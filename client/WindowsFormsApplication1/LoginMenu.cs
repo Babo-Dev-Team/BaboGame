@@ -26,7 +26,12 @@ namespace BaboGameClient
 
         private void LoginButton_Click(object sender, EventArgs e)
         {
-            int error = serverHandler.Connect("192.168.56.101", 9094); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            if (string.IsNullOrWhiteSpace(UsernameTextBox.Text) || string.IsNullOrWhiteSpace(PasswordTextBox.Text))
+            {
+                MessageBox.Show("Els camps estan buits!");
+                return;
+            }
+            int error = serverHandler.Connect("192.168.56.103", 9094); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
@@ -53,7 +58,12 @@ namespace BaboGameClient
 
         private void SignupButton_Click(object sender, EventArgs e)
         {
-            int error = serverHandler.Connect("192.168.56.101", 9094); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            if (string.IsNullOrWhiteSpace(UsernameTextBox.Text) || string.IsNullOrWhiteSpace(PasswordTextBox.Text))
+            {
+                MessageBox.Show("Els camps estan buits!");
+                return;
+            }
+            int error = serverHandler.Connect("192.168.56.103", 9094); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");

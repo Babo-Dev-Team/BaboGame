@@ -22,6 +22,11 @@ namespace BaboGameClient
         {
             if (TimePlayed_rb.Checked)
             {
+            if (string.IsNullOrWhiteSpace(queries_tb.Text))
+                {
+                    MessageBox.Show("Els camps estan buits!");
+                    return;
+                }
                 string TimePlayed;
                 TimePlayed = serverHandler.GetTimePlayed(queries_tb.Text);
                 if (TimePlayed == null)
@@ -53,6 +58,12 @@ namespace BaboGameClient
             }
             else if (Characters_rb.Checked)
             {
+                
+                if (string.IsNullOrWhiteSpace(queries_tb.Text))
+                {
+                    MessageBox.Show("Els camps estan buits!");
+                    return;
+                }
                 QueryGrid.Rows.Clear();
                 QueryGrid.Columns.Clear();
                 string[][] gameCharacters;
