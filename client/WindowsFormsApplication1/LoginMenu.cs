@@ -35,6 +35,8 @@ namespace BaboGameClient
             if(error == 0)
             {
                 MessageBox.Show("Login OK!");
+                QueriesForm queriesForm = new QueriesForm(serverHandler);
+                queriesForm.ShowDialog();
             }
             else if (error == -1)
             {
@@ -48,13 +50,15 @@ namespace BaboGameClient
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
-                // instanciar form consultes
+               
             }
             error = serverHandler.SignUp(this.UsernameTextBox.Text, this.PasswordTextBox.Text);
             if (error == 0)
             {
                 MessageBox.Show("Usuari creat.");
                 // instanciar form consultes
+                QueriesForm queriesForm = new QueriesForm(serverHandler);
+                queriesForm.ShowDialog();
             }
             else if (error == -1)
             {
