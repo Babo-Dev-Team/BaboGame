@@ -86,7 +86,10 @@ namespace BaboGameClient
         {
             this.SendRequest("1/" + username + "/");
             string response = this.ReceiveReponse();
-            return response;
+            if (response == "00:00:00")
+                return null;
+            else
+                return response;
         }
 
         // retorna una matriu amb tantes files com usuaris i 2 columnes
@@ -104,7 +107,7 @@ namespace BaboGameClient
             }
             if (n_pairs > 0)
             {
-                response.Remove(0, 2); //eliminem el n_chars de la resposta
+                response = response.Remove(0, response.IndexOf("/") + 1); //eliminem el n_chars de la resposta
                 for (int i = 0; i < n_pairs; i++)
                 {
                     rankingPairs = response.Split('/');
@@ -129,7 +132,7 @@ namespace BaboGameClient
             }
             if (n_pairs > 0)
             {
-                response.Remove(0, 2); //eliminem el n_chars de la resposta
+                response = response.Remove(0, response.IndexOf("/") + 1); //eliminem el n_chars de la resposta
                 for (int i = 0; i < n_pairs; i++)
                 {
                     playerCharPairs = response.Split('/');

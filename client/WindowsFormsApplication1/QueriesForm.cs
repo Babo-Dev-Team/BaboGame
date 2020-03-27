@@ -31,16 +31,43 @@ namespace BaboGameClient
             }
             else if (Ranking_rb.Checked)
             {
+                QueryGrid.Columns.Add("username", "Usuari");
+                QueryGrid.Columns.Add("Wins", "Partides guanyades");
                 string[][] ranking;
                 ranking = serverHandler.GetRanking();
-                QueryGrid.DataSource = ranking;
+
+                for (int i = 0; i < ranking.GetLength(0); i++)// array rows
+                {
+                    string[] row = new string[ranking[i].GetLength(0)];
+
+                    for (int j = 0; j < ranking[i].GetLength(0); j++)
+                    {
+                        row[j] = ranking[i][j];
+                    }
+
+                    QueryGrid.Rows.Add(row);
+                }
                 QueryGrid.Refresh();
             }
             else
             {
-                string[][] GameCharacters;
-                GameCharacters = serverHandler.GetGameCharacters(queries_tb.Text);
-                QueryGrid.DataSource = GameCharacters;
+                string[][] gameCharacters;
+                gameCharacters = serverHandler.GetGameCharacters(queries_tb.Text);
+                QueryGrid.Columns.Add("username", "Usuari");
+                QueryGrid.Columns.Add("character", "Personatge");
+
+
+                for (int i = 0; i < gameCharacters.GetLength(0); i++)// array rows
+                {
+                    string[] row = new string[gameCharacters[i].GetLength(0)];
+
+                    for (int j = 0; j < gameCharacters[i].GetLength(0); j++)
+                    {
+                        row[j] = gameCharacters[i][j];
+                    }
+
+                    QueryGrid.Rows.Add(row);
+                }
                 QueryGrid.Refresh();
             }
         }
