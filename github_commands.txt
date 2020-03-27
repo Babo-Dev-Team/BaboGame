@@ -1,0 +1,104 @@
+# clonar repositori al directori actual
+git clone <Remote URL>
+
+# veure estat de la branca actual (respecte el commit anterior)
+git status
+
+# veure diferències de la branca actual (respecte el commit anterior)
+git diff
+
+# veure diferencies entre 2 branques (locals i/o remotes)
+git diff <branca1> <branca2>
+
+# afegir arxius a la staging area
+git add <arxius>
+
+# afegir tots els canvis a la staging area
+git add .
+
+# commit dels canvis de la staging area
+git commit
+
+# afegir tots els canvis a la staging area + commit, equivalent a git add . + git commit
+git commit -a 
+
+# publicar els commits al server
+git push <nom server remot> <branca>
+
+exemple: git push origin master
+
+# desarregar els canvis del servidor sense actualitzar la versió local (branca actual)
+git fetch
+
+# descarregar i incoroporar a la versió local els canvis del servidor
+git pull
+
+# crear branca nova
+git branch <nom branca>
+
+# esborrar branca local	COMPTE!!! perill d'esborrar feina personal no combinada en una altra branca
+git branch -d <nom branca>
+
+# esborrar branca local i remota COMPTE!!! perill d'esborrar feina de l'equip no combinada en una altra branca
+git branch -d <nom branca>
+git push origin :<nom branca>
+
+# canviar a una altra branca (per fer fetch, pull, commit...)
+git checkout <nom branca>
+
+
+### proposta per sincronitzar i actualitzar els repositoris quan volem afegir canvis (per a la branca actual): ###
+
+git commit -a  		      		  (primer afegim els canvis que hem fet al repositori local)
+git fetch  				  (comprovem els canvis del servidor, és el moment de mirar si hi ha conflictes)
+git diff <branca> origin/<branca>         (podem observar les diferencies línia per línia)
+git pull 				  (importem els canvis del servidor i els combinem amb la versió local, creant un commit nou amb tots els canvis)
+git push origin <branca>		  (acutalitzem el servidor a la nostra versió local que incoropora tots els canvis)
+
+
+
+### combinar una branca -> a la branca master (afegir a master els canvis de la branca) ###
+
+git checkout <branca_1>
+git fetch / git pull origin <branca_1>  (primer ens assegurem que la branca 1 està al dia)
+git checkout master  	    		(tornem a la branca master)
+git merge <branca_1> 	                (si no hi ha conflictes, els canvis de branca_1 s'afegeixen a master)
+    	  	     			(si hi ha conflicte, l'haurem de resoldre editant els fitxers a mà amb l'editor)
+					(git afegeix marcadors al fitxer per a que veiem els conflictes)
+					(alternativament: git mergetool (eina gràfica per a resolució de conflictes.
+							  cal tenir meld instal·lat (sudo apt install meld)))
+							  
+(bon moment per mirar si el programa compila, i arreglar lo necessari)
+
+git commit -a -m 'comentaris, exemple: merge branca_1 to master'
+git fetch / pull origin master	       	(comprovem que no hi ha canvis nous a origin/master (branca remota))
+git push origin master			(finalment, actualitzem la branca origin/master del servidor))
+
+
+
+### combinar canvis de la branca master -> a una branca experimental ###
+
+git checkout <master>
+git fetch / git pull origin <master>  (primer ens assegurem que la branca master està al dia)
+git checkout branca_1  	    		(tornem a la branca master)
+git merge master 	                (si no hi ha conflictes, els canvis de master s'afegeixen a branca_1)
+    	  	     			(si hi ha conflicte, l'haurem de resoldre editant els fitxers a mà amb l'editor)
+					(git afegeix marcadors al fitxer per a que veiem els conflictes)
+					(alternativament: git mergetool (eina gràfica per a resolució de conflictes.
+							  cal tenir meld instal·lat (sudo apt install meld)))
+
+git commit -a -m 'comentaris, exemple: merge master -> to branca_1'
+git fetch / pull origin branca_1       	(comprovem que no hi ha canvis nous a origin/branca_1 (branca remota))
+git push origin branca_1		(finalment, actualitzem la branca origin/branca_1 del servidor))
+
+
+
+
+### Enllaços d'interès:
+
+# Per què fem commit i després pull i no a la inversa
+https://community.atlassian.com/t5/Bitbucket-questions/Did-a-commit-before-I-did-a-pull/qaq-p/352525
+
+# Git: Basic Branching
+https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging
+
