@@ -10,7 +10,7 @@
 #include "BBDD_Handler.h"
 
 #define USRN_LENGTH 32
-#define GAME_LENGTH 32
+#define GAME_ID_LENGTH 8
 #define PASS_LENGTH 32
 
 int main(int argc, char *argv[])
@@ -74,40 +74,39 @@ int main(int argc, char *argv[])
 				{
 					char username[USRN_LENGTH];
 					strcpy(username, strtok(NULL, "/"));
-					
+					printf("User: %s\n", username);
 					// realitzar la query
-					
-					strcpy(response, "test response 1");
+					char* time_played = BBDD_time_played(username);
+					strcpy(response, time_played);
+					free(time_played);
 					break;
 				}
 				
-			// request 2 -> Winner given a game name query
-			// 				client request contains: 	the name of the game
-			// 				server response contains:	winner				
+			// request 2 -> global player ranking
+			// 				client request contains: 	nothing
+			// 				server response contains:	n_pairs/each user*games won pair separated by '/'			
 			case 2:
 				{
-					char game_name[GAME_LENGTH];
-					char winner[USRN_LENGTH];
-					strcpy(game_name, strtok(NULL, "/"));
-					
 					// realitzar la query
-					
-					strcpy(response, "test response 2");
+					char* ranking_str = BBDD_ranking();
+					strcpy(response, ranking_str);
+					free(ranking_str);
+					//strcpy(response, "test response 2");
 					break;
 				}
 			
 			// request 3 -> Characters used in a game by each user query
 			// 				client request contains: 	the name of the game
-			// 				server response contains:	each user*character pair separated by '/'	
+			// 				server response contains:	n_pairs/each user*character pair separated by '/'
 			case 3:
 				{
-					char game_name[GAME_LENGTH];
-					char query_response[200];
-					strcpy(game_name, strtok(NULL, "/"));
+					char game_id[GAME_ID_LENGTH];
+					strcpy(game_id, strtok(NULL, "/"));
 					
 					// realitzar la query
-					
-					strcpy(response, "test response 3");
+					char* characters_str = BBDD_find_characters(game_id);
+					strcpy(response, characters_str);
+					free(characters_str);
 					break;
 				}
 				
