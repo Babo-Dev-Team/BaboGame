@@ -7,15 +7,11 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include "BBDD_Handler.h"
-
 #define USRN_LENGTH 32
 #define GAME_LENGTH 32
-#define PASS_LENGTH 32
 
 int main(int argc, char *argv[])
 {
-	int err = BBDD_connect();
 	int sock_conn, sock_listen, request_length;
 	struct sockaddr_in serv_addr;
 	char request[512];
@@ -34,7 +30,7 @@ int main(int argc, char *argv[])
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	// escucharemos en el port 9050
-	serv_addr.sin_port = htons(9094);
+	serv_addr.sin_port = htons(9092);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Error al bind");
 	//La cola de requestes pendientes no podr? ser superior a 4
@@ -56,14 +52,12 @@ int main(int argc, char *argv[])
 			// Ahora recibimos el mensaje, que dejamos en request
 			request_length = read(sock_conn, request, sizeof(request));
 			printf ("Recibido\n");
-
 			
 			// marcamos el final de string
 			request[request_length]='\0';
-
+			
 			char *p = strtok(request, "/");
 			int request_code =  atoi(p); // sacamos el request_code del request
-			printf("Request: %d\n", request_code);
 			
 			switch (request_code)
 			{	
@@ -112,56 +106,18 @@ int main(int argc, char *argv[])
 				}
 				
 				
-			// request 4 -> login			
-			// 				client request contains: 	the login user and passwd
-			// 				server response contains:	OK, FAIL	
+			// request 4 -> Characters used in a game by each user query
+			// 				client request contains: 	the name of the game
+			// 				server response contains:	each user*character pair separated by '/'	
 			case 4:
 				{
-					char username[USRN_LENGTH];
-					char password[PASS_LENGTH];
-					strcpy(username, strtok(NULL, "/"));
-					strcpy(password, strtok(NULL, "/"));
-					printf("User: %s\n", username);
-					printf("Password: %s\n", password);
-					// realitzar la query
-					int result = BBDD_check_login(username, password);
-					if(!result)
-					{
-						strcpy(response, "OK");
-					}
-					else 
-					{
-						strcpy(response, "FAIL");
-						disconnect = 1; // close connection to let client try again
-					}				
-					//strcpy(response, "test response 3");
-					break;
-				}
-				
-				// request 5 -> Sign Up			
-				// 				client request contains: 	the new user and passwd
-				// 				server response contains:	OK, FAIL	
-			case 5:
-				{
-					char username[USRN_LENGTH];
-					char password[PASS_LENGTH];
-					strcpy(username, strtok(NULL, "/"));
-					strcpy(password, strtok(NULL, "/"));
-					printf("User: %s\n", username);
-					printf("Password: %s\n", password);
+					char game_name[GAME_LENGTH];
+					char query_response[200];
+					strcpy(game_name, strtok(NULL, "/"));
 					
 					// realitzar la query
-					int result = BBDD_add_user(username, password);
-					if(!result)
-					{
-						strcpy(response, "OK");
-					}
-					else 
-					{
-						strcpy(response, "USED");
-					}
-					disconnect = 1; // close connection to let client log in
-					//strcpy(response, "test response 3");
+					
+					strcpy(response, "test response 3");
 					break;
 				}
 
