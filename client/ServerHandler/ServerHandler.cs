@@ -50,7 +50,11 @@ namespace BaboGameClient
         public int Login (string username, string password)
         {
             int error;
-            this.SendRequest("4/" + username + "/" + password + "/");
+            if ((username == null) || (password == null))
+                return -2;
+            error = this.SendRequest("4/" + username + "/" + password + "/");
+            if (error != 0)
+                return error;
             string response = this.ReceiveReponse();
             if (response == "OK")
             {
@@ -67,7 +71,11 @@ namespace BaboGameClient
         public int SignUp(string username, string password)
         {
             int error;
-            this.SendRequest("5/" + username + "/" + password + "/");
+            if ((username == null) || (password == null))
+                return -2;
+            error = this.SendRequest("5/" + username + "/" + password + "/");
+            if (error != 0)
+                return error;
             string response = this.ReceiveReponse();
             if (response == "OK")
             {
@@ -142,10 +150,18 @@ namespace BaboGameClient
             return playerChars;
         }
 
-        private void SendRequest(string request)
+        private int SendRequest(string request)
         {
             byte[] msg = System.Text.Encoding.ASCII.GetBytes(request);
-            server.Send(msg);
+            try
+            {
+                server.Send(msg);
+                return 0;
+            }
+            catch
+            {
+                return -2;
+            }
         }
 
         private string ReceiveReponse()

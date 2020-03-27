@@ -20,17 +20,19 @@ namespace BaboGameClient
 
         private void Send_btn_Click(object sender, EventArgs e)
         {
-            if(TimePlayed_rb.Checked)
+            if (TimePlayed_rb.Checked)
             {
                 string TimePlayed;
                 TimePlayed = serverHandler.GetTimePlayed(queries_tb.Text);
                 if (TimePlayed == null)
                     MessageBox.Show("Aquest jugador no existeix o no ha jugat res");
                 else
-                    MessageBox.Show("El jugador " + queries_tb + "ha jugat el temps següent:" + TimePlayed);
+                    MessageBox.Show("El jugador " + queries_tb.Text + " ha jugat el temps següent:" + TimePlayed);
             }
             else if (Ranking_rb.Checked)
             {
+                QueryGrid.Rows.Clear();
+                QueryGrid.Columns.Clear();
                 QueryGrid.Columns.Add("username", "Usuari");
                 QueryGrid.Columns.Add("Wins", "Partides guanyades");
                 string[][] ranking;
@@ -49,27 +51,45 @@ namespace BaboGameClient
                 }
                 QueryGrid.Refresh();
             }
-            else
+            else if (Characters_rb.Checked)
             {
+                QueryGrid.Rows.Clear();
+                QueryGrid.Columns.Clear();
                 string[][] gameCharacters;
-                gameCharacters = serverHandler.GetGameCharacters(queries_tb.Text);
-                QueryGrid.Columns.Add("username", "Usuari");
-                QueryGrid.Columns.Add("character", "Personatge");
-
-
-                for (int i = 0; i < gameCharacters.GetLength(0); i++)// array rows
+                try
                 {
-                    string[] row = new string[gameCharacters[i].GetLength(0)];
+                    Convert.ToInt32(queries_tb.Text); //Detecta que hagi posat un nombre i sinò fa saltar el try catch
+                    gameCharacters = serverHandler.GetGameCharacters(queries_tb.Text);
+                    QueryGrid.Columns.Add("username", "Usuari");
+                    QueryGrid.Columns.Add("character", "Personatge");
 
-                    for (int j = 0; j < gameCharacters[i].GetLength(0); j++)
+
+                    for (int i = 0; i < gameCharacters.GetLength(0); i++)// array rows
                     {
-                        row[j] = gameCharacters[i][j];
-                    }
+                        string[] row = new string[gameCharacters[i].GetLength(0)];
 
-                    QueryGrid.Rows.Add(row);
+                        for (int j = 0; j < gameCharacters[i].GetLength(0); j++)
+                        {
+                            row[j] = gameCharacters[i][j];
+                        }
+
+                        QueryGrid.Rows.Add(row);
+                    }
+                    QueryGrid.Refresh();
                 }
-                QueryGrid.Refresh();
+                catch
+                {
+                    MessageBox.Show("Introdueix una ID de partida al quadre de text");
+                }
             }
+            else
+                MessageBox.Show("Selecciona alguna opció");
+        }
+
+        private void QueriesForm_FormClosing(object sender, EventArgs args)
+        {
+            MessageBox.Show("Desconnectant-se...");
+            serverHandler.Disconnect();
         }
     }
 }

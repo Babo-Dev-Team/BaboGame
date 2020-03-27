@@ -26,43 +26,57 @@ namespace BaboGameClient
 
         private void LoginButton_Click(object sender, EventArgs e)
         {
-            int error = serverHandler.Connect("192.168.56.103", 9094);
+            int error = serverHandler.Connect("192.168.56.101", 9094); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
             }
-            error = serverHandler.Login(this.UsernameTextBox.Text, this.PasswordTextBox.Text);
-            if(error == 0)
+            else
             {
-                MessageBox.Show("Login OK!");
-                QueriesForm queriesForm = new QueriesForm(serverHandler);
-                queriesForm.ShowDialog();
-            }
-            else if (error == -1)
-            {
-                MessageBox.Show("Error. usuari / password incorrectes");
+                error = serverHandler.Login(this.UsernameTextBox.Text, this.PasswordTextBox.Text);
+                if (error == 0)
+                {
+                    MessageBox.Show("Login OK!");
+                    QueriesForm queriesForm = new QueriesForm(serverHandler);
+                    queriesForm.ShowDialog();
+                }
+                else if (error == -1)
+                {
+                    MessageBox.Show("Error. usuari / password incorrectes");
+                }
+                else if (error == -2)
+                {
+                    MessageBox.Show("Error en el missatge. Comprova que estiguin tots els camps");
+                }
             }
         }
 
         private void SignupButton_Click(object sender, EventArgs e)
         {
-            int error = serverHandler.Connect("192.168.56.103", 9094);
+            int error = serverHandler.Connect("192.168.56.101", 9094); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
-               
+
             }
-            error = serverHandler.SignUp(this.UsernameTextBox.Text, this.PasswordTextBox.Text);
-            if (error == 0)
+            else
             {
-                MessageBox.Show("Usuari creat.");
-                // instanciar form consultes
-                QueriesForm queriesForm = new QueriesForm(serverHandler);
-                queriesForm.ShowDialog();
-            }
-            else if (error == -1)
-            {
-                MessageBox.Show("Error. aquest usuari ja existeix!");
+                error = serverHandler.SignUp(this.UsernameTextBox.Text, this.PasswordTextBox.Text);
+                if (error == 0)
+                {
+                    MessageBox.Show("Usuari creat.");
+                    // instanciar form consultes
+                    QueriesForm queriesForm = new QueriesForm(serverHandler);
+                    queriesForm.ShowDialog();
+                }
+                else if (error == -1)
+                {
+                    MessageBox.Show("Error. aquest usuari ja existeix!");
+                }
+                else if (error == -2)
+                {
+                    MessageBox.Show("Error en el missatge");
+                }
             }
         }
     }

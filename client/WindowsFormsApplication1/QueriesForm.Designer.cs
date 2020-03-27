@@ -112,6 +112,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.QueriesForm_FormClosing);
 
         }
 
