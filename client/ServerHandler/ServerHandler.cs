@@ -50,7 +50,7 @@ namespace BaboGameClient
         public int Login (string username, string password)
         {
             int error;
-            this.SendRequest("/4/" + username + "/" + password + "/");
+            this.SendRequest("4/" + username + "/" + password + "/");
             string response = this.ReceiveReponse();
             if (response == "OK")
             {
@@ -67,7 +67,7 @@ namespace BaboGameClient
         public int SignUp(string username, string password)
         {
             int error;
-            this.SendRequest("/5/" + username + "/" + password + "/");
+            this.SendRequest("5/" + username + "/" + password + "/");
             string response = this.ReceiveReponse();
             if (response == "OK")
             {
@@ -79,6 +79,64 @@ namespace BaboGameClient
             }
             else error = -2;
             return error;
+        }
+
+        // retorna el temps en format HH:MM:SS
+        public string GetTimePlayed (string username)
+        {
+            this.SendRequest("1/" + username + "/");
+            string response = this.ReceiveReponse();
+            return response;
+        }
+
+        // retorna una matriu amb tantes files com usuaris i 2 columnes
+        // la 0 pel username i la 1 pel nombre de partides guanyades
+        public string[][] GetRanking()
+        {
+            this.SendRequest("2/");
+            string response = this.ReceiveReponse();
+            int n_pairs = Convert.ToInt32(response.Split('/')[0]);
+            string[] rankingPairs = new string[n_pairs];
+            string[][] ranking = new string[n_pairs][];
+            for (int i = 0; i < n_pairs; i++)
+            {
+                ranking[i] = new string[2];
+            }
+            if (n_pairs > 0)
+            {
+                response.Remove(0, 2); //eliminem el n_chars de la resposta
+                for (int i = 0; i < n_pairs; i++)
+                {
+                    rankingPairs = response.Split('/');
+                    ranking[i] = rankingPairs[i].Split('*');
+                }
+            }
+            return ranking;
+        }
+
+        // retorna una matriu com GetRanking amb les parelles
+        // username - character per la partida consultada
+        public string[][] GetGameCharacters(string game)
+        {
+            this.SendRequest("3/" + game + "/");
+            string response = this.ReceiveReponse();
+            int n_pairs = Convert.ToInt32(response.Split('/')[0]);
+            string[] playerCharPairs = new string[n_pairs];
+            string[][] playerChars = new string[n_pairs][];
+            for (int i = 0; i < n_pairs; i++)
+            {
+                playerChars[i] = new string[2];
+            }
+            if (n_pairs > 0)
+            {
+                response.Remove(0, 2); //eliminem el n_chars de la resposta
+                for (int i = 0; i < n_pairs; i++)
+                {
+                    playerCharPairs = response.Split('/');
+                    playerChars[i] = playerCharPairs[i].Split('*');
+                }
+            }
+            return playerChars;
         }
 
         private void SendRequest(string request)

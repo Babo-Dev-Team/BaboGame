@@ -26,7 +26,7 @@ namespace BaboGameClient
 
         private void LoginButton_Click(object sender, EventArgs e)
         {
-            int error = serverHandler.Connect("192.168.56.103", 9092);
+            int error = serverHandler.Connect("192.168.56.103", 9094);
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
@@ -44,7 +44,7 @@ namespace BaboGameClient
 
         private void SignupButton_Click(object sender, EventArgs e)
         {
-            int error = serverHandler.Connect("192.168.56.103", 9092);
+            int error = serverHandler.Connect("192.168.56.103", 9094);
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
