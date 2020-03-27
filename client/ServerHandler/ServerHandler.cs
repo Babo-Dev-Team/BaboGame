@@ -91,9 +91,9 @@ namespace BaboGameClient
 
         // retorna una matriu amb tantes files com usuaris i 2 columnes
         // la 0 pel username i la 1 pel nombre de partides guanyades
-        public string[][] GetRanking(string game)
+        public string[][] GetRanking()
         {
-            this.SendRequest("2/" + game + "/");
+            this.SendRequest("2/");
             string response = this.ReceiveReponse();
             int n_pairs = Convert.ToInt32(response.Split('/')[0]);
             string[] rankingPairs = new string[n_pairs];
