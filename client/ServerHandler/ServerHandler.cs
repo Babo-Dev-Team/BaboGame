@@ -111,7 +111,7 @@ namespace BaboGameClient
             return ranking;
         }
 
-        public string[][] getGameCharacters(string game)
+        public string[][] GetGameCharacters(string game)
         {
             this.SendRequest("3/" + game + "/");
             string response = this.ReceiveReponse();
@@ -133,10 +133,6 @@ namespace BaboGameClient
             }
             return playerChars;
         }
-
-
-
-        public 
 
         private void SendRequest(string request)
         {
