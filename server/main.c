@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
 			// 				server response contains:	OK, FAIL	
 			case 4:
 				{
+					printf("funciona");
 					char username[USRN_LENGTH];
 					char password[PASS_LENGTH];
 					strcpy(username, strtok(NULL, "/"));
