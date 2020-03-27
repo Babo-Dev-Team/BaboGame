@@ -81,6 +81,63 @@ namespace BaboGameClient
             return error;
         }
 
+        public string GetTimePlayed (string username)
+        {
+            this.SendRequest("1/" + username + "/");
+            string response = this.ReceiveReponse();
+            return response;
+        }
+
+        public string[][] GetRanking(string game)
+        {
+            this.SendRequest("2/" + game + "/");
+            string response = this.ReceiveReponse();
+            int n_pairs = Convert.ToInt32(response.Split('/')[0]);
+            string[] rankingPairs = new string[n_pairs];
+            string[][] ranking = new string[n_pairs][];
+            for (int i = 0; i < n_pairs; i++)
+            {
+                ranking[i] = new string[2];
+            }
+            if (n_pairs > 0)
+            {
+                response.Remove(0, 2); //eliminem el n_chars de la resposta
+                for (int i = 0; i < n_pairs; i++)
+                {
+                    rankingPairs = response.Split('/');
+                    ranking[i] = rankingPairs[i].Split('*');
+                }
+            }
+            return ranking;
+        }
+
+        public string[][] getGameCharacters(string game)
+        {
+            this.SendRequest("3/" + game + "/");
+            string response = this.ReceiveReponse();
+            int n_pairs = Convert.ToInt32(response.Split('/')[0]);
+            string[] playerCharPairs = new string[n_pairs];
+            string[][] playerChars = new string[n_pairs][];
+            for (int i = 0; i < n_pairs; i++)
+            {
+                playerChars[i] = new string[2];
+            }
+            if (n_pairs > 0)
+            {
+                response.Remove(0, 2); //eliminem el n_chars de la resposta
+                for (int i = 0; i < n_pairs; i++)
+                {
+                    playerCharPairs = response.Split('/');
+                    playerChars[i] = playerCharPairs[i].Split('*');
+                }
+            }
+            return playerChars;
+        }
+
+
+
+        public 
+
         private void SendRequest(string request)
         {
             byte[] msg = System.Text.Encoding.ASCII.GetBytes(request);
