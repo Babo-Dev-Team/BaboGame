@@ -81,6 +81,7 @@ namespace BaboGameClient
             return error;
         }
 
+        // retorna el temps en format HH:MM:SS
         public string GetTimePlayed (string username)
         {
             this.SendRequest("1/" + username + "/");
@@ -88,6 +89,8 @@ namespace BaboGameClient
             return response;
         }
 
+        // retorna una matriu amb tantes files com usuaris i 2 columnes
+        // la 0 pel username i la 1 pel nombre de partides guanyades
         public string[][] GetRanking(string game)
         {
             this.SendRequest("2/" + game + "/");
@@ -111,6 +114,8 @@ namespace BaboGameClient
             return ranking;
         }
 
+        // retorna una matriu com GetRanking amb les parelles
+        // username - character per la partida consultada
         public string[][] GetGameCharacters(string game)
         {
             this.SendRequest("3/" + game + "/");
