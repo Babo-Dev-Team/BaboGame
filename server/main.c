@@ -14,31 +14,48 @@
 #define GAME_ID_LENGTH 8
 #define PASS_LENGTH 32
 
+#define NMBR_THREADS 100
 //----------------------------------------------------------
 #define CNCTD_LST_LENGTH 20
 //Llista d'usuaris connectats
 typedef struct{
+	int id;
 	char UserName [USRN_LENGTH];
 	int socket;
+	int state; //0 lliure, 1 ocupat
 }Connected;
 
 typedef struct{
 	Connected connected [CNCTD_LST_LENGTH];
 	int number;
+	pthread_mutex_t* mutex;
 }ListConnected;
 
+typedef struct CurrentConnected{
+	ListConnected* list;
+	int socket;
+}CurrentConnected;
 //Funció d'afegir connectat
 int AddConnected (ListConnected* list, char name [USRN_LENGTH], int socket)
 {
-	if (list->number < CNCTD_LST_LENGTH)
+	int i=0;
+	int space_found=0;
+	while ((i < CNCTD_LST_LENGTH) && !space_found)
 	{
-		strcpy(list->connected[list->number].UserName, name);
-		list->connected[list->number].socket = socket;
+		if(!list->connected[i].state)
+			space_found=1;
+		if(!space_found)
+			i++;
+	}
+	if (space_found)
+	{
+		strcpy(list->connected[i].UserName,name);
+		list->connected[i].socket = socket;
 		list->number++;
 		return 0;
 	}
-	
-	return -1;
+	else
+		return -1;
 }
 
 //Retorna la posició
@@ -49,7 +66,7 @@ int Location (ListConnected *list, char name [USRN_LENGTH])
 	int user_found = 0;
 	while ((i < list->number) && !user_found)
 	{
-		if(!strcmp(list->connected[i].UserName, name))
+		if((!strcmp(list->connected[i].UserName, name))&&(list->connected[i].state))
 			user_found=1;
 		if(!user_found)
 			i++;
@@ -69,10 +86,7 @@ int DelConnected(ListConnected *list, char name[USRN_LENGTH])
 	int loc = Location(list, name);
 	if (loc != -1)
 	{
-		for(loc; loc < list->number; loc++)
-		{
-			list->connected[loc] = list->connected[loc+1];
-		}
+		list->connected[loc].state = 0;
 		list->number--;
 		return 0;
 	}
@@ -92,13 +106,15 @@ int  GetSocket(ListConnected *list, char name[20])
 //-----------------------------------------------------------
 
 //Thread del client
-void* attendClient (void* sockets)
+void* attendClient (void* userConnected)
 {
 	int err = BBDD_connect();
 	int sock_conn, request_length;
-	int* s;
-	s = (int *) sockets;
-	sock_conn = *s;
+	CurrentConnected* user = (CurrentConnected*) userConnected;
+	sock_conn = user->socket;
+	
+	char username[USRN_LENGTH];
+	char password[PASS_LENGTH];
 	
 	char request[512];
 	char response[512];
@@ -170,12 +186,11 @@ void* attendClient (void* sockets)
 		case 4:
 		{
 			printf("funciona");
-			char username[USRN_LENGTH];
-			char password[PASS_LENGTH];
 			strcpy(username, strtok(NULL, "/"));
 			strcpy(password, strtok(NULL, "/"));
 			printf("User: %s\n", username);
 			printf("Password: %s\n", password);
+			AddConnected(user->list,username,sock_conn);
 			// realitzar la query
 			int result = BBDD_check_login(username, password);
 			if(!result)
@@ -196,13 +211,11 @@ void* attendClient (void* sockets)
 		// 				server response contains:	OK, FAIL	
 		case 5:
 		{
-			char username[USRN_LENGTH];
-			char password[PASS_LENGTH];
 			strcpy(username, strtok(NULL, "/"));
 			strcpy(password, strtok(NULL, "/"));
 			printf("User: %s\n", username);
 			printf("Password: %s\n", password);
-			
+			AddConnected(user->list,username,sock_conn);
 			// realitzar la query
 			int result = BBDD_add_user(username, password);
 			if(!result)
@@ -238,6 +251,7 @@ void* attendClient (void* sockets)
 	}
 	
 	close(sock_conn);
+	DelConnected(user->list, username);
 	
 	//Acabar el thread
 	pthread_exit(0);
@@ -271,9 +285,17 @@ int main(int argc, char *argv[])
 	
 	//CONNEXIÓ
 	int i;
-	int sockets [100];
-	pthread_t thread[100];
+	pthread_t thread[NMBR_THREADS];
 	
+	//Connectats
+	ListConnected list;
+	list.number = 0;
+	CurrentConnected user_connected[NMBR_THREADS];
+	for(i=0;i<NMBR_THREADS;i++)
+	{
+		user_connected[i].list = &list;
+	}
+
 	// Atenderemos requestes indefinidamente
 	for(i=0;i<5;i++)
 	{
@@ -283,8 +305,8 @@ int main(int argc, char *argv[])
 		sock_conn = accept(sock_listen, NULL, NULL);
 		printf ("He recibido conexi?n\n");
 		
-		sockets[i] = sock_conn;
-		pthread_create(&thread[i], NULL, attendClient, &sockets[i]);
+		user_connected[i].socket = sock_conn;
+		pthread_create(&thread[i], NULL, attendClient, &user_connected[i]);
 	}
 }
 
