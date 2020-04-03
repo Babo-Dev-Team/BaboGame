@@ -14,6 +14,83 @@
 #define GAME_ID_LENGTH 8
 #define PASS_LENGTH 32
 
+//----------------------------------------------------------
+#define CNCTD_LST_LENGTH 20
+//Llista d'usuaris connectats
+typedef struct{
+	char UserName [USRN_LENGTH];
+	int socket;
+}Connected;
+
+typedef struct{
+	Connected connected [CNCTD_LST_LENGTH];
+	int number;
+}ListConnected;
+
+//Funció d'afegir connectat
+int AddConnected (ListConnected* list, char name [USRN_LENGTH], int socket)
+{
+	if (list->number < CNCTD_LST_LENGTH)
+	{
+		strcpy(list->connected[list->number].UserName, name);
+		list->connected[list->number].socket = socket;
+		list->number++;
+		return 0;
+	}
+	
+	return -1;
+}
+
+//Retorna la posició
+int Location (ListConnected *list, char name [USRN_LENGTH])
+{
+	//0 troba la posició, -1 no està a la llista
+	int i = 0;
+	int user_found = 0;
+	while ((i < list->number) && !user_found)
+	{
+		if(!strcmp(list->connected[i].UserName, name))
+			user_found=1;
+		if(!user_found)
+			i++;
+	}
+	if(user_found)
+	{
+		return i;
+	}
+	else
+	   return -1;
+}
+
+//Elimina jugador
+int DelConnected(ListConnected *list, char name[USRN_LENGTH])
+{
+	//0 l'elimina correctament, 0 no està a la llista
+	int loc = Location(list, name);
+	if (loc != -1)
+	{
+		for(loc; loc < list->number; loc++)
+		{
+			list->connected[loc] = list->connected[loc+1];
+		}
+		list->number--;
+		return 0;
+	}
+	else
+		return -1;
+}
+//Retorna el socket a partir d'un nom
+int  GetSocket(ListConnected *list, char name[20])
+{
+	//Reotorna el valor del socket, -1 si no està a la llista
+	int loc = Location(list,name);
+	if(loc != -1)
+		return list->connected[loc].socket;
+	else
+		return -1;
+}
+//-----------------------------------------------------------
+
 //Thread del client
 void* attendClient (void* sockets)
 {
