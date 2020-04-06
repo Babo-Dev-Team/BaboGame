@@ -169,7 +169,7 @@ int BBDD_add_user(char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 	
 	//TO DO: afegir comprovacio d-usuari prexistent
 	
-	return 0;
+	return user_id;
 	
 }
 
@@ -196,7 +196,7 @@ int BBDD_check_login (char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 	else
 	{
 		// login OK
-		return 0;
+		return atoi(row[0]);
 	}
 }
 
