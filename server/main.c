@@ -20,57 +20,83 @@
 //Llista d'usuaris connectats
 typedef struct{
 	int id;
-	char UserName [USRN_LENGTH];
+	char username [USRN_LENGTH];
 	int socket;
-	int state; //0 lliure, 1 ocupat
-}Connected;
+	//int state; //0 lliure, 1 ocupat
+}ConnectedUser;
 
-typedef struct{
-	Connected connected [CNCTD_LST_LENGTH];
+typedef struct ConnectedList{
+	ConnectedUser* connected [CNCTD_LST_LENGTH];
+	//Connected* connected;
 	int number;
-	pthread_mutex_t* mutex;
-}ListConnected;
+	pthread_mutex_t mutex;
+}ConnectedList;
 
-typedef struct CurrentConnected{
-	ListConnected* list;
-	int socket;
-}CurrentConnected;
-//Funció d'afegir connectat
-int AddConnected (ListConnected* list, char name [USRN_LENGTH], int socket)
+typedef struct ThreadArgs{
+	ConnectedList* list;
+	ConnectedUser* user;
+}ThreadArgs;
+
+// creem i afegim connectat a la llista, donats el nom, socket i id
+// retorna -1 si la llista està plena
+int AddConnectedByAttributes (ConnectedList* list, char name [USRN_LENGTH], int socket, int id)
 {
-	int i=0;
-	int space_found=0;
-	while ((i < CNCTD_LST_LENGTH) && !space_found)
+	pthread_mutex_lock(&list->mutex);
+	if(list->number < CNCTD_LST_LENGTH)
 	{
-		if(!list->connected[i].state)
-			space_found=1;
-		if(!space_found)
-			i++;
-	}
-	if (space_found)
-	{
-		strcpy(list->connected[i].UserName,name);
-		list->connected[i].socket = socket;
+		int pos = list->number;
+		list->connected[pos]->id = id;
+		list->connected[pos]->socket = socket;
+		strcpy(list->connected[pos]->username, name);
 		list->number++;
+		pthread_mutex_unlock(&list->mutex);
+		return 0;
+	}
+	
+	else
+	{
+		pthread_mutex_unlock(&list->mutex);
+		return -1;
+	}
+}
+
+// Afegeix user a la llista de connectats (per punter)
+// Retorna -1 si la llista està plena
+int AddConnected (ConnectedList* list, ConnectedUser* user)
+{
+	pthread_mutex_lock(&list->mutex);
+	if(list->number < CNCTD_LST_LENGTH)
+	{
+		int pos = list->number;
+		list->connected[pos] = user;
+		list->number++;
+		pthread_mutex_unlock(&list->mutex);
 		return 0;
 	}
 	else
+	{
+		pthread_mutex_lock(&list->mutex);
 		return -1;
+	}
+	   
 }
 
-//Retorna la posició
-int Location (ListConnected *list, char name [USRN_LENGTH])
+// retorna la posicio a la llista d'un usuari connectat
+// retorna -1 si no s'ha trobat l'usuari
+int GetConnectedPos (ConnectedList *list, char name [USRN_LENGTH])
 {
 	//0 troba la posició, -1 no està a la llista
 	int i = 0;
 	int user_found = 0;
+	pthread_mutex_lock(&list->mutex);
 	while ((i < list->number) && !user_found)
 	{
-		if((!strcmp(list->connected[i].UserName, name))&&(list->connected[i].state))
+		if(!strcmp(list->connected[i]->username, name))
 			user_found=1;
 		if(!user_found)
 			i++;
 	}
+	pthread_mutex_unlock(&list->mutex);
 	if(user_found)
 	{
 		return i;
@@ -79,38 +105,129 @@ int Location (ListConnected *list, char name [USRN_LENGTH])
 	   return -1;
 }
 
-//Elimina jugador
-int DelConnected(ListConnected *list, char name[USRN_LENGTH])
+// donat un nom, retorna el id de l'usuari connectat
+// Retorna -1 si no el troba.
+int GetConnectedId (ConnectedList *list, char name [USRN_LENGTH])
 {
-	//0 l'elimina correctament, 0 no està a la llista
-	int loc = Location(list, name);
-	if (loc != -1)
+	//0 troba la posició, -1 no està a la llista
+	int i = 0;
+	int user_found = 0;
+	pthread_mutex_lock(&list->mutex);
+	while ((i < list->number) && !user_found)
 	{
-		list->connected[loc].state = 0;
+		if(!strcmp(list->connected[i]->username, name))
+			user_found=1;
+		if(!user_found)
+			i++;
+	}
+	int ret;
+	if(user_found)
+	{
+		ret = list->connected[i]->id;
+	}
+	else 
+	{
+		ret = -1;
+	}
+	pthread_mutex_unlock(&list->mutex);
+	return ret;
+}
+
+// Elimina jugador per username
+// Retorna -1 si no el troba
+int DelConnectedByName(ConnectedList *list, char name[USRN_LENGTH])
+{
+	// busquem la posicio de l'usuari ja que necessitem mantenir el lock sobre la llista
+	int pos = 0;
+	int user_found = 0;
+	int ret;
+	pthread_mutex_lock(&list->mutex);
+	while ((pos < list->number) && !user_found)
+	{
+		if(!strcmp(list->connected[pos]->username, name))
+			user_found = 1;
+		else pos++;
+	}
+	if(user_found)
+	{
+		for (int j = pos; j < list->number - 1; j++)
+		{
+			list->connected[j] = list->connected[j + 1];
+		}
 		list->number--;
-		return 0;
+		ret = 0;
+	}
+	else 
+	   ret = -1;
+	pthread_mutex_unlock(&list->mutex);
+	return ret;
+}
+
+// Elimina jugador per id
+// Retorna -1 si no el troba
+int DelConnectedById(ConnectedList *list, int id)
+{
+	// busquem la posicio de l'usuari ja que necessitem mantenir el lock sobre la llista
+	int pos = 0;
+	int user_found = 0;
+	int ret;
+	pthread_mutex_lock(&list->mutex);
+	while ((pos < list->number) && !user_found)
+	{
+		if(list->connected[pos]->id == id)
+			user_found = 1;
+		else pos++;
+	}
+	if (user_found)
+	{
+		for (int j = pos; j < list->number - 1; j++)
+		{
+			list->connected[j] = list->connected[j + 1];
+		}
+		list->number--;
+		ret = 0;
+	}
+	else 
+		ret = -1;
+	pthread_mutex_unlock(&list->mutex);
+	return ret;
+}
+
+//Retorna el socket a partir d'un nom
+// Retorna -1 si no troba l'usuari
+int  GetConnectedSocket(ConnectedList* list, char name[USRN_LENGTH])
+{
+	int pos = 0;
+	int user_found = 0;
+	int ret;
+	pthread_mutex_lock(&list->mutex);
+	while ((pos < list->number) && !user_found)
+	{
+		if(!strcmp(list->connected[pos]->username, name))
+			user_found = 1;
+		else pos++;
+	}
+	if (user_found)
+	{
+		ret = list->connected[pos]->socket;
 	}
 	else
-		return -1;
-}
-//Retorna el socket a partir d'un nom
-int  GetSocket(ListConnected *list, char name[20])
-{
-	//Reotorna el valor del socket, -1 si no està a la llista
-	int loc = Location(list,name);
-	if(loc != -1)
-		return list->connected[loc].socket;
-	else
-		return -1;
+		ret = -1;
+	pthread_mutex_unlock(&list->mutex);
+	return ret;
 }
 //-----------------------------------------------------------
 
 //Thread del client
-void* attendClient (void* userConnected)
+void* attendClient (void* args)
 {
 	int err = BBDD_connect();
 	int sock_conn, request_length;
-	CurrentConnected* user = (CurrentConnected*) userConnected;
+	ThreadArgs* threadArgs = (ThreadArgs*) args;
+	
+	// Punters al usuari que gestiona el thread i a la llista
+	ConnectedUser* user = threadArgs->user;
+	ConnectedList* connectedList = threadArgs->list;
 	sock_conn = user->socket;
 	
 	char username[USRN_LENGTH];
@@ -123,6 +240,7 @@ void* attendClient (void* userConnected)
 	while(!disconnect)
 	{
 		// Ahora recibimos el mensaje, que dejamos en request
+		// no cal bloquejar la llista, doncs user encara no en forma part
 		request_length = read(sock_conn, request, sizeof(request));
 		printf ("Recibido\n");
 		
@@ -190,19 +308,30 @@ void* attendClient (void* userConnected)
 			strcpy(password, strtok(NULL, "/"));
 			printf("User: %s\n", username);
 			printf("Password: %s\n", password);
-			AddConnected(user->list,username,sock_conn);
 			// realitzar la query
-			int result = BBDD_check_login(username, password);
-			if(!result)
+			int id = BBDD_check_login(username, password);
+			if(id >= 0)
 			{
-				strcpy(response, "OK");
+				// si login OK, omplim els atributs del user
+				// i el posem a la llista de connectats.
+				// No cal bloquejar la llista, doncs user encara no en forma part
+				user->id = id;
+				strcpy(user->username, username);
+				
+				// Aqui hem de bloquejar per afegir user a la llista
+				// pero ja ho fa la AddConnected
+				int err = AddConnected(connectedList, user);
+				if (!err)
+				{
+					strcpy(response, "OK");					
+				}
+				else strcpy(response, "FAIL");	
 			}
 			else 
 			{
 				strcpy(response, "FAIL");
 				disconnect = 1; // close connection to let client try again
 			}				
-			//strcpy(response, "test response 3");
 			break;
 		}
 		
@@ -215,18 +344,23 @@ void* attendClient (void* userConnected)
 			strcpy(password, strtok(NULL, "/"));
 			printf("User: %s\n", username);
 			printf("Password: %s\n", password);
-			AddConnected(user->list,username,sock_conn);
+			//AddConnected(user->list,username,sock_conn);
 			// realitzar la query
-			int result = BBDD_add_user(username, password);
-			if(!result)
+			int id = BBDD_add_user(username, password);
+			if(id >= 0)
 			{
+				// si sign up OK, afegim els parametres i posem l'usuari a la
+				// llista de connectats.
+				user->id = id;
+				strcpy(user->username, username);
+				int err = AddConnected(connectedList, user);
 				strcpy(response, "OK");
 			}
 			else 
 			{
-				strcpy(response, "USED");
+				strcpy(response, "USED"); // encara no s'utilitza
 			}
-			disconnect = 1; // close connection to let client log in
+			//disconnect = 1; // close connection to let client log in
 			//strcpy(response, "test response 3");
 			break;
 		}
@@ -250,8 +384,8 @@ void* attendClient (void* userConnected)
 		}
 	}
 	
-	close(sock_conn);
-	DelConnected(user->list, username);
+	close(user->socket);
+	DelConnectedByName(connectedList, user->username);
 	
 	//Acabar el thread
 	pthread_exit(0);
@@ -288,16 +422,19 @@ int main(int argc, char *argv[])
 	pthread_t thread[NMBR_THREADS];
 	
 	//Connectats
-	ListConnected list;
-	list.number = 0;
-	CurrentConnected user_connected[NMBR_THREADS];
-	for(i=0;i<NMBR_THREADS;i++)
+	ConnectedList* list = malloc(sizeof(ConnectedList));
+	list->number = 0;
+	pthread_mutex_init(&list->mutex, NULL);
+	
+	ThreadArgs threadArgs[NMBR_THREADS];
+	for(i = 0; i < NMBR_THREADS; i++)
 	{
-		user_connected[i].list = &list;
+		threadArgs[i].list = list;
+		threadArgs[i].user = malloc(sizeof(ConnectedUser));
 	}
 
 	// Atenderemos requestes indefinidamente
-	for(i=0;i<5;i++)
+	for(i = 0; i < 5; i++)
 	{
 		printf ("Escuchando\n");	
 		
@@ -305,8 +442,14 @@ int main(int argc, char *argv[])
 		sock_conn = accept(sock_listen, NULL, NULL);
 		printf ("He recibido conexi?n\n");
 		
-		user_connected[i].socket = sock_conn;
-		pthread_create(&thread[i], NULL, attendClient, &user_connected[i]);
+		threadArgs[i].user->socket = sock_conn;
+		pthread_create(&thread[i], NULL, attendClient, &threadArgs[i]);
 	}
+	
+	for(i = 0; i < NMBR_THREADS; i++)
+	{
+		free(threadArgs[i].user);
+	}
+	free(list);
 }
 
