@@ -93,6 +93,22 @@ namespace BaboGameClient
                     MessageBox.Show("Introdueix una ID de partida al quadre de text");
                 }
             }
+            else if (ConnectedList_rb.Checked)
+            {
+                QueryGrid.Rows.Clear();
+                QueryGrid.Columns.Clear();
+                QueryGrid.Columns.Add("Users Connected", "Usuaris Connectats");
+                string[] connected;
+                connected = serverHandler.GetConnected();
+
+                for (int i = 0; i < connected.GetLength(0); i++)// array rows
+                {
+                    string row = connected[i];
+
+                    QueryGrid.Rows.Add(row);
+                }
+                QueryGrid.Refresh();
+            }
             else
                 MessageBox.Show("Selecciona alguna opció");
         }
