@@ -450,6 +450,7 @@ int main(int argc, char *argv[])
 	{
 		free(threadArgs[i].user);
 	}
+	pthread_mutex_destroy(&list->mutex);
 	free(list);
 }
 
