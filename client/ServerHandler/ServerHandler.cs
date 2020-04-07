@@ -5,9 +5,16 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BaboGameClient
 {
+    public class ConnectedUser
+    {
+        public string name { get; set; }
+        public int id { get; set; }
+    }
+
     public class ServerHandler
     {
         private Socket server;
@@ -153,21 +160,12 @@ namespace BaboGameClient
 
         //retorna una matriu el qual només retorna els usuaris connectats
         //Només té una columna de connectats i no necessita entrades
-        public string[] GetConnected()
+        public List<ConnectedUser> GetConnected()
         {
             this.SendRequest("6/");
             string response = this.ReceiveReponse();
-            int n_connected = Convert.ToInt32(response.Split('/')[0]);
-            string[] connected = new string[n_connected];
-            if (n_connected > 0)
-            {
-                response = response.Remove(0, response.IndexOf("/") + 1); //eliminem el n_connects de la resposta
-                for (int i = 0; i < n_connected; i++)
-                {
-                    connected[i] = response.Split('/')[0];
-                }
-            }
-            return connected;
+            List<ConnectedUser> connectedList = JsonSerializer.Deserialize<List<ConnectedUser>>(response);
+            return connectedList;
         }
 
         private int SendRequest(string request)
