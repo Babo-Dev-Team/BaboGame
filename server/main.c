@@ -7,228 +7,193 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <pthread.h>
+#include "json.h"
+#include <time.h>
 
 #include "BBDD_Handler.h"
-
-#define USRN_LENGTH 32
-#define GAME_ID_LENGTH 8
-#define PASS_LENGTH 32
+#include "globals.h"
+#include "connected_list.h"
 
 #define NMBR_THREADS 100
+#define MAX_GAME_USRCOUNT 6
+#define TOKEN_LEN 32
+#define MAX_GAMES 256
+
 //----------------------------------------------------------
-#define CNCTD_LST_LENGTH 20
-//Llista d'usuaris connectats
-typedef struct{
+
+typedef struct PreGameThreadArgs{
+	ConnectedList* connectedList;
+	ConnectedUser* connectedUser;
+}PreGameThreadArgs;
+
+// usuari dins la pre-partida
+typedef struct PreGameUser{
 	int id;
-	char username [USRN_LENGTH];
 	int socket;
-	//int state; //0 lliure, 1 ocupat
-}ConnectedUser;
+	char username[USRN_LENGTH];
+	char charname[CHAR_LEN];
+}PreGameUser;
 
-typedef struct ConnectedList{
-	ConnectedUser* connected [CNCTD_LST_LENGTH];
-	//Connected* connected;
-	int number;
-	pthread_mutex_t mutex;
-}ConnectedList;
-
-typedef struct ThreadArgs{
-	ConnectedList* list;
-	ConnectedUser* user;
-}ThreadArgs;
-
-// creem i afegim connectat a la llista, donats el nom, socket i id
-// retorna -1 si la llista està plena
-int AddConnectedByAttributes (ConnectedList* list, char name [USRN_LENGTH], int socket, int id)
-{
-	pthread_mutex_lock(&list->mutex);
-	if(list->number < CNCTD_LST_LENGTH)
-	{
-		int pos = list->number;
-		list->connected[pos]->id = id;
-		list->connected[pos]->socket = socket;
-		strcpy(list->connected[pos]->username, name);
-		list->number++;
-		pthread_mutex_unlock(&list->mutex);
-		return 0;
-	}
+// estat de la pre-partida
+typedef struct PreGameState{
+	int gameId;								// id de la partida
+	int userCount;							// nombre de participants
+	char gameName[GAME_LEN];				// nom de la partida
+	PreGameUser* creator;					// creador de la partida
+	PreGameUser* users[MAX_GAME_USRCOUNT];	// llista usuaris a la partida
+	char accessToken[TOKEN_LEN]; 			// token per accedir a la partida des de monogame
+	int inGame;								// bool per saber si estem jugant o esperant
+	int softKill;					    	// bool per indicar partida acabada i pot ser eliminada
+	pthread_mutex_t game_mutex;				// mutex de la pre-partida
 	
-	else
+}PreGameState;
+
+// taula de partides (informativa), utilitza soft delete
+// és una taula de PreGameState
+typedef struct GameTable{
+	PreGameState* createdGames[MAX_GAMES];
+	int gameCount;
+	pthread_mutex_t game_table_mutex;
+}GameTable;
+
+// genera una seqüència aleatòria que utilitzem com a token d'accés a la partida
+void token_gen(char token[TOKEN_LEN])
+{
+	int size = TOKEN_LEN - 1;
+	const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK0123456789";
+	for (int i = 0; i < size; i++) 
 	{
-		pthread_mutex_unlock(&list->mutex);
-		return -1;
+		int key = rand() % (int) (sizeof charset - 1);
+		token[i] = charset[key];
 	}
+	token[TOKEN_LEN] = '\0';
 }
 
-// Afegeix user a la llista de connectats (per punter)
-// Retorna -1 si la llista està plena
-int AddConnected (ConnectedList* list, ConnectedUser* user)
+// afegim un PreGameUser a la llista d'usuaris de la partida
+int AddPreGameUser(PreGameState* gameState, PreGameUser* user)
 {
-	pthread_mutex_lock(&list->mutex);
-	if(list->number < CNCTD_LST_LENGTH)
+	pthread_mutex_lock(&gameState->game_mutex);
+	if(gameState->userCount < MAX_GAME_USRCOUNT)
 	{
-		int pos = list->number;
-		list->connected[pos] = user;
-		list->number++;
-		pthread_mutex_unlock(&list->mutex);
+		int pos = gameState->userCount;
+		gameState->users[pos] = user;
+		gameState->userCount++;
+		pthread_mutex_unlock(&gameState->game_mutex);
 		return 0;
 	}
 	else
 	{
-		pthread_mutex_lock(&list->mutex);
+		pthread_mutex_unlock(&gameState->game_mutex);
 		return -1;
 	}
-	   
 }
 
-// retorna la posicio a la llista d'un usuari connectat
-// retorna -1 si no s'ha trobat l'usuari
-int GetConnectedPos (ConnectedList *list, char name [USRN_LENGTH])
+// eliminem un usuari de la partida (l'usuari abandona el PreGame)
+int DeletePreGameUser(PreGameState* gameState, PreGameUser* user)
 {
-	//0 troba la posició, -1 no està a la llista
+	pthread_mutex_lock(&gameState->game_mutex);
+	int userCount = gameState->userCount;
+	int pos;
+	int found = 0;
 	int i = 0;
-	int user_found = 0;
-	pthread_mutex_lock(&list->mutex);
-	while ((i < list->number) && !user_found)
+	while (i < userCount && !found)
 	{
-		if(!strcmp(list->connected[i]->username, name))
-			user_found=1;
-		if(!user_found)
-			i++;
-	}
-	pthread_mutex_unlock(&list->mutex);
-	if(user_found)
-	{
-		return i;
-	}
-	else
-	   return -1;
-}
-
-// donat un nom, retorna el id de l'usuari connectat
-// Retorna -1 si no el troba.
-int GetConnectedId (ConnectedList *list, char name [USRN_LENGTH])
-{
-	//0 troba la posició, -1 no està a la llista
-	int i = 0;
-	int user_found = 0;
-	pthread_mutex_lock(&list->mutex);
-	while ((i < list->number) && !user_found)
-	{
-		if(!strcmp(list->connected[i]->username, name))
-			user_found=1;
-		if(!user_found)
-			i++;
-	}
-	int ret;
-	if(user_found)
-	{
-		ret = list->connected[i]->id;
-	}
-	else 
-	{
-		ret = -1;
-	}
-	pthread_mutex_unlock(&list->mutex);
-	return ret;
-}
-
-// Elimina jugador per username
-// Retorna -1 si no el troba
-int DelConnectedByName(ConnectedList *list, char name[USRN_LENGTH])
-{
-	// busquem la posicio de l'usuari ja que necessitem mantenir el lock sobre la llista
-	int pos = 0;
-	int user_found = 0;
-	int ret;
-	pthread_mutex_lock(&list->mutex);
-	while ((pos < list->number) && !user_found)
-	{
-		if(!strcmp(list->connected[pos]->username, name))
-			user_found = 1;
-		else pos++;
-	}
-	if(user_found)
-	{
-		for (int j = pos; j < list->number - 1; j++)
+		if(gameState->users[i] == user)
 		{
-			list->connected[j] = list->connected[j + 1];
+			found = 1;
+			pos = i;
 		}
-		list->number--;
-		ret = 0;
+		else 
+		   i++;
 	}
-	else 
-	   ret = -1;
-	pthread_mutex_unlock(&list->mutex);
-	return ret;
-}
-
-// Elimina jugador per id
-// Retorna -1 si no el troba
-int DelConnectedById(ConnectedList *list, int id)
-{
-	// busquem la posicio de l'usuari ja que necessitem mantenir el lock sobre la llista
-	int pos = 0;
-	int user_found = 0;
 	int ret;
-	pthread_mutex_lock(&list->mutex);
-	while ((pos < list->number) && !user_found)
+	if (found)
 	{
-		if(list->connected[pos]->id == id)
-			user_found = 1;
-		else pos++;
-	}
-	if (user_found)
-	{
-		for (int j = pos; j < list->number - 1; j++)
+		free(gameState->users[pos]); // alliberem el PreGameUser de la memoria
+		for(int j = pos; j < userCount - 1; j++)
 		{
-			list->connected[j] = list->connected[j + 1];
+			gameState->users[j] = gameState->users[j + 1];
 		}
-		list->number--;
+		gameState->userCount--;
 		ret = 0;
 	}
 	else 
 		ret = -1;
-	pthread_mutex_unlock(&list->mutex);
+	pthread_mutex_unlock(&gameState->game_mutex);
 	return ret;
 }
 
-//Retorna el socket a partir d'un nom
-// Retorna -1 si no troba l'usuari
-int  GetConnectedSocket(ConnectedList* list, char name[USRN_LENGTH])
+// assignació de personatge a l'usuari per a una partida (PreGame)
+int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char charname[CHAR_LEN])
 {
-	int pos = 0;
-	int user_found = 0;
+	pthread_mutex_lock(&gameState->game_mutex);
+	int userCount = gameState->userCount;
+	int pos;
+	int i = 0;
+	int found = 0;
+	while (i < userCount && !found)
+	{
+		if(!strcmp(gameState->users[i]->username, username))
+		{
+			found = 1;
+			pos = i;
+		}
+		else 
+			i++;
+	}
 	int ret;
-	pthread_mutex_lock(&list->mutex);
-	while ((pos < list->number) && !user_found)
+	if (found)
 	{
-		if(!strcmp(list->connected[pos]->username, name))
-			user_found = 1;
-		else pos++;
+		strcpy(gameState->users[i]->charname, charname);
+		ret = 1;
 	}
-	if (user_found)
-	{
-		ret = list->connected[pos]->socket;
-	}
-	else
-		ret = -1;
-	pthread_mutex_unlock(&list->mutex);
+	else 
+		ret = 0;
+	pthread_mutex_unlock(&gameState->game_mutex);
 	return ret;
 }
-//-----------------------------------------------------------
+
+// crea un usuari PreGameUser a partir d'un ConnectedUser
+// per poder afegir-lo a la partida
+PreGameUser* CreatePreGameUser(ConnectedUser* user)
+{
+	PreGameUser* preGameUser = malloc(sizeof(PreGameUser));
+	pthread_mutex_lock(&user->user_mutex);
+	preGameUser->socket = user->socket;
+	preGameUser->id = user->id;
+	strcpy(preGameUser->username, user->username);
+	pthread_mutex_unlock(&user->user_mutex);
+	return preGameUser;
+}
+
+// creem una partida en estat PreGame (sala de partida on es poden unir altres jugadors)
+// aquesta funció inicialitza PreGameState amb el creador de la partida
+PreGameState* CreateGame(ConnectedUser* user, char name[GAME_LEN])
+{
+	// no ens cal bloquejar el preGameState perque som els únics utilitzant-lo
+	PreGameState* preGameState = malloc(sizeof(PreGameState));
+	preGameState->inGame = 0;
+	preGameState->softKill = 0;
+	strcpy(preGameState->gameName, name); //TODO: comprovar que no estigui ocupat!!!! millor des del scope on es cridi aquesta funcio per no passar tota la taula
+	token_gen(preGameState->accessToken);
+	preGameState->creator = CreatePreGameUser(user);
+	AddPreGameUser(preGameState, preGameState->creator);
+	return preGameState;
+}
+
+
 
 //Thread del client
 void* attendClient (void* args)
-{
+{	
 	int err = BBDD_connect();
 	int sock_conn, request_length;
-	ThreadArgs* threadArgs = (ThreadArgs*) args;
+	PreGameThreadArgs* threadArgs = (PreGameThreadArgs*) args;
 	
 	// Punters al usuari que gestiona el thread i a la llista
-	ConnectedUser* user = threadArgs->user;
-	ConnectedList* connectedList = threadArgs->list;
-	sock_conn = user->socket;
+	ConnectedUser* connectedUser = threadArgs->connectedUser;
+	ConnectedList* connectedList = threadArgs->connectedList;
+	sock_conn = connectedUser->socket;
 	
 	char username[USRN_LENGTH];
 	char password[PASS_LENGTH];
@@ -315,12 +280,12 @@ void* attendClient (void* args)
 				// si login OK, omplim els atributs del user
 				// i el posem a la llista de connectats.
 				// No cal bloquejar la llista, doncs user encara no en forma part
-				user->id = id;
-				strcpy(user->username, username);
+				connectedUser->id = id;
+				strcpy(connectedUser->username, username);
 				
 				// Aqui hem de bloquejar per afegir user a la llista
 				// pero ja ho fa la AddConnected
-				int err = AddConnected(connectedList, user);
+				int err = AddConnected(connectedList, connectedUser);
 				if (!err)
 				{
 					strcpy(response, "OK");					
@@ -351,9 +316,9 @@ void* attendClient (void* args)
 			{
 				// si sign up OK, afegim els parametres i posem l'usuari a la
 				// llista de connectats.
-				user->id = id;
-				strcpy(user->username, username);
-				int err = AddConnected(connectedList, user);
+				connectedUser->id = id;
+				strcpy(connectedUser->username, username);
+				int err = AddConnected(connectedList, connectedUser);
 				strcpy(response, "OK");
 			}
 			else 
@@ -365,7 +330,65 @@ void* attendClient (void* args)
 			break;
 		}
 		
+		case 6:
+		{
+			json_object* listJson = connectedListToJson(connectedList);
+			//strcpy(response, json_object_to_json_string_ext(listJson, JSON_C_TO_STRING_PRETTY));
+			strcpy(response, json_object_to_json_string(listJson));
+			
+			// DESTRUIR LLISTA JSON!!!
+			
+			break;
+		}
+		
+		// crear partida
+		// l'usuari especifica nom partida
+		// es retorna si OK: id partida, token, MAX_GAME_USRCOUNT
+		// es retorna un JSON amb l'estat de la partida (serialitzar PreGameState)
+		case 7:
+		{
+			break;
+		}
+		
+		// llista de partides: l'usuari vol la taula de partides
+		// es retornara un JSON
+		case 8:
+		{
+			break;
+		}
+		
+		// join partida: l'usuari demana unir-se a partida pel nom.
+		// si s'accepta, se li retorna PreGameState per JSON.
+		// si la partida no existeix o esta en curs, no se'l deixa entrar.
+		case 9:
+		{
+			break;
+		}
+		
+		// el creador d'una partida indica que comenci la partida:
+		// es posa el estat de la partida en actiu a PreGameState.
+		// s'inicialitzen estructures per contenir l'estat de la partida real.
+		// aquí, o mantenim els threads oberts i passem a una funcionalitat de partida des del propi thread de cada usuari,
+		// on caldria potser fer servir variables des de main per emmagatzemar l'estat de la partida per a que siguin accessibles
+		// per tots els threads, on es podria posar el id de la partida en una llista de partides actives i tots els threads
+		// que busquin la seva partida per id i hi accedeixin per referència
+		// Per fer això caldria que el client Forms pugues passar els paràmetres de connexió al client MonoGame.
+		
+		// o bé parem tots els threads dels usuaris d'aquesta partida i esperem una nova connexió. en aquesta, l'usuari es loguejarà amb
+		// username i token de partida que haurem passat a monogame. Llavors, crearem nous threads, un per user i un thread de gestió de partida
+		// els threads de user s'encarreguen de rebre updates dels clients i enviar updates als clients. el thread de gestió
+		// calcula les colisions i altres dinàmiques de partida. Això tb es podria fer amb la 1a opció, caldria crear un nou thread de gestió
+		
+		// la diferència més que res és en si incorporem els protocols de comunicació servidor client in-game en aquesta funció,
+		// o bé creem nous threads amb la seva funció específica per gestionar la partida en execució.
+		case 10:
+		{
+			break;
+		}
+			
+		
 		// request 0 -> Disconnect	
+		// TODO: S'ha d'eliminar el user de la llista de connectats!!!
 		case 0:
 			// Se acabo el servicio para este cliente
 			disconnect = 1;
@@ -384,15 +407,18 @@ void* attendClient (void* args)
 		}
 	}
 	
-	close(user->socket);
-	DelConnectedByName(connectedList, user->username);
+	close(sock_conn);
+	DelConnectedByName(connectedList, connectedUser->username);
 	
 	//Acabar el thread
 	pthread_exit(0);
 }
 
 int main(int argc, char *argv[])
-{
+{		
+	// iniciem el seed per generar aleatorietat
+	srand(time(NULL));
+	
 	int sock_conn, sock_listen;
 	struct sockaddr_in serv_addr;
 
@@ -410,7 +436,7 @@ int main(int argc, char *argv[])
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	// escucharemos en el port 9050
-	serv_addr.sin_port = htons(9094);
+	serv_addr.sin_port = htons(9098);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Error al bind");
 	//La cola de requestes pendientes no podr? ser superior a 4
@@ -421,16 +447,21 @@ int main(int argc, char *argv[])
 	int i;
 	pthread_t thread[NMBR_THREADS];
 	
-	//Connectats
-	ConnectedList* list = malloc(sizeof(ConnectedList));
-	list->number = 0;
-	pthread_mutex_init(&list->mutex, NULL);
+	// Llista de connectats
+	ConnectedList* connectedList = malloc(sizeof(ConnectedList));
+	connectedList->number = 0;
+	pthread_mutex_init(&connectedList->mutex, NULL);
 	
-	ThreadArgs threadArgs[NMBR_THREADS];
+	// Taula de partides
+	GameTable* gameTable = malloc(sizeof(GameTable));
+	gameTable->gameCount = 0;
+	pthread_mutex_init(&gameTable->game_table_mutex, NULL);
+	
+	PreGameThreadArgs threadArgs[NMBR_THREADS];
 	for(i = 0; i < NMBR_THREADS; i++)
 	{
-		threadArgs[i].list = list;
-		threadArgs[i].user = malloc(sizeof(ConnectedUser));
+		threadArgs[i].connectedList = connectedList;
+		threadArgs[i].connectedUser = malloc(sizeof(ConnectedUser));
 	}
 
 	// Atenderemos requestes indefinidamente
@@ -442,15 +473,17 @@ int main(int argc, char *argv[])
 		sock_conn = accept(sock_listen, NULL, NULL);
 		printf ("He recibido conexi?n\n");
 		
-		threadArgs[i].user->socket = sock_conn;
+		threadArgs[i].connectedUser->socket = sock_conn;
+		pthread_mutex_init(&threadArgs[i].connectedUser->user_mutex, NULL); // inicialitzem el mutex de l'usuari
+		
 		pthread_create(&thread[i], NULL, attendClient, &threadArgs[i]);
 	}
 	
 	for(i = 0; i < NMBR_THREADS; i++)
 	{
-		free(threadArgs[i].user);
+		free(threadArgs[i].connectedUser);
 	}
-	pthread_mutex_destroy(&list->mutex);
-	free(list);
+	pthread_mutex_destroy(&connectedList->mutex);
+	free(connectedList);
 }
 
