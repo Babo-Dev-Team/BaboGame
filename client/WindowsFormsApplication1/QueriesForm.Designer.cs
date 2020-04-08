@@ -34,6 +34,7 @@
             this.TimePlayed_rb = new System.Windows.Forms.RadioButton();
             this.Ranking_rb = new System.Windows.Forms.RadioButton();
             this.Characters_rb = new System.Windows.Forms.RadioButton();
+            this.ConnectedList_rb = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).BeginInit();
             this.SuspendLayout();
             // 
@@ -96,11 +97,23 @@
             this.Characters_rb.Text = "Personatges utilitzats en una partida";
             this.Characters_rb.UseVisualStyleBackColor = true;
             // 
+            // ConnectedList_rb
+            // 
+            this.ConnectedList_rb.AutoSize = true;
+            this.ConnectedList_rb.Location = new System.Drawing.Point(149, 262);
+            this.ConnectedList_rb.Name = "ConnectedList_rb";
+            this.ConnectedList_rb.Size = new System.Drawing.Size(155, 21);
+            this.ConnectedList_rb.TabIndex = 6;
+            this.ConnectedList_rb.TabStop = true;
+            this.ConnectedList_rb.Text = "Llista de connectats";
+            this.ConnectedList_rb.UseVisualStyleBackColor = true;
+            // 
             // QueriesForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.ConnectedList_rb);
             this.Controls.Add(this.Characters_rb);
             this.Controls.Add(this.Ranking_rb);
             this.Controls.Add(this.TimePlayed_rb);
@@ -109,10 +122,10 @@
             this.Controls.Add(this.QueryGrid);
             this.Name = "QueriesForm";
             this.Text = "QueriesForm";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.QueriesForm_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.QueriesForm_FormClosing);
 
         }
 
@@ -124,5 +137,6 @@
         private System.Windows.Forms.RadioButton TimePlayed_rb;
         private System.Windows.Forms.RadioButton Ranking_rb;
         private System.Windows.Forms.RadioButton Characters_rb;
+        private System.Windows.Forms.RadioButton ConnectedList_rb;
     }
 }

@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BaboGameClient
 {
@@ -22,7 +24,7 @@ namespace BaboGameClient
         {
             if (TimePlayed_rb.Checked)
             {
-            if (string.IsNullOrWhiteSpace(queries_tb.Text))
+                if (string.IsNullOrWhiteSpace(queries_tb.Text))
                 {
                     MessageBox.Show("Els camps estan buits!");
                     return;
@@ -58,7 +60,7 @@ namespace BaboGameClient
             }
             else if (Characters_rb.Checked)
             {
-                
+
                 if (string.IsNullOrWhiteSpace(queries_tb.Text))
                 {
                     MessageBox.Show("Els camps estan buits!");
@@ -92,6 +94,15 @@ namespace BaboGameClient
                 {
                     MessageBox.Show("Introdueix una ID de partida al quadre de text");
                 }
+            }
+            else if (ConnectedList_rb.Checked)
+            {
+                QueryGrid.Rows.Clear();
+                QueryGrid.Columns.Clear();
+                List<ConnectedUser> connectedList = serverHandler.GetConnected();
+                QueryGrid.DataSource = connectedList;
+                QueryGrid.Columns[0].HeaderText = "Usuari";
+                QueryGrid.Columns[1].HeaderText = "ID";
             }
             else
                 MessageBox.Show("Selecciona alguna opció");
