@@ -76,7 +76,6 @@ namespace BaboGameClient
                     QueryGrid.Columns.Add("username", "Usuari");
                     QueryGrid.Columns.Add("character", "Personatge");
 
-
                     for (int i = 0; i < gameCharacters.GetLength(0); i++)// array rows
                     {
                         string[] row = new string[gameCharacters[i].GetLength(0)];
@@ -100,9 +99,62 @@ namespace BaboGameClient
                 QueryGrid.Rows.Clear();
                 QueryGrid.Columns.Clear();
                 List<ConnectedUser> connectedList = serverHandler.GetConnected();
-                QueryGrid.DataSource = connectedList;
-                QueryGrid.Columns[0].HeaderText = "Usuari";
-                QueryGrid.Columns[1].HeaderText = "ID";
+                //QueryGrid.DataSource = connectedList;
+                //QueryGrid.Columns[0].HeaderText = "Usuari";
+                //QueryGrid.Columns[1].HeaderText = "ID";
+                QueryGrid.Columns.Add("username", "Usuari");
+                QueryGrid.Columns.Add("ID", "ID");
+
+
+                for (int i = 0; i < connectedList.Count; i++)// array rows
+                {
+                    string[] row = new string[2];
+                    row[0] = connectedList[i].Name;
+                    row[1] = connectedList[i].Id.ToString();
+                    QueryGrid.Rows.Add(row);
+                }
+            }
+            else if (createGame_rb.Checked)
+            {
+                if(queries_tb.Text.Length == 0)
+                {
+                    MessageBox.Show("Escriu el nom de la partida!");
+                }
+                else
+                {
+                    string response = serverHandler.CreateGame(queries_tb.Text);
+                    MessageBox.Show(response);
+                }
+            }
+
+            else if (showGames_rb.Checked)
+            {
+                QueryGrid.Rows.Clear();
+                QueryGrid.Columns.Clear();
+                List<PreGameState> gameTable = serverHandler.GetGameTable();
+                QueryGrid.Columns.Add("ID", "ID");
+                QueryGrid.Columns.Add("Nom", "Nom");
+                QueryGrid.Columns.Add("Creador", "Creador");
+                QueryGrid.Columns.Add("Participants", "Participants");
+                QueryGrid.Columns.Add("Estat", "Estat");
+                                             
+                for (int i = 0; i < gameTable.Count; i++)// array rows
+                {
+                    string[] row = new string[5];
+                    row[0] = gameTable[i].Id.ToString();
+                    row[1] = gameTable[i].Name;
+                    row[2] = gameTable[i].Creator;
+                    row[3] = gameTable[i].UserCount.ToString();
+                    if (gameTable[i].Playing == 1)
+                    {
+                        row[4] = "En Curs";
+                    }
+                    else
+                    {
+                        row[4] = "Oberta";
+                    }
+                    QueryGrid.Rows.Add(row);
+                }
             }
             else
                 MessageBox.Show("Selecciona alguna opció");

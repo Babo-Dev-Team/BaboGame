@@ -35,6 +35,8 @@
             this.Ranking_rb = new System.Windows.Forms.RadioButton();
             this.Characters_rb = new System.Windows.Forms.RadioButton();
             this.ConnectedList_rb = new System.Windows.Forms.RadioButton();
+            this.createGame_rb = new System.Windows.Forms.RadioButton();
+            this.showGames_rb = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).BeginInit();
             this.SuspendLayout();
             // 
@@ -49,7 +51,7 @@
             // 
             // Send_btn
             // 
-            this.Send_btn.Location = new System.Drawing.Point(209, 330);
+            this.Send_btn.Location = new System.Drawing.Point(187, 395);
             this.Send_btn.Name = "Send_btn";
             this.Send_btn.Size = new System.Drawing.Size(75, 23);
             this.Send_btn.TabIndex = 1;
@@ -108,11 +110,35 @@
             this.ConnectedList_rb.Text = "Llista de connectats";
             this.ConnectedList_rb.UseVisualStyleBackColor = true;
             // 
+            // createGame_rb
+            // 
+            this.createGame_rb.AutoSize = true;
+            this.createGame_rb.Location = new System.Drawing.Point(150, 303);
+            this.createGame_rb.Name = "createGame_rb";
+            this.createGame_rb.Size = new System.Drawing.Size(112, 21);
+            this.createGame_rb.TabIndex = 7;
+            this.createGame_rb.TabStop = true;
+            this.createGame_rb.Text = "Crear partida";
+            this.createGame_rb.UseVisualStyleBackColor = true;
+            // 
+            // showGames_rb
+            // 
+            this.showGames_rb.AutoSize = true;
+            this.showGames_rb.Location = new System.Drawing.Point(150, 330);
+            this.showGames_rb.Name = "showGames_rb";
+            this.showGames_rb.Size = new System.Drawing.Size(117, 21);
+            this.showGames_rb.TabIndex = 8;
+            this.showGames_rb.TabStop = true;
+            this.showGames_rb.Text = "Llista partides";
+            this.showGames_rb.UseVisualStyleBackColor = true;
+            // 
             // QueriesForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.showGames_rb);
+            this.Controls.Add(this.createGame_rb);
             this.Controls.Add(this.ConnectedList_rb);
             this.Controls.Add(this.Characters_rb);
             this.Controls.Add(this.Ranking_rb);
@@ -138,5 +164,7 @@
         private System.Windows.Forms.RadioButton Ranking_rb;
         private System.Windows.Forms.RadioButton Characters_rb;
         private System.Windows.Forms.RadioButton ConnectedList_rb;
+        private System.Windows.Forms.RadioButton createGame_rb;
+        private System.Windows.Forms.RadioButton showGames_rb;
     }
 }

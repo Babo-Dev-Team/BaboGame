@@ -11,8 +11,17 @@ namespace BaboGameClient
 {
     public class ConnectedUser
     {
-        public string name { get; set; }
-        public int id { get; set; }
+        public string Name { get; set; }
+        public int Id { get; set; }
+    }
+
+    public class PreGameState
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Creator { get; set; }
+        public int UserCount { get; set; }
+        public int Playing { get; set; }
     }
 
     public class ServerHandler
@@ -158,6 +167,14 @@ namespace BaboGameClient
             return playerChars;
         }
 
+        // retorna el temps en format HH:MM:SS
+        public string  CreateGame(string gameName)
+        {
+            this.SendRequest("7/" + gameName + "/");
+            string response = this.ReceiveReponse();
+            return response;
+        }
+
         //retorna una matriu el qual només retorna els usuaris connectats
         //Només té una columna de connectats i no necessita entrades
         public List<ConnectedUser> GetConnected()
@@ -168,6 +185,14 @@ namespace BaboGameClient
             return connectedList;
         }
 
+        public List<PreGameState> GetGameTable()
+        {
+            this.SendRequest("8/");
+            string response = this.ReceiveReponse();
+            List<PreGameState> gameTable = JsonSerializer.Deserialize<List<PreGameState>>(response);
+            return gameTable;
+        }
+        
         private int SendRequest(string request)
         {
             byte[] msg = System.Text.Encoding.ASCII.GetBytes(request);
@@ -185,7 +210,7 @@ namespace BaboGameClient
         private string ReceiveReponse()
         {
             //Recibimos la respuesta del servidor
-            byte[] response = new byte[200];
+            byte[] response = new byte[8192];
             this.server.Receive(response);
             return Encoding.ASCII.GetString(response).Split('\0')[0];
         }
