@@ -1,0 +1,11 @@
+prefix=
+exec_prefix=
+libdir=/home/ixion/Projects/git_repos/BaboGame/server/libs/json-c
+includedir=/home/ixion/Projects/git_repos/BaboGame/server/libs/json-c
+
+Name: json
+Description: JSON implementation in C
+Version: 0.13.99
+Requires:
+Libs:  -L/home/ixion/Projects/git_repos/BaboGame/server/libs/json-c -ljson-c
+Cflags: -I/home/ixion/Projects/git_repos/BaboGame/server/libs/json-c
