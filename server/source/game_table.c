@@ -121,18 +121,18 @@ PreGameUser* CreatePreGameUser(ConnectedUser* connectedUser)
 // afegim un PreGameUser a la llista d'usuaris de la partida
 int AddPreGameUser(PreGameState* gameState, PreGameUser* user)
 {
-	//pthread_mutex_lock(gameState->game_mutex);
+	pthread_mutex_lock(gameState->game_mutex);
 	if(gameState->userCount < MAX_GAME_USRCOUNT)
 	{
 		int pos = gameState->userCount;
 		gameState->users[pos] = user;
 		gameState->userCount++;		
-		//pthread_mutex_unlock(gameState->game_mutex);
+		pthread_mutex_unlock(gameState->game_mutex);
 		return 0;
 	}
 	else
 	{
-		//pthread_mutex_unlock(gameState->game_mutex);
+		pthread_mutex_unlock(gameState->game_mutex);
 		return -1;
 	}
 }
