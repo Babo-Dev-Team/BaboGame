@@ -15,11 +15,11 @@ tab_width=4
 tab_use_spaces=0
 explorer_path=.
 inherits_from=
-current_source=source/game_table.c
+current_source=main.c
 path_char=/
 [source]
 path=main.c
-cursor=202:18
+cursor=322:2
 open=true
 [source]
 path=source/BBDD_Handler.c
@@ -27,7 +27,7 @@ cursor=171:15
 open=true
 [source]
 path=source/connected_list.c
-cursor=0:0
+cursor=211:79
 open=true
 [source]
 path=source/game_table.c

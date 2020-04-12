@@ -34,11 +34,10 @@ typedef struct ThreadArgs{
 //------------------------------------------------------------------------------
 
 //Thread del client
-void* attendClient (void* args)
+void* attendClient (ThreadArgs* threadArgs)
 {	
 	int err = BBDD_connect();
 	int sock_conn, request_length;
-	ThreadArgs* threadArgs = (ThreadArgs*) args;
 	
 	// Punters als paràmetres del thread: connectedUser és l'usuari que gestiona,
 	// connectedList i gameTable són les estructures globals que contenen els usuaris i les partides
@@ -321,6 +320,7 @@ void* attendClient (void* args)
 	
 	close(sock_conn);
 	DelConnectedByName(connectedList, connectedUser->username);
+	threadArgs->connectedUser=NULL; //El punter de l'usuari esborrat ara val NULL
 	
 	//Acabar el thread
 	pthread_exit(0);
@@ -394,9 +394,27 @@ int main(int argc, char *argv[])
 		threadArgs[i].gameTable = gameTable;
 	}
 
-	// Atenderemos requestes indefinidamente
-	for(i = 0; i < 5; i++)
+	// Atenem infinites peticions
+	int Iterator=0;
+	int freespace=0;
+	for(;;)
 	{
+		if (threadArgs[Iterator].connectedList->number>=CNCTD_LST_LENGTH)
+		{
+			printf ("No queda espai per a més jugadors\n");
+		}
+		else
+		{
+		while ((Iterator<CNCTD_LST_LENGTH)&&(freespace==0))
+		{
+			if (threadArgs[Iterator].connectedUser==NULL)
+			{
+				freespace=1;
+			}
+			else
+				Iterator++;
+		}
+		
 		printf ("Escuchando\n");	
 		
 		//sock_conn es el socket que usaremos para este cliente
@@ -405,11 +423,14 @@ int main(int argc, char *argv[])
 		
 		// Creem el l'usuari per cada thread que s'instancia i el posem
 		// a l'element de l'array threadArgs que es passa al thread
-		threadArgs[i].connectedUser = CreateConnectedUser();
-		threadArgs[i].connectedUser->socket = sock_conn;
+		threadArgs[Iterator].connectedUser = CreateConnectedUser();
+		threadArgs[Iterator].connectedUser->socket = sock_conn;
 		
 		// creem el thread
-		pthread_create(&thread[i], NULL, attendClient, &threadArgs[i]);
+		pthread_create(&thread[Iterator], NULL, attendClient, &threadArgs[i]);
+		
+		
+		}
 	}
 	
 	// Alliberem recursos
