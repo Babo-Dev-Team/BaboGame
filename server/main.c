@@ -25,6 +25,7 @@ typedef struct ThreadArgs{
 	ConnectedList* connectedList;			// punter a la llista de connectats
 	ConnectedUser* connectedUser;			// punter a l'usuari que gestiona el thread 
 	GameTable* gameTable;					// punter a la taula de partides
+	int freespace;
 }ThreadArgs;
 //------------------------------------------------------------------------------
 
@@ -41,6 +42,7 @@ void* attendClient (ThreadArgs* threadArgs)
 	
 	// Punters als paràmetres del thread: connectedUser és l'usuari que gestiona,
 	// connectedList i gameTable són les estructures globals que contenen els usuaris i les partides
+	//ThreadArgs* threadArgs = (ThreadArgs*) args;
 	ConnectedUser* connectedUser = threadArgs->connectedUser;
 	ConnectedList* connectedList = threadArgs->connectedList;
 	GameTable* gameTable = threadArgs->gameTable;
@@ -129,7 +131,6 @@ void* attendClient (ThreadArgs* threadArgs)
 		// 				server response contains:	OK, FAIL	
 		case 4:
 		{
-			printf("funciona");
 			strcpy(username, strtok(NULL, "/"));
 			strcpy(password, strtok(NULL, "/"));
 			printf("User: %s\n", username);
@@ -313,15 +314,14 @@ void* attendClient (ThreadArgs* threadArgs)
 		// Enviamos response siempre que no se haya recibido request de disconnect
 		if(request_code)
 		{
-			printf ("%s\n", response);
+			printf ("%s = %s\n", threadArgs->connectedUser->username,response);
 			write (sock_conn, response, strlen(response));	
 		}
 	}
 	
 	close(sock_conn);
 	DelConnectedByName(connectedList, connectedUser->username);
-	threadArgs->connectedUser=NULL; //El punter de l'usuari esborrat ara val NULL
-	
+	threadArgs->connectedUser=NULL; //El punter de l'usuari esborrat ara val NULL	
 	//Acabar el thread
 	pthread_exit(0);
 }
@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	// escucharemos en el port 9050
-	serv_addr.sin_port = htons(9098);
+	serv_addr.sin_port = htons(9000);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Error al bind");
 	//La cola de requestes pendientes no podr? ser superior a 4
@@ -392,6 +392,7 @@ int main(int argc, char *argv[])
 	{
 		threadArgs[i].connectedList = connectedList;
 		threadArgs[i].gameTable = gameTable;
+		threadArgs[i].connectedUser = NULL;
 	}
 
 	// Atenem infinites peticions
@@ -399,6 +400,8 @@ int main(int argc, char *argv[])
 	int freespace=0;
 	for(;;)
 	{
+		Iterator = 0;
+		freespace = 0;
 		if (threadArgs[Iterator].connectedList->number>=CNCTD_LST_LENGTH)
 		{
 			printf ("No queda espai per a més jugadors\n");
@@ -410,25 +413,30 @@ int main(int argc, char *argv[])
 			if (threadArgs[Iterator].connectedUser==NULL)
 			{
 				freespace=1;
+				threadArgs[Iterator].connectedUser = NULL;			
 			}
 			else
 				Iterator++;
 		}
-		
-		printf ("Escuchando\n");	
-		
-		//sock_conn es el socket que usaremos para este cliente
-		sock_conn = accept(sock_listen, NULL, NULL);
-		printf ("He recibido conexi?n\n");
-		
-		// Creem el l'usuari per cada thread que s'instancia i el posem
-		// a l'element de l'array threadArgs que es passa al thread
-		threadArgs[Iterator].connectedUser = CreateConnectedUser();
-		threadArgs[Iterator].connectedUser->socket = sock_conn;
-		
-		// creem el thread
-		pthread_create(&thread[Iterator], NULL, attendClient, &threadArgs[i]);
-		
+		if(freespace==0)
+			printf("No se puede escuchar más gente");
+		else
+		{
+			printf ("Escuchando\n");	
+			
+			//sock_conn es el socket que usaremos para este cliente
+			sock_conn = accept(sock_listen, NULL, NULL);
+			printf ("He recibido conexi?n\n");
+			
+			// Creem el l'usuari per cada thread que s'instancia i el posem
+			// a l'element de l'array threadArgs que es passa al thread
+			threadArgs[Iterator].connectedUser = CreateConnectedUser();
+			threadArgs[Iterator].connectedUser->socket = sock_conn;
+			
+			// creem el thread
+			pthread_create(&thread[Iterator], NULL, attendClient, &threadArgs[Iterator]);
+			printf("Iterator: %d\n", Iterator);
+		}
 		
 		}
 	}

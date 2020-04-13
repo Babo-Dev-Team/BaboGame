@@ -19,7 +19,7 @@ current_source=main.c
 path_char=/
 [source]
 path=main.c
-cursor=322:2
+cursor=44:3
 open=true
 [source]
 path=source/BBDD_Handler.c
@@ -27,7 +27,7 @@ cursor=171:15
 open=true
 [source]
 path=source/connected_list.c
-cursor=211:79
+cursor=227:52
 open=true
 [source]
 path=source/game_table.c
