@@ -67,7 +67,7 @@ namespace BaboGameClient
                 MessageBox.Show("Els camps estan buits!");
                 return;
             }
-            int error = serverHandler.Connect("192.168.56.103", 9098); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            int error = serverHandler.Connect("192.168.56.101", 9000); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
