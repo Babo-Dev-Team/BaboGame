@@ -62,7 +62,7 @@ int __gameNameAvailable(GameTable* table, char name[GAME_LEN])
 	int i = 0;
 	while (i < MAX_GAMES && available)
 	{
-		if(table->createdGames[i] != NULL)
+		if(table->createdGames[i] != NULL) // TODO: settejar els punters a NULL a l'esborrar partides
 		{
 			if(!strcmp(table->createdGames[i]->gameName, name))
 			{
@@ -121,18 +121,18 @@ PreGameUser* CreatePreGameUser(ConnectedUser* connectedUser)
 // afegim un PreGameUser a la llista d'usuaris de la partida
 int AddPreGameUser(PreGameState* gameState, PreGameUser* user)
 {
-	//pthread_mutex_lock(gameState->game_mutex);
+	pthread_mutex_lock(gameState->game_mutex);
 	if(gameState->userCount < MAX_GAME_USRCOUNT)
 	{
 		int pos = gameState->userCount;
 		gameState->users[pos] = user;
 		gameState->userCount++;		
-		//pthread_mutex_unlock(gameState->game_mutex);
+		pthread_mutex_unlock(gameState->game_mutex);
 		return 0;
 	}
 	else
 	{
-		//pthread_mutex_unlock(gameState->game_mutex);
+		pthread_mutex_unlock(gameState->game_mutex);
 		return -1;
 	}
 }
@@ -223,7 +223,7 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 			while (i < MAX_GAMES && !emptyFound)
 			{
 				// Busquem punter lliure
-				if(table->createdGames[i] == NULL)
+				if(table->createdGames[i] == NULL) // TODO: settejar els punters a NULL quan s'esborri la partida!!!
 				{
 					emptyFound = 1;
 					emptyPos = i;
@@ -288,7 +288,7 @@ void DeleteGameTable(GameTable* table)
 {
 	for (int i = 0; i < MAX_GAMES; i++)
 	{
-		if (table->createdGames[i] != NULL)
+		if (table->createdGames[i] != NULL) // TODO: settejar els punters a NULL quan s'esborrin les partides
 		{
 			__deletePreGame(table->createdGames[i]);
 		}

@@ -23,6 +23,7 @@
 void __deleteConnectedUser(ConnectedUser* user)
 {
 	free(user);
+	
 }
 //------------------------------------------------------------------------------
 
