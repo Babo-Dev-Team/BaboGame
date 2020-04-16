@@ -15,7 +15,7 @@
 #include "connected_list.h"
 #include "game_table.h"
 
-#define NMBR_THREADS 100
+//#define NMBR_THREADS 100
 
 //------------------------------------------------------------------------------
 // DATA STRUCTS
@@ -25,7 +25,7 @@ typedef struct ThreadArgs{
 	ConnectedList* connectedList;			// punter a la llista de connectats
 	ConnectedUser* connectedUser;			// punter a l'usuari que gestiona el thread 
 	GameTable* gameTable;					// punter a la taula de partides
-	int freespace;
+	pthread_mutex_t* threadArgs_mutex;
 }ThreadArgs;
 //------------------------------------------------------------------------------
 
@@ -35,17 +35,31 @@ typedef struct ThreadArgs{
 //------------------------------------------------------------------------------
 
 //Thread del client
-void* attendClient (ThreadArgs* threadArgs)
-{	
+void* attendClient (void* args)
+{
 	int err = BBDD_connect();
 	int sock_conn, request_length;
 	
+	// inicialitzem un punter a l'element corresponent de l'array de ThreadArgs
+	// de la funció main
+	pthread_mutex_lock(((ThreadArgs*)args)->threadArgs_mutex);
+	ThreadArgs* threadArgs = (ThreadArgs*) args;
+	
 	// Punters als paràmetres del thread: connectedUser és l'usuari que gestiona,
 	// connectedList i gameTable són les estructures globals que contenen els usuaris i les partides
-	//ThreadArgs* threadArgs = (ThreadArgs*) args;
 	ConnectedUser* connectedUser = threadArgs->connectedUser;
 	ConnectedList* connectedList = threadArgs->connectedList;
 	GameTable* gameTable = threadArgs->gameTable;
+
+	// guardem el socket en una variable local
+	sock_conn = connectedUser->socket;
+	
+	// A partir d'aquí ja no ens cal bloquejar l'array threadArgs per accedir als paràmetres del thread
+	// perquè ho farem a través dels punters que acabem d'inicialitzar. Ja no passem per l'array
+	// threadArgs per dereferenciar els objectes connectedUser, connectedList, gameTable o el socket. 
+	// les Structs connectedList i gameTable ja tenen els seus mutex, que han estat incialitzats a main
+	// i que ja uitilizen les funcions que modifiquen aquestes estructures.
+	pthread_mutex_unlock(threadArgs->threadArgs_mutex);
 	
 	// punters a un usuari de partida i a una partida. Si l'usuari a qui presta
 	// servei el thread crea una partida o s'uneix a una partida existent,
@@ -53,9 +67,6 @@ void* attendClient (ThreadArgs* threadArgs)
 	// Així evitem búsquedes excessives a la taula de partides.
 	PreGameUser* preGameUser;
 	PreGameState* preGame;
-	
-	// guardem el socket en una variable local
-	sock_conn = connectedUser->socket;
 	
 	char username[USRN_LENGTH];
 	char password[PASS_LENGTH];
@@ -237,6 +248,8 @@ void* attendClient (ThreadArgs* threadArgs)
 				}
 				else
 				{
+					// assignem a preGameUser el creador de la partida,
+					// que és l'usuari que gestiona el thread de tipus PreGameUser
 					printf("Crear partida OK\n");
 					pthread_mutex_lock(preGame->game_mutex);
 					preGameUser = preGame->creator;
@@ -321,7 +334,12 @@ void* attendClient (ThreadArgs* threadArgs)
 	
 	close(sock_conn);
 	DelConnectedByName(connectedList, connectedUser->username);
-	threadArgs->connectedUser=NULL; //El punter de l'usuari esborrat ara val NULL	
+	
+	// modifiquem el punter a threadArgs per indicar thread disponible
+	pthread_mutex_lock(threadArgs->threadArgs_mutex);
+	threadArgs->connectedUser = NULL; //El punter de l'usuari esborrat ara val NULL	
+	pthread_mutex_unlock(threadArgs->threadArgs_mutex);
+	
 	//Acabar el thread
 	pthread_exit(0);
 }
@@ -352,7 +370,7 @@ int main(int argc, char *argv[])
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	// escucharemos en el port 9050
-	serv_addr.sin_port = htons(9000);
+	serv_addr.sin_port = htons(9098);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Error al bind");
 	//La cola de requestes pendientes no podr? ser superior a 4
@@ -360,8 +378,7 @@ int main(int argc, char *argv[])
 		printf("Error en el Listen");
 	
 	//CONNEXIÓ
-	int i;
-	pthread_t thread[NMBR_THREADS];
+	pthread_t thread[CNCTD_LST_LENGTH];
 	
 	// Llista de connectats.
 	// creem el mutex de la llista de connectats
@@ -387,57 +404,79 @@ int main(int argc, char *argv[])
 	
 	// passem a threadArgs els punters a la taula de partides
 	// i la llista d'usuaris connectats, iguals per cada element.
-	ThreadArgs threadArgs[NMBR_THREADS];
-	for(i = 0; i < NMBR_THREADS; i++)
+	// assignem a cada element de l'array el mutex per accedir als arguments dels threads
+	pthread_mutex_t* mutexThreadArgs = malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexThreadArgs, NULL);
+	ThreadArgs threadArgs[CNCTD_LST_LENGTH];
+	for(int i = 0; i < CNCTD_LST_LENGTH; i++)
 	{
 		threadArgs[i].connectedList = connectedList;
 		threadArgs[i].gameTable = gameTable;
 		threadArgs[i].connectedUser = NULL;
+		threadArgs[i].threadArgs_mutex = mutexThreadArgs;
 	}
 
 	// Atenem infinites peticions
-	int Iterator=0;
-	int freespace=0;
-	for(;;)
+	int freeSpace = 0;
+	int i = 0;
+	while(1)
 	{
-		Iterator = 0;
-		freespace = 0;
-		if (threadArgs[Iterator].connectedList->number>=CNCTD_LST_LENGTH)
+		printf ("Escuchando\n");					
+		//sock_conn es el socket que usaremos para este cliente
+		sock_conn = accept(sock_listen, NULL, NULL);				
+		printf ("He recibido conexi?n\n");
+		
+		i = 0;
+		freeSpace = 0;				
+		pthread_mutex_lock(mutexThreadArgs);
+		if (threadArgs[i].connectedList->number >= CNCTD_LST_LENGTH)
 		{
-			printf ("No queda espai per a més jugadors\n");
+			pthread_mutex_unlock(mutexThreadArgs);
+			printf ("Llista jugadors plena\n");
+			char response[20] = "FULL";
+			write (sock_conn, response, strlen(response));	
+			printf("%s\n", response);
+			close(sock_conn);
 		}
 		else
 		{
-		while ((Iterator<CNCTD_LST_LENGTH)&&(freespace==0))
-		{
-			if (threadArgs[Iterator].connectedUser==NULL)
+			while ((i < CNCTD_LST_LENGTH) && (freeSpace == 0))
 			{
-				freespace=1;
-				threadArgs[Iterator].connectedUser = NULL;			
+				if (threadArgs[i].connectedUser == NULL)
+				{
+					freeSpace = 1;
+					threadArgs[i].connectedUser = NULL;			
+				}
+				else
+					i++;
+			}
+			pthread_mutex_unlock(mutexThreadArgs);
+			if(freeSpace == 0)
+			{
+				printf("No hi ha espai a threadArgs");
+				char response[20] = "FULL";
+				write (sock_conn, response, strlen(response));	
+				printf("%s\n", response);
+				close(sock_conn);
 			}
 			else
-				Iterator++;
-		}
-		if(freespace==0)
-			printf("No se puede escuchar más gente");
-		else
-		{
-			printf ("Escuchando\n");	
-			
-			//sock_conn es el socket que usaremos para este cliente
-			sock_conn = accept(sock_listen, NULL, NULL);
-			printf ("He recibido conexi?n\n");
-			
-			// Creem el l'usuari per cada thread que s'instancia i el posem
-			// a l'element de l'array threadArgs que es passa al thread
-			threadArgs[Iterator].connectedUser = CreateConnectedUser();
-			threadArgs[Iterator].connectedUser->socket = sock_conn;
-			
-			// creem el thread
-			pthread_create(&thread[Iterator], NULL, attendClient, &threadArgs[Iterator]);
-			printf("Iterator: %d\n", Iterator);
-		}
-		
+			{
+				// avisem al client que estem preparats per atendre peticions
+				char response[20] = "OK";
+				write (sock_conn, response, strlen(response));	
+				printf("%s\n", response);
+				
+				pthread_mutex_lock(mutexThreadArgs);
+				// Creem el l'usuari per cada thread que s'instancia i el posem
+				// a l'element de l'array threadArgs que es passa al thread
+				threadArgs[i].connectedUser = CreateConnectedUser();
+				threadArgs[i].connectedUser->socket = sock_conn;
+				
+				// creem el thread
+				pthread_create(&thread[i], NULL, attendClient, &threadArgs[i]);
+				pthread_mutex_unlock(mutexThreadArgs);
+				printf("Iterator: %d\n", i);
+			}			
 		}
 	}
 	
@@ -451,6 +490,7 @@ int main(int argc, char *argv[])
 	DeleteGameTable(gameTable);		// eliminem la taula de partides i totes les partides
 	pthread_mutex_destroy(mutexConnectedList);
 	pthread_mutex_destroy(gameTable->game_table_mutex);
+	pthread_mutex_destroy(mutexThreadArgs);
 }
 //------------------------------------------------------------------------------
 
