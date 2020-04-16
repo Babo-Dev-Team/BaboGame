@@ -32,9 +32,13 @@ namespace BaboGameClient
                 return;
             }
             int error = serverHandler.Connect("192.168.56.103", 9098); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
-            if (error != 0)
+            if (error == -1)
             {
                 MessageBox.Show("Connection Error.");
+            }
+            else if (error == -2)
+            {
+                MessageBox.Show("Error: server Full. Try again later.");
             }
             else
             {
