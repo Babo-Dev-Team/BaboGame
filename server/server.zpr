@@ -19,11 +19,11 @@ current_source=main.c
 path_char=/
 [source]
 path=main.c
-cursor=44:3
+cursor=371:46
 open=true
 [source]
 path=source/BBDD_Handler.c
-cursor=171:15
+cursor=201:0
 open=true
 [source]
 path=source/connected_list.c
