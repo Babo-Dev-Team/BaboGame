@@ -103,7 +103,8 @@ void* attendClient (void* args)
 			printf("User: %s\n", username);
 			// realitzar la query
 			char* time_played = BBDD_time_played(username);
-			strcpy(response, time_played);
+			strcpy(response, "1/");
+			strcat(response, time_played);
 			free(time_played);
 			break;
 		}
@@ -115,7 +116,8 @@ void* attendClient (void* args)
 		{
 			// realitzar la query
 			char* ranking_str = BBDD_ranking();
-			strcpy(response, ranking_str);
+			strcpy(response, "2/");
+			strcat(response, ranking_str);
 			free(ranking_str);
 			//strcpy(response, "test response 2");
 			break;
@@ -131,7 +133,8 @@ void* attendClient (void* args)
 			
 			// realitzar la query
 			char* characters_str = BBDD_find_characters(game_id);
-			strcpy(response, characters_str);
+			strcpy(response, "3/");
+			strcat(response, characters_str);
 			free(characters_str);
 			break;
 		}
@@ -161,13 +164,19 @@ void* attendClient (void* args)
 				int err = AddConnected(connectedList, connectedUser);
 				if (!err)
 				{
-					strcpy(response, "OK");					
+					strcpy(response, "4/");
+					strcat(response, "OK");					
 				}
-				else strcpy(response, "FAIL");	
+				else 
+				{
+					strcpy(response, "4/");
+					strcat(response, "FAIL");	
+				}
 			}
 			else 
 			{
-				strcpy(response, "FAIL");
+				strcpy(response, "4/");
+				strcat(response, "FAIL");
 				disconnect = 1; // close connection to let client try again
 			}				
 			break;
@@ -194,10 +203,12 @@ void* attendClient (void* args)
 				// Afegim l'usuari del thread a la llista de connectats. 
 				// A partir d'aquí, connectedUser comparteix mutex amb la connectedList
 				int err = AddConnected(connectedList, connectedUser);
-				strcpy(response, "OK");
+				strcpy(response, "5/");
+				strcat(response, "OK");
 			}
 			else 
 			{
+				strcpy(response, "5/");				
 				strcpy(response, "USED");
 			}
 			break;
@@ -207,7 +218,8 @@ void* attendClient (void* args)
 		{
 			json_object* listJson = connectedListToJson(connectedList);
 			//strcpy(response, json_object_to_json_string_ext(listJson, JSON_C_TO_STRING_PRETTY));
-			strcpy(response, json_object_to_json_string(listJson));
+			strcpy(response, "6/");
+			strcat(response, json_object_to_json_string(listJson));
 			
 			// DESTRUIR LLISTA JSON!!!
 			// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
@@ -239,12 +251,14 @@ void* attendClient (void* args)
 				if (err == -2)
 				{
 					printf("Crear partida FAIL: EXISTS\n");
-					strcpy(response, "EXISTS");
+					strcpy(response, "7/");
+					strcat(response, "EXISTS");
 				}
 				else if (err == -1)
 				{
 					printf("Crear partida FAIL: TABLE FULL\n");
-					strcpy(response, "FULL");
+					strcpy(response, "7/");
+					strcat(response, "FULL");
 				}
 				else
 				{
@@ -255,13 +269,15 @@ void* attendClient (void* args)
 					preGameUser = preGame->creator;
 					pthread_mutex_unlock(preGame->game_mutex);
 					// TODO: retornar partida per JSON
-					strcpy(response, "OK");
+					strcpy(response, "7/");
+					strcat(response, "OK");
 				}
 			}
 			else 
 			{
 				printf("Crear partida FAIL: EXISTS\n");
-				strcpy(response, "EXISTS");
+				strcpy(response, "7/");
+				strcat(response, "EXISTS");
 			}
 
 			break;
@@ -272,7 +288,8 @@ void* attendClient (void* args)
 		case 8:
 		{
 			json_object* gameTableJson = GameTableToJson(gameTable);
-			strcpy(response, json_object_to_json_string_ext(gameTableJson, JSON_C_TO_STRING_PRETTY));
+			strcpy(response, "8/");
+			strcat(response, json_object_to_json_string_ext(gameTableJson, JSON_C_TO_STRING_PRETTY));
 			//strcpy(response, json_object_to_json_string(listJson));
 			
 			// DESTRUIR LLISTA JSON!!!
