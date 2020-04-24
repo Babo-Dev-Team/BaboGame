@@ -62,7 +62,7 @@ int __gameNameAvailable(GameTable* table, char name[GAME_LEN])
 	int i = 0;
 	while (i < MAX_GAMES && available)
 	{
-		if(table->createdGames[i] != NULL) // TODO: settejar els punters a NULL a l'esborrar partides
+		if(table->createdGames[i] != NULL) 
 		{
 			if(!strcmp(table->createdGames[i]->gameName, name))
 			{
@@ -223,7 +223,7 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 			while (i < MAX_GAMES && !emptyFound)
 			{
 				// Busquem punter lliure
-				if(table->createdGames[i] == NULL) // TODO: settejar els punters a NULL quan s'esborri la partida!!!
+				if(table->createdGames[i] == NULL)
 				{
 					emptyFound = 1;
 					emptyPos = i;
@@ -267,6 +267,7 @@ int DeleteGameFromTable(GameTable* table, PreGameState* gameState)
 	if(gameState->gameId != -1) // comprovem que la partida es troba a la llista amb ID valida
 	{
 		__deletePreGame(table->createdGames[gameState->gameId]); // hard delete, esborrem l'objecte per evitar leaks de memoria.
+		table->createdGames[gameState->gameId] = NULL; // posem el punter a NULL indicant espai lliure a la taula de partides
 		ret = 0;
 	}
 	else
@@ -288,7 +289,7 @@ void DeleteGameTable(GameTable* table)
 {
 	for (int i = 0; i < MAX_GAMES; i++)
 	{
-		if (table->createdGames[i] != NULL) // TODO: settejar els punters a NULL quan s'esborrin les partides
+		if (table->createdGames[i] != NULL) 
 		{
 			__deletePreGame(table->createdGames[i]);
 		}
