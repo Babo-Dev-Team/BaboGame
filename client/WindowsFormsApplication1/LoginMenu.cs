@@ -31,7 +31,7 @@ namespace BaboGameClient
                 MessageBox.Show("Els camps estan buits!");
                 return;
             }
-            int error = serverHandler.Connect("147.83.117.22", 50084); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104 Shiva: 147.83.117.22
+            int error = serverHandler.Connect("147.83.117.22", 50085); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104 Shiva: 147.83.117.22
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");
@@ -63,7 +63,7 @@ namespace BaboGameClient
                 MessageBox.Show("Els camps estan buits!");
                 return;
             }
-            int error = serverHandler.Connect("147.83.117.22", 50084); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104 Shiva: 147.83.117.22
+            int error = serverHandler.Connect("147.83.117.22", 50085); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104 Shiva: 147.83.117.22
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");

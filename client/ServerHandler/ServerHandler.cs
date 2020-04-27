@@ -24,14 +24,154 @@ namespace BaboGameClient
         public int Playing { get; set; }
     }
 
+    public static class ReceiverArgs
+    {
+        public static List<ConnectedUser> connectedList;
+        public static List<PreGameState> gameTable;
+        public static string responseStr;
+        public static int newDataFromServer;
+        public static Socket server;
+    }
+
+    public class ServerReceiver
+    {
+        private bool discardUpdates;
+        private string response;
+        //private ReceiverArgs receiverArgs;
+        public ServerReceiver()
+        {
+            //this.receiverArgs = args; // passa per referencia
+            //this.discardUpdates = false;
+        }
+
+        // Garanteix la integritat de les dades. 
+        // Si un update no es pot escriure a les estructures de dades,
+        // no rebrem més updates fins que ho poguem fer.
+        // Recomanat quan es reben dades només un cop i no les volem perdre
+        public void IntegrityMode()
+        {
+            this.discardUpdates = false;
+        }
+
+        // Garanteix un temps d'execució màxim per la recepció i escriptura d'un update.
+        // Si en el moment de rebre un update no el podem escriure, es descarta i seguim escoltant.
+        // Garanteix que sempre es disposa de l'update més recent i es recomana per l'execució de la partida.
+        public void PerformanceMode()
+        {
+            this.discardUpdates = true;
+        }
+
+        public void Init()
+        {
+            //ReceiverArgs. = args;
+            this.discardUpdates = false;
+        }
+
+        public void Start()
+        {
+            bool allowNextUpdate = false;
+            while (true)
+            {
+                // agafem la resposta del server
+                response = this.ReceiveReponse();
+                allowNextUpdate = false;
+                while(!allowNextUpdate)
+                {
+                    // comprovem que tenim accés exclusiu garantit a les estructures de dades
+                    // el flag a 0 indica que ServerHandler ja ha entregat l'update anterior,
+                    // per tant, no tornarà a accedir a les dades fins que no escrivim el nou update
+                    if (ReceiverArgs.newDataFromServer == 0)
+                    {
+                        // arranquem l'id de resposta
+                        string num = response.Split('/')[0];
+                        int responseType = Convert.ToInt32(num);
+
+                        switch (responseType)
+                        {
+                            // temps total jugador
+                            case 1:
+                                if (response == "00:00:00")
+                                    response = null;
+                                ReceiverArgs.responseStr = response; // passem update
+                                break;
+                            case 4:
+                                // només copiem la resposta si és vàlida
+                                if (response == "OK" || response == "FAIL")
+                                {
+                                    ReceiverArgs.responseStr = response;
+                                }
+                                break;
+                            // llista de connectats
+                            case 6:
+                                // passem la nova llista a les estructures de dades compartides
+                                ReceiverArgs.connectedList = JsonSerializer.Deserialize<List<ConnectedUser>>(response);
+                                break;
+                            
+                            // llista de partides
+                            case 8:
+                                List<PreGameState> gameTable = JsonSerializer.Deserialize<List<PreGameState>>(response);
+                                break;
+
+                            default:
+                                response = null;
+                                break;
+                        }
+                        // indiquem que hi ha noves dades i seguim escoltant
+                        ReceiverArgs.newDataFromServer = 1;
+                        allowNextUpdate = true;
+                    }
+                    else
+                    {
+                        // si estem en mode performance i no hem pogut escriure l'update, el descartem
+                        // per seguir escoltant.
+                        if (this.discardUpdates)
+                        {
+                            allowNextUpdate = true;
+                        }
+                    }
+                }
+                
+            }         
+        }
+
+        private string ReceiveReponse()
+        {
+            //Recibimos la respuesta del servidor
+            byte[] response = new byte[8192];
+            ReceiverArgs.server.Receive(response);
+            return Encoding.ASCII.GetString(response).Split('\0')[0];
+        }
+    }
+
     public class ServerHandler
     {
         private Socket server;
         private IPAddress serverIP; //= IPAddress.Parse("192.168.56.103");
         private IPEndPoint serverIPEP; //= new IPEndPoint(direc, 9092);
 
+        // estructures de dades internes per a que actualitzi el Receiver
+        //private List<ConnectedUser> connectedList;
+        //private List<PreGameState> gameTable;
+        //private string responseStr;
+
+        // flag d'escriptura de les dades
+        //private int newDataFromServer;
+
+        // crear la subclasse del receiver
+
+        private ServerReceiver Receiver;
+        //private ReceiverArgs receiverArgs;
+
+        // crear el thread per la sublasse
+        // mirar com passar-li accés a les dades i al flac (classe estatica rollo struct?)
+
+
         public ServerHandler()
         {
+            //receiverArgs = new ReceiverArgs();
+            //receiverArgs.connectedList = this.connectedList;
+            //receiverArgs.gameTable = this.gameTable;
+            //receiverArgs.server = this.server;
 
         }
 
@@ -45,7 +185,13 @@ namespace BaboGameClient
             server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
-                server.Connect(this.serverIPEP);//Intentamos conectar el socket
+                server.Connect(this.serverIPEP); //Intentamos conectar el socket
+                
+                // inicialitzem el Receiver passant-li les estructures de dades
+                ReceiverArgs.newDataFromServer = 0;
+                ReceiverArgs.server = this.server;
+                this.Receiver = new ServerReceiver();
+                this.Receiver.Init();
             }
             catch (SocketException)
             {
@@ -72,12 +218,20 @@ namespace BaboGameClient
             error = this.SendRequest("4/" + username + "/" + password + "/");
             if (error != 0)
                 return error;
-            string response = this.ReceiveReponse();
-            if (response == "OK")
+            //string response = this.ReceiveReponse();
+
+            this.Receiver.Start();
+            int i = 0;
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                i++;
+            }
+
+            if (ReceiverArgs.responseStr == "OK")
             {
                 error = 0;
             }
-            else if (response == "FAIL")
+            else if (ReceiverArgs.responseStr == "FAIL")
             {
                 error = -1;
             }
@@ -109,12 +263,23 @@ namespace BaboGameClient
         // retorna el temps en format HH:MM:SS
         public string GetTimePlayed (string username)
         {
+            this.Receiver.Start();
             this.SendRequest("1/" + username + "/");
-            string response = this.ReceiveReponse();
-            if (response == "00:00:00")
-                return null;
-            else
-                return response;
+
+            // wait
+            int i = 0;
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                i++;
+            }
+
+            return ReceiverArgs.responseStr;
+
+            //string response = this.ReceiveReponse();
+            //if (response == "00:00:00")
+            //    return null;
+            //else
+            //    return response;
         }
 
         // retorna una matriu amb tantes files com usuaris i 2 columnes
