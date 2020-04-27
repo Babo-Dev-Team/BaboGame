@@ -1,7 +1,7 @@
-drop database if exists BaboGameBBDD;
-create database BaboGameBBDD;
+drop database if exists T12_BaboGameBBDD;
+create database T12_BaboGameBBDD;
 
-use BaboGameBBDD;
+use T12_BaboGameBBDD;
 
 create table jugadors(
 id INTEGER,

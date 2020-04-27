@@ -15,6 +15,8 @@
 #include "connected_list.h"
 #include "game_table.h"
 
+#define SHIVA_PORT 50084
+
 //#define NMBR_THREADS 100
 
 //------------------------------------------------------------------------------
@@ -369,8 +371,8 @@ int main(int argc, char *argv[])
 	// asocia el socket a cualquiera de las IP de la maquina. 
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	// escucharemos en el port 9050
-	serv_addr.sin_port = htons(9098);
+	// escucharemos en el puerto 50084, 50085 i/o 50086
+	serv_addr.sin_port = htons(SHIVA_PORT);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Error al bind");
 	//La cola de requestes pendientes no podr? ser superior a 4
@@ -479,12 +481,6 @@ int main(int argc, char *argv[])
 			}			
 		}
 	}
-	
-	// Alliberem recursos
-	/*for(i = 0; i < NMBR_THREADS; i++)
-	{
-		free(threadArgs[i].connectedUser);
-	}*/
 	
 	DeleteConnectedList(connectedList);  // eliminem la llista de connectats i tots els usuaris
 	DeleteGameTable(gameTable);		// eliminem la taula de partides i totes les partides
