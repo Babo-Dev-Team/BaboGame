@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace BaboGameClient
 {
@@ -26,6 +27,7 @@ namespace BaboGameClient
 
     public class ServerHandler
     {
+        private Thread Attend;
         private Socket server;
         private IPAddress serverIP; //= IPAddress.Parse("192.168.56.103");
         private IPEndPoint serverIPEP; //= new IPEndPoint(direc, 9092);
@@ -33,6 +35,15 @@ namespace BaboGameClient
         public ServerHandler()
         {
 
+        }
+
+        public void AttendServer ()
+        {
+            while (true)
+            {
+                //Rebem el missatge del servidor
+                string message = this.ReceiveReponse();
+            }
         }
 
         public int Connect(string ip, int port)
@@ -52,6 +63,13 @@ namespace BaboGameClient
                 //Si hay excepcion imprimimos error y salimos del programa con return 
                 error = -1;
             }
+            
+
+            //Posem en marxa el Thread que atendrà els missatges del servidor
+            ThreadStart thread = delegate { AttendServer();};
+            Attend = new Thread(thread);
+            Attend.Start();
+
             return error;
         }
 
@@ -60,8 +78,12 @@ namespace BaboGameClient
             // Nos desconectamos
             string request = "/0";
             this.SendRequest(request);
+
+            //Aturem el Thread Attend
+            Attend.Abort(); //Aturem el thread Attend
+
             server.Shutdown(SocketShutdown.Both);
-            server.Close();
+            server.Close();            
         }
 
         public int Login (string username, string password)
