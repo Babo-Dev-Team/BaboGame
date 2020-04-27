@@ -15,6 +15,8 @@
 #include "connected_list.h"
 #include "game_table.h"
 
+#define SHIVA_PORT 50084
+
 //#define NMBR_THREADS 100
 
 //------------------------------------------------------------------------------
@@ -165,7 +167,9 @@ void* attendClient (void* args)
 				if (!err)
 				{
 					strcpy(response, "4/");
-					strcat(response, "OK");					
+					strcat(response, "OK");	
+					
+					//strcpy(response, "OK");
 				}
 				else 
 				{
@@ -344,7 +348,7 @@ void* attendClient (void* args)
 		// Enviamos response siempre que no se haya recibido request de disconnect
 		if(request_code)
 		{
-			printf ("%s = %s\n", threadArgs->connectedUser->username,response);
+			printf ("%s = %s\n", threadArgs->connectedUser->username, response);
 			write (sock_conn, response, strlen(response));	
 		}
 	}
@@ -387,7 +391,7 @@ int main(int argc, char *argv[])
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	// escucharemos en el puerto 50084, 50085 i/o 50086
-	serv_addr.sin_port = htons(50084);
+	serv_addr.sin_port = htons(SHIVA_PORT);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Error al bind");
 	//La cola de requestes pendientes no podr? ser superior a 4

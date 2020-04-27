@@ -145,6 +145,7 @@ namespace BaboGameClient
 
     public class ServerHandler
     {
+        private const int SERVER_RSP_LEN = 8192;
         private Socket server;
         private IPAddress serverIP; //= IPAddress.Parse("192.168.56.103");
         private IPEndPoint serverIPEP; //= new IPEndPoint(direc, 9092);
@@ -197,7 +198,15 @@ namespace BaboGameClient
             {
                 //Si hay excepcion imprimimos error y salimos del programa con return 
                 error = -1;
+                return error;
             }
+            //return error;
+
+            string response = ReceiveReponse();
+            if (response == "OK")
+                error = 0;
+            else if (response == "FULL")
+                error = -2;
             return error;
         }
 
@@ -375,7 +384,7 @@ namespace BaboGameClient
         private string ReceiveReponse()
         {
             //Recibimos la respuesta del servidor
-            byte[] response = new byte[8192];
+            byte[] response = new byte[SERVER_RSP_LEN];
             this.server.Receive(response);
             return Encoding.ASCII.GetString(response).Split('\0')[0];
         }
