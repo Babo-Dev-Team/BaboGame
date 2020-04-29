@@ -141,7 +141,7 @@ namespace BaboGameClient
 
                         // taula de partides
                         case 8:
-                            List<PreGameState> gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
+                            ReceiverArgs.gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
                             break;
 
                         default:
