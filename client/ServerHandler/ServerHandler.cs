@@ -99,6 +99,26 @@ namespace BaboGameClient
                                 response = null;
                             ReceiverArgs.responseStr = splitResponse[1]; // passem update
                             break;
+                        case 2:
+                            //Ranking dels jugadors
+                            string Ranking = splitResponse[1];
+                            for (int i=2; i<splitResponse.Length; i++)
+                            {
+                                Ranking = Ranking + "/" + splitResponse[i]; 
+                                
+                            }
+                            ReceiverArgs.responseStr = Ranking; // passem update
+                            break;
+                        case 3:
+                            //Entrega els personantges que han jugat una partida
+                            string CharactersList = splitResponse[1];
+                            for (int i = 2; i < splitResponse.Length; i++)
+                            {
+                                CharactersList = CharactersList + "/" + splitResponse[i];
+
+                            }
+                            ReceiverArgs.responseStr = CharactersList;
+                            break;
                         case 4:
                             // només copiem la resposta si és vàlida
                             if (splitResponse[1] == "OK" || splitResponse[1] == "FAIL")
@@ -106,13 +126,20 @@ namespace BaboGameClient
                                 ReceiverArgs.responseStr = splitResponse[1];
                             }
                             break;
+                        case 5:
+                            //Crea un compte
+                            ReceiverArgs.responseStr = splitResponse[1];
+                            break;
                         // llista de connectats
                         case 6:
                             // passem la nova llista a les estructures de dades compartides
                             ReceiverArgs.connectedList = JsonSerializer.Deserialize<List<ConnectedUser>>(splitResponse[1]);
                             break;
+                        case 7:
+                            ReceiverArgs.responseStr = splitResponse[1];
+                            break;
 
-                        // llista de partides
+                        // taula de partides
                         case 8:
                             List<PreGameState> gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
                             break;
@@ -279,7 +306,7 @@ namespace BaboGameClient
             error = this.SendRequest("5/" + username + "/" + password + "/");
             if (error != 0)
                 return error;
-            string response = this.ReceiveReponse();
+            string response = ReceiverArgs.responseStr;
             if (response == "OK")
             {
                 error = 0;
@@ -289,6 +316,7 @@ namespace BaboGameClient
                 error = -1;
             }
             else error = -2;
+            ReceiverArgs.newDataFromServer = 0;
             return error;
         }
 
@@ -302,7 +330,7 @@ namespace BaboGameClient
             {
                 Thread.Sleep(1);
             }
-
+            ReceiverArgs.newDataFromServer = 0;                                         //*******************************
             return ReceiverArgs.responseStr;
 
             //string response = this.ReceiveReponse();
@@ -317,7 +345,14 @@ namespace BaboGameClient
         public string[][] GetRanking()
         {
             this.SendRequest("2/");
-            string response = this.ReceiveReponse();
+
+            // wait
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                Thread.Sleep(1);
+            }
+
+            string response = ReceiverArgs.responseStr;
             int n_pairs = Convert.ToInt32(response.Split('/')[0]);
             string[] rankingPairs = new string[n_pairs];
             string[][] ranking = new string[n_pairs][];
@@ -334,6 +369,7 @@ namespace BaboGameClient
                     ranking[i] = rankingPairs[i].Split('*');
                 }
             }
+            ReceiverArgs.newDataFromServer = 0;
             return ranking;
         }
 
@@ -342,7 +378,14 @@ namespace BaboGameClient
         public string[][] GetGameCharacters(string game)
         {
             this.SendRequest("3/" + game + "/");
-            string response = this.ReceiveReponse();
+
+            // wait
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                Thread.Sleep(1);
+            }
+
+            string response = ReceiverArgs.responseStr;
             int n_pairs = Convert.ToInt32(response.Split('/')[0]);
             string[] playerCharPairs = new string[n_pairs];
             string[][] playerChars = new string[n_pairs][];
@@ -359,6 +402,7 @@ namespace BaboGameClient
                     playerChars[i] = playerCharPairs[i].Split('*');
                 }
             }
+            ReceiverArgs.newDataFromServer = 0;
             return playerChars;
         }
 
@@ -366,7 +410,15 @@ namespace BaboGameClient
         public string  CreateGame(string gameName)
         {
             this.SendRequest("7/" + gameName + "/");
-            string response = this.ReceiveReponse();
+
+            // wait
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                Thread.Sleep(1);
+            }
+
+            string response = ReceiverArgs.responseStr;
+            ReceiverArgs.newDataFromServer = 0;
             return response;
         }
 
@@ -375,16 +427,30 @@ namespace BaboGameClient
         public List<ConnectedUser> GetConnected()
         {
             this.SendRequest("6/");
-            string response = this.ReceiveReponse();
-            List<ConnectedUser> connectedList = JsonSerializer.Deserialize<List<ConnectedUser>>(response);
+
+            // wait
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                Thread.Sleep(1);
+            }
+
+            List<ConnectedUser> connectedList = ReceiverArgs.connectedList;
+            ReceiverArgs.newDataFromServer = 0;
             return connectedList;
         }
 
         public List<PreGameState> GetGameTable()
         {
             this.SendRequest("8/");
-            string response = this.ReceiveReponse();
-            List<PreGameState> gameTable = JsonSerializer.Deserialize<List<PreGameState>>(response);
+
+            // wait
+            while (ReceiverArgs.newDataFromServer == 0)
+            {
+                Thread.Sleep(1);
+            }
+
+            List<PreGameState> gameTable = ReceiverArgs.gameTable;
+            ReceiverArgs.newDataFromServer = 0;
             return gameTable;
         }
         
