@@ -22,21 +22,97 @@
 //------------------------------------------------------------------------------
 // DATA STRUCTS
 //------------------------------------------------------------------------------
+
+// Arguments del global sender (inclosos a thread args amb punter)
+typedef struct SenderArgs{
+	char globalResponse[SERVER_RSP_LEN];
+	//int sockets [CNCTD_LST_LENGTH];
+	pthread_mutex_t* sender_mutex;
+	pthread_cond_t* sender_signal;
+}SenderArgs;
+
 // Arugments que es passen a cada thread
 typedef struct ThreadArgs{
 	ConnectedList* connectedList;			// punter a la llista de connectats
 	ConnectedUser* connectedUser;			// punter a l'usuari que gestiona el thread 
-	GameTable* gameTable;					// punter a la taula de partides
-	pthread_mutex_t* threadArgs_mutex;
+	GameTable* gameTable;					// punter a la taula de partides	
+	pthread_mutex_t* threadArgs_mutex;	
+	SenderArgs* senderArgs;
 }ThreadArgs;
+
 //------------------------------------------------------------------------------
 
+// funció per enviar a tothom, activa el thread globalSender
+int sendToAll (SenderArgs* args, char response[SERVER_RSP_LEN])
+{
+	// adquirim el lock del sender (alliberat pel pthread_mutex_wait en el seu thread)
+	pthread_mutex_lock(args->sender_mutex);
+	strcpy(args->globalResponse, response);
+	
+	// ara indiquem al thread que s'executi
+	pthread_cond_signal(args->sender_signal);
+	
+	pthread_mutex_unlock(args->sender_mutex);
+}
 
 //------------------------------------------------------------------------------
 // THREAD FUNCTIONS
 //------------------------------------------------------------------------------
 
+// sender globa, envia a tots els connectats.
+// fa anar un senyal pthread. El sender estarà inactiu fins que es cridi 
+// la funció SendToAll
+void* globalSender (void* args)
+{
+	// bloquegem els threadArgs perquè volem que ningú més accedeixi als ThreadArgs del sender
+	pthread_mutex_lock(((ThreadArgs*)args)->threadArgs_mutex);
+	ThreadArgs* threadArgs = (ThreadArgs*) args;
+	SenderArgs* senderArgs = threadArgs->senderArgs;
+
+	// inicialitzem un array de sockets actius
+	int activeSocketList[CNCTD_LST_LENGTH];
+	for (int i = 0; i < CNCTD_LST_LENGTH; i++)
+	{
+		activeSocketList[i] = -1;
+	}
+	
+	while(1)
+	{	
+		// hem de bloquejar els senderArgs per a que 
+		// pthread_condition_wait s'executi correctament
+		pthread_mutex_lock(senderArgs->sender_mutex);
+		
+		// alliberem els args per a que la funcio sendToAll els pugui modificar
+		// i esperem que ens andiqui amb el sender_signal que tenim dades per enviar
+		pthread_cond_wait(senderArgs->sender_signal, senderArgs->sender_mutex);
+		
+		// consultem els sockets actius a la llista de connectats
+		pthread_mutex_lock(threadArgs->connectedList->mutex);
+		int n_users = threadArgs->connectedList->number;
+		for(int i = 0; i < n_users; i++)
+		{
+			activeSocketList[i] = threadArgs->connectedList->connected[i]->socket;
+		}
+		pthread_mutex_unlock(threadArgs->connectedList->mutex);
+		strcat(senderArgs->globalResponse, "|");
+		// enviem a tots els sockets actius
+		for (int i = 0; i < n_users; i++)
+		{			
+			printf ("%s = %s\n", "GLOBAL NOTIFICATION: ", senderArgs->globalResponse);
+			write (activeSocketList[i], senderArgs->globalResponse, strlen(senderArgs->globalResponse));			
+		}
+		// desbloquegem per si sortíssim del loop
+		pthread_mutex_unlock(senderArgs->sender_mutex);
+	}
+	pthread_mutex_unlock(threadArgs->threadArgs_mutex);
+}
+
 //Thread del client
+// DONE: enviar llista de connectats modificada al fer login 
+//		Afegir separador | a totes les respostes del server (final de missatge)
+// TODO: enviar llista de connectats modificada al desconnectar client,
+// 	    Enviar llista de connectats modificada al fer sign-up 
+// 		enviar taula de partides modificada com a notif. global
 void* attendClient (void* args)
 {
 	int err = BBDD_connect();
@@ -76,6 +152,10 @@ void* attendClient (void* args)
 	
 	char request[CLIENT_REQ_LEN];
 	char response[SERVER_RSP_LEN];
+	char globalResponse[SERVER_RSP_LEN];
+	
+	// aquest flag indica si cal enviar alguna notificació de forma global
+	int globalSend;
 	
 	int disconnect = 0;
 	while(!disconnect)
@@ -93,6 +173,7 @@ void* attendClient (void* args)
 		int request_code =  atoi(p); // sacamos el request_code del request
 		printf("Request: %d\n", request_code);
 		
+		globalSend = 0;
 		switch (request_code)
 		{	
 			// request 1 -> Total time played by user query
@@ -169,7 +250,15 @@ void* attendClient (void* args)
 					strcpy(response, "4/");
 					strcat(response, "OK");	
 					
-					//strcpy(response, "OK");
+					json_object* listJson = connectedListToJson(connectedList);
+					
+					// si modifiquem la llista, cal enviar la nova llista de forma global
+					strcpy(globalResponse, "6/");
+					strcat(globalResponse, json_object_to_json_string(listJson));
+					globalSend = 1;
+					
+					// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+					free(listJson);
 				}
 				else 
 				{
@@ -347,9 +436,16 @@ void* attendClient (void* args)
 		
 		// Enviamos response siempre que no se haya recibido request de disconnect
 		if(request_code)
-		{
-			printf ("%s = %s\n", threadArgs->connectedUser->username, response);
+		{	
+			strcat(response, "|");
+			printf("%s = %s\n", threadArgs->connectedUser->username, response);
 			write (sock_conn, response, strlen(response));	
+		}
+		
+		// enviem notificacions globals
+		if (globalSend)
+		{
+			sendToAll(threadArgs->senderArgs, globalResponse); 
 		}
 	}
 	
@@ -400,6 +496,8 @@ int main(int argc, char *argv[])
 	
 	//CONNEXIÓ
 	pthread_t thread[CNCTD_LST_LENGTH];
+	pthread_t senderThread;		// creem el thread del sender global
+	//int sockets[CNCTD_LST_LENGTH];
 	
 	// Llista de connectats.
 	// creem el mutex de la llista de connectats
@@ -423,9 +521,35 @@ int main(int argc, char *argv[])
 	//gameTable->game_table_mutex = malloc(sizeof(pthread_mutex_t));
 	//pthread_mutex_init(gameTable->game_table_mutex, NULL);
 	
+	
+	// inicialitzem el ThreadArgs que passarem al thread del sender
+	ThreadArgs senderThreadArgs;
+	pthread_mutex_t* mutexSenderThreadArgs = malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexSenderThreadArgs, NULL);	
+	senderThreadArgs.connectedList = connectedList;
+	senderThreadArgs.gameTable = gameTable;
+	senderThreadArgs.connectedUser = NULL;
+	senderThreadArgs.threadArgs_mutex = mutexSenderThreadArgs;
+	
+	// incialitzem els SenderArgs (només n'hi ha d'haver una instància en tot el programa)
+	SenderArgs senderArgs;
+	pthread_cond_t* signalSender = malloc(sizeof(pthread_cond_t));
+	pthread_cond_init(signalSender, NULL);
+	pthread_mutex_t* mutexSender = malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexSender, NULL);
+	senderArgs.sender_mutex = mutexSender;		// mutex per bloquejar el sender thread
+	senderArgs.sender_signal = signalSender;	// senyal per activar el sender thread
+	
+	// passem el senderArgs al ThreadArgs del sender
+	senderThreadArgs.senderArgs = &senderArgs;
+	
+	// creem el thread del sender
+	pthread_create(&senderThread, NULL, globalSender, &senderThreadArgs);
+	
 	// passem a threadArgs els punters a la taula de partides
 	// i la llista d'usuaris connectats, iguals per cada element.
 	// assignem a cada element de l'array el mutex per accedir als arguments dels threads
+	// També passem els senderArgs per a que puguin fer arribar respostes al sender global
 	pthread_mutex_t* mutexThreadArgs = malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mutexThreadArgs, NULL);
 	ThreadArgs threadArgs[CNCTD_LST_LENGTH];
@@ -435,8 +559,9 @@ int main(int argc, char *argv[])
 		threadArgs[i].gameTable = gameTable;
 		threadArgs[i].connectedUser = NULL;
 		threadArgs[i].threadArgs_mutex = mutexThreadArgs;
+		threadArgs[i].senderArgs = &senderArgs;
 	}
-
+	
 	// Atenem infinites peticions
 	int freeSpace = 0;
 	int i = 0;
@@ -454,7 +579,7 @@ int main(int argc, char *argv[])
 		{
 			pthread_mutex_unlock(mutexThreadArgs);
 			printf ("Llista jugadors plena\n");
-			char response[20] = "FULL";
+			char response[20] = "FULL|";
 			write (sock_conn, response, strlen(response));	
 			printf("%s\n", response);
 			close(sock_conn);
@@ -475,7 +600,7 @@ int main(int argc, char *argv[])
 			if(freeSpace == 0)
 			{
 				printf("No hi ha espai a threadArgs");
-				char response[20] = "FULL";
+				char response[20] = "FULL|";
 				write (sock_conn, response, strlen(response));	
 				printf("%s\n", response);
 				close(sock_conn);
@@ -483,9 +608,14 @@ int main(int argc, char *argv[])
 			else
 			{
 				// avisem al client que estem preparats per atendre peticions
-				char response[20] = "OK";
+				char response[20] = "OK|";
 				write (sock_conn, response, strlen(response));	
 				printf("%s\n", response);
+				
+				// guardem l'id del socket
+				// TODO: mirar si això es pot fer sense mutex, és a dir,
+				// si modificar un int que forma part d'un array és atomic en C
+				//senderArgs.sockets[i] = sock_conn;
 				
 				pthread_mutex_lock(mutexThreadArgs);
 				// Creem el l'usuari per cada thread que s'instancia i el posem
@@ -512,6 +642,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_destroy(mutexConnectedList);
 	pthread_mutex_destroy(gameTable->game_table_mutex);
 	pthread_mutex_destroy(mutexThreadArgs);
+	pthread_mutex_destroy(mutexSender);
 }
 //------------------------------------------------------------------------------
 

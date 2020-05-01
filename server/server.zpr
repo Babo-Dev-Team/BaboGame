@@ -19,7 +19,7 @@ current_source=main.c
 path_char=/
 [source]
 path=main.c
-cursor=291:9
+cursor=485:29
 open=true
 [source]
 path=source/BBDD_Handler.c
@@ -27,7 +27,7 @@ cursor=197:10
 open=true
 [source]
 path=source/connected_list.c
-cursor=227:52
+cursor=236:23
 open=true
 [source]
 path=source/game_table.c
@@ -47,7 +47,7 @@ cursor=0:0
 open=true
 [header]
 path=source/globals.h
-cursor=10:28
+cursor=0:0
 open=true
 [config]
 name=Debug
