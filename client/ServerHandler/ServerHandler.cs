@@ -25,168 +25,174 @@ namespace BaboGameClient
         public int Playing { get; set; }
     }
 
+    // arguments estàtics per passar informació entre el thread del Receiver i el thread principal.
+    // Les dades les agafarà el Notification Worker directament, i pel monogame la idea és fer anar 
+    // el Server Handler i mode realtime al receiver
     public static class ReceiverArgs
     {
-        public static List<ConnectedUser> connectedList;
+        public static List<ConnectedUser> connectedList;    // llistes per parsejar el JSON
         public static List<PreGameState> gameTable;
-        public static string responseStr;
-        public static int newDataFromServer;
-        public static Socket server;
+        public static string responseStr;                   // resposta per string
+        public static int newDataFromServer;                // Flag pel mode Realtime
+        public static Socket server;                        // el socket per llegir
+        public static int responseType;                     // indica el número de resposta
+        public static AutoResetEvent notificationSignal;    // senyal pel mode Notificacions
+
     }
 
     public class ServerReceiver
     {  
-        private bool discardUpdates;
         private string response;
-        //private ReceiverArgs receiverArgs;
+
         public ServerReceiver()
         {
-            //this.receiverArgs = args; // passa per referencia
-            //this.discardUpdates = false;
+
         }
 
-        // Garanteix la integritat de les dades. 
-        // Si un update no es pot escriure a les estructures de dades,
-        // no rebrem més updates fins que ho poguem fer.
-        // Recomanat quan es reben dades només un cop i no les volem perdre
-        public void IntegrityMode()
-        {
-            this.discardUpdates = false;
-        }
+        //------------------------------------------------
+        // THREAD WORKERS (2)
+        //------------------------------------------------
 
-        // Garanteix un temps d'execució màxim per la recepció i escriptura d'un update.
-        // Si en el moment de rebre un update no el podem escriure, es descarta i seguim escoltant.
-        // Garanteix que sempre es disposa de l'update més recent i es recomana per l'execució de la partida.
-        public void PerformanceMode()
+        // Gestió Event Driven.
+        // el receiver, cada cop que rep un update, assenyala amb notificationSignal
+        // al NotificationWorker de la GUI que té notificacions pendents per processar.
+        // el NotificationWorker crida el mètode Read*** segons les dades que s'han rebut
+        // No s'utilitza el flag newDataFromServer.
+        public void StartNotificationMode()
         {
-            this.discardUpdates = true;
-        }
-
-        public void Init()
-        {
-            //ReceiverArgs. = args;
-            this.discardUpdates = false;
-        }
-
-        public void Start()
-        {
+            ReceiverArgs.newDataFromServer = -1; // indiquem que no l'utilitzem
             while (true)
             {
                 // agafem la resposta del server
                 response = this.ReceiveReponse();
-                if (ReceiverArgs.newDataFromServer == 1)
-                {
+                
+                this.ProcessData();
 
-                    while (!this.discardUpdates && ReceiverArgs.newDataFromServer == 1)
-                    {
-                        // esperem a que l'update anterior es processi
-                        // TODO: Assegurar que aquest bucle s'executa
-                        Thread.Sleep(1);
-                    }
-                }
-                if (ReceiverArgs.newDataFromServer == 0)
-                {
-                    // arranquem l'id de resposta
-                    string[] splitResponse = response.Split('/');
-                    string num = splitResponse[0];
-                    int responseType = Convert.ToInt32(num);
-
-                    switch (responseType)
-                    {
-                        // temps total jugador
-                        case 1:
-                            if (response == "00:00:00")
-                                response = null;
-                            ReceiverArgs.responseStr = splitResponse[1]; // passem update
-                            break;
-                        case 2:
-                            //Ranking dels jugadors
-                            string Ranking = splitResponse[1];
-                            for (int i=2; i<splitResponse.Length; i++)
-                            {
-                                Ranking = Ranking + "/" + splitResponse[i]; 
-                                
-                            }
-                            ReceiverArgs.responseStr = Ranking; // passem update
-                            break;
-                        case 3:
-                            //Entrega els personantges que han jugat una partida
-                            string CharactersList = splitResponse[1];
-                            for (int i = 2; i < splitResponse.Length; i++)
-                            {
-                                CharactersList = CharactersList + "/" + splitResponse[i];
-
-                            }
-                            ReceiverArgs.responseStr = CharactersList;
-                            break;
-                        case 4:
-                            // només copiem la resposta si és vàlida
-                            if (splitResponse[1] == "OK" || splitResponse[1] == "FAIL")
-                            {
-                                ReceiverArgs.responseStr = splitResponse[1];
-                            }
-                            break;
-                        case 5:
-                            //Crea un compte
-                            ReceiverArgs.responseStr = splitResponse[1];
-                            break;
-                        // llista de connectats
-                        case 6:
-                            // passem la nova llista a les estructures de dades compartides
-                            ReceiverArgs.connectedList = JsonSerializer.Deserialize<List<ConnectedUser>>(splitResponse[1]);
-                            break;
-                        case 7:
-                            ReceiverArgs.responseStr = splitResponse[1];
-                            break;
-
-                        // taula de partides
-                        case 8:
-                            ReceiverArgs.gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
-                            break;
-
-                        default:
-                            response = null;
-                            break;
-                    }
-                    // indiquem que hi ha noves dades i seguim escoltant
-                    ReceiverArgs.newDataFromServer = 1;
-                }
-
+                // Permetem al NotificationWorker agafar les dades de la llista
+                //this.notificationSignal.Set();
+                ReceiverArgs.notificationSignal.Set();
+                // Donem temps a notificationWorker per a que agafi les dades
+                // TODO: implementar un lock segons aquest exemple: 
+                // https://docs.microsoft.com/en-us/dotnet/api/system.threading.eventresetmode?view=netcore-3.1#System_Threading_EventResetMode_ManualReset
+                Thread.Sleep(100);
             }
-
-                /*
-                //allowNextUpdate = false;
-                while (!allowNextUpdate)
-                {
-                    // comprovem que tenim accés exclusiu garantit a les estructures de dades
-                    // el flag a 0 indica que ServerHandler ja ha entregat l'update anterior,
-                    // per tant, no tornarà a accedir a les dades fins que no escrivim el nou update
-                    else
-                    {
-                        // si estem en mode performance i no hem pogut escriure l'update, el descartem
-                        // per seguir escoltant.
-                        if (this.discardUpdates)
-                        {
-                            allowNextUpdate = true;
-                        }
-                    }
-                }
-                */
-                    
         }
 
+        // Gestió Real Time.
+        // el receiver, cada cop que rep un update, posa el flag newDataFromServer a 1.
+        // d'aquesta manera, la propera vegada que el monogame demani si hi ha canvis, 
+        // el serverhandler li passarà l'actualització llegint de ReceiverArgs.
+        // i tornarà a posar el flag a 0. Amb aquest mode pot ser que es descartin updates
+        // si no es processen abans que arribi el següent update.
+        // no s'utilitza el senyal notificationSignal.
+        public void StartRealtimeMode()
+        {
+            ReceiverArgs.newDataFromServer = 0;
+            while (true)
+            {
+                // esperem a rebre una resposta del servidor
+                response = this.ReceiveReponse();
+
+                // si podem escriure perquè l'update anterior s'ha processat, ho fem.
+                // si no podem escriure, descartem l'update i seguim escoltant.
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    this.ProcessData();
+
+                    // avisem que hi ha un nou update
+                    ReceiverArgs.newDataFromServer = 1;
+                }
+            }
+        }
+
+
+        //------------------------------------------------
+        // INTERNAL METHODS
+        //------------------------------------------------
+
+        // funció per processar les respostes que es reben.
+        private void ProcessData()
+        {
+            // arranquem l'id de resposta
+            string[] splitResponse = response.Split('/');
+            string num = splitResponse[0];
+            int responseType = Convert.ToInt32(num);
+
+            // indiquem el tipus de dades que s'han rebut
+            ReceiverArgs.responseType = responseType;
+
+            switch (responseType)
+            {
+                // temps total jugador
+                case 1:
+                    if (response == "00:00:00")
+                        response = null;
+                    ReceiverArgs.responseStr = splitResponse[1]; // passem update
+                    break;
+                case 2:
+                    //Ranking dels jugadors
+                    string Ranking = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        Ranking = Ranking + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = Ranking; // passem update
+                    break;
+                case 3:
+                    //Entrega els personantges que han jugat una partida
+                    string CharactersList = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        CharactersList = CharactersList + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = CharactersList;
+                    break;
+                case 4:
+                    // només copiem la resposta si és vàlida
+                    if (splitResponse[1] == "OK" || splitResponse[1] == "FAIL")
+                    {
+                        ReceiverArgs.responseStr = splitResponse[1];
+                    }
+                    break;
+                case 5:
+                    //Crea un compte
+                    ReceiverArgs.responseStr = splitResponse[1];
+                    break;
+                // llista de connectats
+                case 6:
+                    // passem la nova llista a les estructures de dades compartides
+                    ReceiverArgs.connectedList = JsonSerializer.Deserialize<List<ConnectedUser>>(splitResponse[1]);
+                    break;
+                case 7:
+                    ReceiverArgs.responseStr = splitResponse[1];
+                    break;
+
+                // taula de partides
+                case 8:
+                    ReceiverArgs.gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
+                    break;
+
+                default:
+                    response = null;
+                    break;
+            }
+        }
+
+        // escoltem el servidor i ens quedem només amb el primer missatge (partim per |)
         private string ReceiveReponse()
         {
             //Recibimos la respuesta del servidor
             byte[] response = new byte[8192];
             ReceiverArgs.server.Receive(response);
-            return Encoding.ASCII.GetString(response).Split('\0')[0];
+            return Encoding.ASCII.GetString(response).Split('|')[0];
         }
     }
 
     public class ServerHandler
     {
-        // crear la subclasse del receiver
+        // la instància del receiver
         private ServerReceiver Receiver;
         Thread threadReceiver;
 
@@ -195,29 +201,31 @@ namespace BaboGameClient
         private IPAddress serverIP; //= IPAddress.Parse("192.168.56.103");
         private IPEndPoint serverIPEP; //= new IPEndPoint(direc, 9092);
 
-        // estructures de dades internes per a que actualitzi el Receiver
-        //private List<ConnectedUser> connectedList;
-        //private List<PreGameState> gameTable;
-        //private string responseStr;
-
-        // flag d'escriptura de les dades
-        //private int newDataFromServer;
-
-        //private ReceiverArgs receiverArgs;
-
-        // crear el thread per la sublasse
-        // mirar com passar-li accés a les dades i al flac (classe estatica rollo struct?)
-
-
         public ServerHandler()
         {
-            //receiverArgs = new ReceiverArgs();
-            //receiverArgs.connectedList = this.connectedList;
-            //receiverArgs.gameTable = this.gameTable;
-            //receiverArgs.server = this.server;
 
         }
 
+        //------------------------------------------------
+        // NEW METHODS (USE WITH NOTIFICATION WORKER)
+        //------------------------------------------------
+
+        public void RequestTimePlayed(string username)
+        {
+            this.SendRequest("1/" + username + "/");
+        }
+
+        public void RequestConnected()
+        {
+            this.SendRequest("6/");
+        }
+
+        // TODO: Adaptar els metodes deprecated (al final del document) a metodes nous de tipus Request***
+
+        // Aquests mètodes no s'han d'actualitzar ja que es segueixen fent servir igual 
+        //------------------------------------------------
+        // OLD METHODS (OK)
+        //------------------------------------------------
         public int Connect(string ip, int port)
         {
             int error = 0;
@@ -229,9 +237,15 @@ namespace BaboGameClient
             try
             {
                 server.Connect(this.serverIPEP); //Intentamos conectar el socket
-                
-  
-                
+
+                ReceiverArgs.server = this.server;
+                this.Receiver = new ServerReceiver();
+
+                ThreadStart threadStart = delegate { this.Receiver.StartNotificationMode(); };
+                threadReceiver = new Thread(threadStart);
+
+
+
             }
             catch (SocketException)
             {
@@ -245,15 +259,6 @@ namespace BaboGameClient
             if (response == "OK")
             {
                 error = 0;
-
-                // inicialitzem el Receiver passant-li les estructures de dades
-                ReceiverArgs.newDataFromServer = 0;
-                ReceiverArgs.server = this.server;
-                this.Receiver = new ServerReceiver();
-                this.Receiver.Init();
-                ThreadStart threadStart = delegate { this.Receiver.Start(); };
-                threadReceiver = new Thread(threadStart);
-                threadReceiver.Start();
             }
             else if (response == "FULL")
                 error = -2;
@@ -266,10 +271,15 @@ namespace BaboGameClient
             // Nos desconectamos
             string request = "/0";
             this.SendRequest(request);
+
+            // parem el receiver
+            threadReceiver.Abort();
+
             server.Shutdown(SocketShutdown.Both);
             server.Close();
         }
 
+        // login convencional (sense fer servir el Notification Worker ni el Server Receiver
         public int Login (string username, string password)
         {
             int error;
@@ -278,26 +288,22 @@ namespace BaboGameClient
             error = this.SendRequest("4/" + username + "/" + password + "/");
             if (error != 0)
                 return error;
-            //string response = this.ReceiveReponse();
 
-            while (ReceiverArgs.newDataFromServer == 0)
-            {
-                Thread.Sleep(1);
-            }
-
-            if (ReceiverArgs.responseStr == "OK")
+            string response = this.ReceiveReponse();
+            if (response == "4/OK")
             {
                 error = 0;
+                threadReceiver.Start();
             }
-            else if (ReceiverArgs.responseStr == "FAIL")
+            else if (response == "4/FAIL")
             {
                 error = -1;
             }
             else error = -2;
-            ReceiverArgs.newDataFromServer = 0;
             return error;
         }
 
+        // sign up convencional (sense fer servir el Notification Worker ni el Server Receiver
         public int SignUp(string username, string password)
         {
             int error;
@@ -306,31 +312,71 @@ namespace BaboGameClient
             error = this.SendRequest("5/" + username + "/" + password + "/");
             if (error != 0)
                 return error;
-            string response = ReceiverArgs.responseStr;
+
+            string response = this.ReceiveReponse();
             if (response == "OK")
             {
                 error = 0;
+                threadReceiver.Start();
             }
             else if (response == "USED")
             {
                 error = -1;
             }
             else error = -2;
-            ReceiverArgs.newDataFromServer = 0;
             return error;
         }
+
+        private int SendRequest(string request)
+        {
+            byte[] msg = System.Text.Encoding.ASCII.GetBytes(request);
+            try
+            {
+                server.Send(msg);
+                return 0;
+            }
+            catch
+            {
+                return -2;
+            }
+        }
+
+        private string ReceiveReponse()
+        {
+            //Recibimos la respuesta del servidor
+            byte[] response = new byte[SERVER_RSP_LEN];
+            this.server.Receive(response);
+            return Encoding.ASCII.GetString(response).Split('|')[0];
+        }
+
+        //------------------------------------------------
+        // OLD METHODS (DEPRECATED)
+        //------------------------------------------------ 
 
         // retorna el temps en format HH:MM:SS
         public string GetTimePlayed (string username)
         {
             this.SendRequest("1/" + username + "/");
 
-            // wait
-            while (ReceiverArgs.newDataFromServer == 0)
+
+            bool responseReceived = false;
+            while (!responseReceived)
             {
-                Thread.Sleep(1);
-            }
-            ReceiverArgs.newDataFromServer = 0;                                         //*******************************
+                // esperem a rebre resposta
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    Thread.Sleep(1);
+                }
+
+                // descartem totes les respostes que no siguin al login
+                else if (ReceiverArgs.newDataFromServer == 1 && ReceiverArgs.responseType != 1)
+                {
+                    ReceiverArgs.newDataFromServer = 0;
+                }
+
+                else responseReceived = true;
+            }                                       //*******************************
+            ReceiverArgs.newDataFromServer = 0;
             return ReceiverArgs.responseStr;
 
             //string response = this.ReceiveReponse();
@@ -352,6 +398,23 @@ namespace BaboGameClient
                 Thread.Sleep(1);
             }
 
+            bool responseReceived = false;
+            while (!responseReceived)
+            {
+                // esperem a rebre resposta
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    Thread.Sleep(1);
+                }
+
+                // descartem totes les respostes que no siguin al login
+                else if (ReceiverArgs.newDataFromServer == 1 && ReceiverArgs.responseType != 2)
+                {
+                    ReceiverArgs.newDataFromServer = 0;
+                }
+
+                else responseReceived = true;
+            }
             string response = ReceiverArgs.responseStr;
             int n_pairs = Convert.ToInt32(response.Split('/')[0]);
             string[] rankingPairs = new string[n_pairs];
@@ -379,10 +442,23 @@ namespace BaboGameClient
         {
             this.SendRequest("3/" + game + "/");
 
-            // wait
-            while (ReceiverArgs.newDataFromServer == 0)
+
+            bool responseReceived = false;
+            while (!responseReceived)
             {
-                Thread.Sleep(1);
+                // esperem a rebre resposta
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    Thread.Sleep(1);
+                }
+
+                // descartem totes les respostes que no siguin al login
+                else if (ReceiverArgs.newDataFromServer == 1 && ReceiverArgs.responseType != 3)
+                {
+                    ReceiverArgs.newDataFromServer = 0;
+                }
+
+                else responseReceived = true;
             }
 
             string response = ReceiverArgs.responseStr;
@@ -417,63 +493,76 @@ namespace BaboGameClient
                 Thread.Sleep(1);
             }
 
+
+            bool responseReceived = false;
+            while (!responseReceived)
+            {
+                // esperem a rebre resposta
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    Thread.Sleep(1);
+                }
+
+                // descartem totes les respostes que no siguin al login
+                else if (ReceiverArgs.newDataFromServer == 1 && ReceiverArgs.responseType != 7)
+                {
+                    ReceiverArgs.newDataFromServer = 0;
+                }
+
+                else responseReceived = true;
+            }
+
             string response = ReceiverArgs.responseStr;
             ReceiverArgs.newDataFromServer = 0;
             return response;
         }
 
+    
+
         //retorna una matriu el qual només retorna els usuaris connectats
         //Només té una columna de connectats i no necessita entrades
-        public List<ConnectedUser> GetConnected()
+        public List<ConnectedUser> ReadConnected()
         {
-            this.SendRequest("6/");
-
-            // wait
-            while (ReceiverArgs.newDataFromServer == 0)
+            // esperem a rebre resposta
+            if (ReceiverArgs.newDataFromServer == 0 || ReceiverArgs.responseType != 6)
             {
-                Thread.Sleep(1);
+                return null;
+            }
+            else
+            {
+                List<ConnectedUser> connectedList = ReceiverArgs.connectedList;
+                ReceiverArgs.newDataFromServer = 0;
+                return connectedList;
             }
 
-            List<ConnectedUser> connectedList = ReceiverArgs.connectedList;
-            ReceiverArgs.newDataFromServer = 0;
-            return connectedList;
         }
 
         public List<PreGameState> GetGameTable()
         {
             this.SendRequest("8/");
 
-            // wait
-            while (ReceiverArgs.newDataFromServer == 0)
+
+            bool responseReceived = false;
+            while (!responseReceived)
             {
-                Thread.Sleep(1);
+                // esperem a rebre resposta
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    Thread.Sleep(1);
+                }
+
+                // descartem totes les respostes que no siguin al login
+                else if (ReceiverArgs.newDataFromServer == 1 && ReceiverArgs.responseType != 8)
+                {
+                    ReceiverArgs.newDataFromServer = 0;
+                }
+
+                else responseReceived = true;
             }
 
             List<PreGameState> gameTable = ReceiverArgs.gameTable;
             ReceiverArgs.newDataFromServer = 0;
             return gameTable;
-        }
-        
-        private int SendRequest(string request)
-        {
-            byte[] msg = System.Text.Encoding.ASCII.GetBytes(request);
-            try
-            {
-                server.Send(msg);
-                return 0;
-            }
-            catch
-            {
-                return -2;
-            }
-        }
-
-        private string ReceiveReponse()
-        {
-            //Recibimos la respuesta del servidor
-            byte[] response = new byte[SERVER_RSP_LEN];
-            this.server.Receive(response);
-            return Encoding.ASCII.GetString(response).Split('\0')[0];
         }
     }
 }
