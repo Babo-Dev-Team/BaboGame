@@ -8,20 +8,62 @@ using System.Text;
 using System.Windows.Forms;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace BaboGameClient
 {
     public partial class QueriesForm : Form
     {
         ServerHandler serverHandler;
-        public QueriesForm(ServerHandler serverHandler)
+
+        // necessitem una ref. al Notification Worker per modificar el camp 
+        // DataGridUpdateRequested segons el data grid
+        NotificationWorker notificationWorker;
+
+        public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
             InitializeComponent();
             this.serverHandler = serverHandler;
+            this.notificationWorker = notificationWorker;
         }
+
+        //------------------------------------------------
+        // DELEGATE METHODS (USE FROM NOTIFICATION WORKER)
+        //------------------------------------------------
+
+        public void UpdateConnectedList(List<ConnectedUser> connectedList)
+        {
+            this.QueryGrid.Rows.Clear();
+            this.QueryGrid.Columns.Clear();
+            this.QueryGrid.Columns.Add("username", "Usuari");
+            this.QueryGrid.Columns.Add("ID", "ID");
+
+            for (int i = 0; i < connectedList.Count; i++)// array rows
+            {
+                string[] row = new string[2];
+                row[0] = connectedList[i].Name;
+                row[1] = connectedList[i].Id.ToString();
+                this.QueryGrid.Rows.Add(row);
+            }
+        }
+
+        public void TimePlayedPopup(string TimePlayed)
+        {
+            if (TimePlayed == null)
+                MessageBox.Show("Aquest jugador no existeix o no ha jugat res");
+            else
+                MessageBox.Show("El jugador " + queries_tb.Text + " ha jugat el temps següent:" + TimePlayed);
+        }
+
+        //------------------------------------------------
+        // REGULAR METHODS, USE FROM UI
+        //------------------------------------------------
 
         private void Send_btn_Click(object sender, EventArgs e)
         {
+            // Demanem al server handler que envii el request.
+            // En aquest cas el server handler ja no l'hem de cridar més
+            // perquè l'actualització ens arribarà pel Notification Worker
             if (TimePlayed_rb.Checked)
             {
                 if (string.IsNullOrWhiteSpace(queries_tb.Text))
@@ -29,13 +71,10 @@ namespace BaboGameClient
                     MessageBox.Show("Els camps estan buits!");
                     return;
                 }
-                string TimePlayed;
-                TimePlayed = serverHandler.GetTimePlayed(queries_tb.Text);
-                if (TimePlayed == null)
-                    MessageBox.Show("Aquest jugador no existeix o no ha jugat res");
-                else
-                    MessageBox.Show("El jugador " + queries_tb.Text + " ha jugat el temps següent:" + TimePlayed);
+                serverHandler.RequestTimePlayed(queries_tb.Text);
             }
+
+            // TODO: Modificar la resta de queries com la primera
             else if (Ranking_rb.Checked)
             {
                 QueryGrid.Rows.Clear();
@@ -94,26 +133,15 @@ namespace BaboGameClient
                     MessageBox.Show("Introdueix una ID de partida al quadre de text");
                 }
             }
+
+            // Aquesta ja està modificada: demanem al server handler que ens fagi el request
+            // i indiquem al Notification Worker el tipus d'info que esperem rebre per al data grid
             else if (ConnectedList_rb.Checked)
             {
-                QueryGrid.Rows.Clear();
-                QueryGrid.Columns.Clear();
-                List<ConnectedUser> connectedList = serverHandler.GetConnected();
-                //QueryGrid.DataSource = connectedList;
-                //QueryGrid.Columns[0].HeaderText = "Usuari";
-                //QueryGrid.Columns[1].HeaderText = "ID";
-                QueryGrid.Columns.Add("username", "Usuari");
-                QueryGrid.Columns.Add("ID", "ID");
-
-
-                for (int i = 0; i < connectedList.Count; i++)// array rows
-                {
-                    string[] row = new string[2];
-                    row[0] = connectedList[i].Name;
-                    row[1] = connectedList[i].Id.ToString();
-                    QueryGrid.Rows.Add(row);
-                }
+                notificationWorker.DataGridUpdateRequested = 6;
+                serverHandler.RequestConnected();
             }
+
             else if (createGame_rb.Checked)
             {
                 if(queries_tb.Text.Length == 0)
