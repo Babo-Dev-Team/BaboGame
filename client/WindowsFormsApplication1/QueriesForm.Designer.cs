@@ -37,7 +37,10 @@
             this.ConnectedList_rb = new System.Windows.Forms.RadioButton();
             this.createGame_rb = new System.Windows.Forms.RadioButton();
             this.showGames_rb = new System.Windows.Forms.RadioButton();
+            this.MenúExtres = new System.Windows.Forms.MenuStrip();
+            this.Notificacions_btn = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).BeginInit();
+            this.MenúExtres.SuspendLayout();
             this.SuspendLayout();
             // 
             // QueryGrid
@@ -132,6 +135,23 @@
             this.showGames_rb.Text = "Llista partides";
             this.showGames_rb.UseVisualStyleBackColor = true;
             // 
+            // MenúExtres
+            // 
+            this.MenúExtres.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.MenúExtres.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.Notificacions_btn});
+            this.MenúExtres.Location = new System.Drawing.Point(0, 0);
+            this.MenúExtres.Name = "MenúExtres";
+            this.MenúExtres.Size = new System.Drawing.Size(800, 28);
+            this.MenúExtres.TabIndex = 9;
+            this.MenúExtres.Text = "menuStrip1";
+            // 
+            // Notificacions_btn
+            // 
+            this.Notificacions_btn.Name = "Notificacions_btn";
+            this.Notificacions_btn.Size = new System.Drawing.Size(108, 24);
+            this.Notificacions_btn.Text = "Notificacions";
+            // 
             // QueriesForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -146,10 +166,14 @@
             this.Controls.Add(this.queries_tb);
             this.Controls.Add(this.Send_btn);
             this.Controls.Add(this.QueryGrid);
+            this.Controls.Add(this.MenúExtres);
+            this.MainMenuStrip = this.MenúExtres;
             this.Name = "QueriesForm";
             this.Text = "QueriesForm";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.QueriesForm_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).EndInit();
+            this.MenúExtres.ResumeLayout(false);
+            this.MenúExtres.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -166,5 +190,7 @@
         private System.Windows.Forms.RadioButton ConnectedList_rb;
         private System.Windows.Forms.RadioButton createGame_rb;
         private System.Windows.Forms.RadioButton showGames_rb;
+        private System.Windows.Forms.MenuStrip MenúExtres;
+        private System.Windows.Forms.ToolStripMenuItem Notificacions_btn;
     }
 }
