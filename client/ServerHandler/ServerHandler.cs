@@ -215,9 +215,19 @@ namespace BaboGameClient
             this.SendRequest("1/" + username + "/");
         }
 
+        public void RequestGameCharacters(string partyID)
+        {
+            this.SendRequest("3/" + partyID + "/");
+        }
+
         public void RequestConnected()
         {
             this.SendRequest("6/");
+        }
+
+        public void RequestCreateParty(string name)
+        {
+            this.SendRequest("7/" + name + "/");
         }
 
         // TODO: Adaptar els metodes deprecated (al final del document) a metodes nous de tipus Request***

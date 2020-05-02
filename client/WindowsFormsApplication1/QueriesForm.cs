@@ -47,6 +47,29 @@ namespace BaboGameClient
             }
         }
 
+        public void UpdateCharactersList(string[][] gameCharacters)
+        {
+            this.QueryGrid.Rows.Clear();
+            this.QueryGrid.Columns.Clear();
+
+            QueryGrid.Columns.Add("username", "Usuari");
+            QueryGrid.Columns.Add("character", "Personatge");
+
+            for (int i = 0; i < gameCharacters.GetLength(0); i++)// array rows
+            {
+                string[] row = new string[gameCharacters[i].GetLength(0)];
+
+                for (int j = 0; j < gameCharacters[i].GetLength(0); j++)
+                {
+                    row[j] = gameCharacters[i][j];
+                }
+
+                QueryGrid.Rows.Add(row);
+            }
+            QueryGrid.Refresh();
+
+        }
+
         public void TimePlayedPopup(string TimePlayed)
         {
             if (TimePlayed == null)
@@ -55,6 +78,13 @@ namespace BaboGameClient
                 MessageBox.Show("El jugador " + queries_tb.Text + " ha jugat el temps següent:" + TimePlayed);
         }
 
+        public void CreatePartyPopup(string response)
+        {
+            if (response == "OK")
+                MessageBox.Show("La partida s'ha creat correctament");
+            else
+                MessageBox.Show(response);
+        }
         //------------------------------------------------
         // REGULAR METHODS, USE FROM UI
         //------------------------------------------------
@@ -97,36 +127,18 @@ namespace BaboGameClient
                 }
                 QueryGrid.Refresh();
             }
-            else if (Characters_rb.Checked)
+            else if (Characters_rb.Checked) //Modificat a la nova versió - Albert
             {
-
+                notificationWorker.DataGridUpdateRequested = 3;
                 if (string.IsNullOrWhiteSpace(queries_tb.Text))
                 {
                     MessageBox.Show("Els camps estan buits!");
                     return;
                 }
-                QueryGrid.Rows.Clear();
-                QueryGrid.Columns.Clear();
-                string[][] gameCharacters;
                 try
                 {
                     Convert.ToInt32(queries_tb.Text); //Detecta que hagi posat un nombre i sinò fa saltar el try catch
-                    gameCharacters = serverHandler.GetGameCharacters(queries_tb.Text);
-                    QueryGrid.Columns.Add("username", "Usuari");
-                    QueryGrid.Columns.Add("character", "Personatge");
-
-                    for (int i = 0; i < gameCharacters.GetLength(0); i++)// array rows
-                    {
-                        string[] row = new string[gameCharacters[i].GetLength(0)];
-
-                        for (int j = 0; j < gameCharacters[i].GetLength(0); j++)
-                        {
-                            row[j] = gameCharacters[i][j];
-                        }
-
-                        QueryGrid.Rows.Add(row);
-                    }
-                    QueryGrid.Refresh();
+                    serverHandler.RequestGameCharacters(queries_tb.Text);   
                 }
                 catch
                 {
@@ -142,7 +154,7 @@ namespace BaboGameClient
                 serverHandler.RequestConnected();
             }
 
-            else if (createGame_rb.Checked)
+            else if (createGame_rb.Checked) //Modificat a la nova versió - Albert
             {
                 if(queries_tb.Text.Length == 0)
                 {
@@ -150,8 +162,7 @@ namespace BaboGameClient
                 }
                 else
                 {
-                    string response = serverHandler.CreateGame(queries_tb.Text);
-                    MessageBox.Show(response);
+                    serverHandler.RequestCreateParty(queries_tb.Text);
                 }
             }
 
@@ -191,6 +202,7 @@ namespace BaboGameClient
         private void QueriesForm_FormClosing(object sender, EventArgs args)
         {
             MessageBox.Show("Desconnectant-se...");
+            notificationWorker.DataGridUpdateRequested = 0;
             serverHandler.Disconnect();
         }
     }

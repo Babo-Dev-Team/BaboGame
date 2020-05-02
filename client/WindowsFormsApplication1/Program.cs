@@ -20,6 +20,12 @@ namespace BaboGameClient
         // el mètode delegat per crear un popup amb el temps jugat
         delegate void TimePlayedPopupDelegate(string TimePlayed);
 
+        // el mètode delegat per accedir al data grid view amb una taula de strings
+        delegate void CharacterListDelegate(string[][] characterList);
+
+        // el mètode delegat per crear un popup com a resposta a la creació de partida
+        delegate void CreatePartyPopup(string response);
+
         //------------------------------------------------
         // ATTRIBUTES
         //------------------------------------------------
@@ -70,6 +76,40 @@ namespace BaboGameClient
                 }
 
                 // TODO: la resta de queries
+
+                //Mostra els personatges utilitzats en una partida
+                else if (responseType == 3)
+                {
+                    string CharacterList = ReceiverArgs.responseStr;
+                    CharacterListDelegate characterDelegate = new CharacterListDelegate(this.QueriesForm.UpdateCharactersList);
+                    
+                    int n_pairs = Convert.ToInt32(CharacterList.Split('/')[0]);
+                    string[] playerCharPairs = new string[n_pairs];
+                    string[][] playerChars = new string[n_pairs][];
+                    for (int i = 0; i < n_pairs; i++)
+                    {
+                        playerChars[i] = new string[2];
+                    }
+                    if (n_pairs > 0)
+                    {
+                        CharacterList = CharacterList.Remove(0, CharacterList.IndexOf("/") + 1); //eliminem el n_chars de la resposta
+                        for (int i = 0; i < n_pairs; i++)
+                        {
+                            playerCharPairs = CharacterList.Split('/');
+                            playerChars[i] = playerCharPairs[i].Split('*');
+                        }
+                    }
+
+                    QueriesForm.Invoke(characterDelegate, new object[] { playerChars });
+                }
+
+                //Mostra la resposta a la partida creada
+                else if (responseType == 7)
+                {
+                    string response = ReceiverArgs.responseStr;
+                    CreatePartyPopup createPartyDelegate = new CreatePartyPopup(this.QueriesForm.CreatePartyPopup);
+                    QueriesForm.Invoke(createPartyDelegate, new object[] { response });
+                }
             }
         }
 
