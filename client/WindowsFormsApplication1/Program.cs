@@ -23,6 +23,12 @@ namespace BaboGameClient
         // el mètode delegat per accedir al data grid view amb una taula de strings
         delegate void CharacterListDelegate(string[][] characterList);
 
+        //el el mètode delegat per accedir al data grid del Ranking
+        delegate void RankingDelegate(string[][] rankingList);
+
+        // el mètode delegat per crear un popup com a resposta a la creació d'un nou usuari
+        delegate void SignUpPopup(string response);
+
         // el mètode delegat per crear un popup com a resposta a la creació de partida
         delegate void CreatePartyPopup(string response);
 
@@ -103,6 +109,37 @@ namespace BaboGameClient
                     QueriesForm.Invoke(characterDelegate, new object[] { playerChars });
                 }
 
+                //Mostra el ranking
+                else if (responseType == 2)                  
+                {
+                    string response = ReceiverArgs.responseStr;
+                    RankingDelegate rankingDelegate = new RankingDelegate(this.QueriesForm.UpdateRanking);                    
+                    int n_pairs = Convert.ToInt32(response.Split('/')[0]);
+                    string[] rankingPairs = new string[n_pairs];
+                    string[][] ranking = new string[n_pairs][];
+                    for (int i = 0; i < n_pairs; i++)
+                    {
+                        ranking[i] = new string[2];
+                    }
+                    if (n_pairs > 0)
+                    {
+                        response = response.Remove(0, response.IndexOf("/") + 1); //eliminem el n_chars de la resposta
+                        for (int i = 0; i < n_pairs; i++)
+                        {
+                            rankingPairs = response.Split('/');
+                            ranking[i] = rankingPairs[i].Split('*');
+                        }
+                    }
+
+                    QueriesForm.Invoke(rankingDelegate, new object[] { ranking });
+                }
+                //Crea un compte amb SignUp
+                else if (responseType == 5)
+                {
+                    string response = ReceiverArgs.responseStr;
+                    SignUpPopup SignUpDelegate = new SignUpPopup(this.QueriesForm.SignUpPopup);
+                    QueriesForm.Invoke(SignUpDelegate, new object[] { response });
+                }
                 //Mostra la resposta a la partida creada
                 else if (responseType == 7)
                 {

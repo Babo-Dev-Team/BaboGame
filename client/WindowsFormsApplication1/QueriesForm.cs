@@ -70,6 +70,28 @@ namespace BaboGameClient
 
         }
 
+        public void UpdateRanking(string[][] ranking)                   
+        {
+            QueryGrid.Rows.Clear();
+            QueryGrid.Columns.Clear();
+            QueryGrid.Columns.Add("username", "Usuari");
+            QueryGrid.Columns.Add("Wins", "Partides guanyades");
+
+            for (int i = 0; i < ranking.GetLength(0); i++)// array rows
+            {
+                string[] row = new string[ranking[i].GetLength(0)];
+
+                for (int j = 0; j < ranking[i].GetLength(0); j++)
+                {
+                    row[j] = ranking[i][j];
+                }
+
+                QueryGrid.Rows.Add(row);
+            }
+            QueryGrid.Refresh();
+
+        }
+
         public void TimePlayedPopup(string TimePlayed)
         {
             if (TimePlayed == null)
@@ -77,6 +99,15 @@ namespace BaboGameClient
             else
                 MessageBox.Show("El jugador " + queries_tb.Text + " ha jugat el temps següent:" + TimePlayed);
         }
+
+        public void SignUpPopup(string response)
+        {
+            if (response == "OK")
+                MessageBox.Show("L'usuari s'ha creat correctament");
+            else
+                MessageBox.Show(response);
+        }
+            
 
         public void CreatePartyPopup(string response)
         {
@@ -107,29 +138,12 @@ namespace BaboGameClient
             // TODO: Modificar la resta de queries com la primera
             else if (Ranking_rb.Checked)
             {
-                QueryGrid.Rows.Clear();
-                QueryGrid.Columns.Clear();
-                QueryGrid.Columns.Add("username", "Usuari");
-                QueryGrid.Columns.Add("Wins", "Partides guanyades");
-                string[][] ranking;
-                ranking = serverHandler.GetRanking();
-
-                for (int i = 0; i < ranking.GetLength(0); i++)// array rows
-                {
-                    string[] row = new string[ranking[i].GetLength(0)];
-
-                    for (int j = 0; j < ranking[i].GetLength(0); j++)
-                    {
-                        row[j] = ranking[i][j];
-                    }
-
-                    QueryGrid.Rows.Add(row);
-                }
-                QueryGrid.Refresh();
+                
+                serverHandler.RequestRanking();
             }
             else if (Characters_rb.Checked) //Modificat a la nova versió - Albert
             {
-                notificationWorker.DataGridUpdateRequested = 3;
+                //notificationWorker.DataGridUpdateRequested = 3;
                 if (string.IsNullOrWhiteSpace(queries_tb.Text))
                 {
                     MessageBox.Show("Els camps estan buits!");

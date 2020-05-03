@@ -215,9 +215,19 @@ namespace BaboGameClient
             this.SendRequest("1/" + username + "/");
         }
 
+        public void RequestRanking()
+        {
+            this.SendRequest("2/");
+        }
+
         public void RequestGameCharacters(string partyID)
         {
             this.SendRequest("3/" + partyID + "/");
+        }
+
+        public void RequestSignUp(string username, string password)
+        {
+            this.SendRequest("5/" + username + "/" + password + "/");
         }
 
         public void RequestConnected()
@@ -324,12 +334,12 @@ namespace BaboGameClient
                 return error;
 
             string response = this.ReceiveReponse();
-            if (response == "OK")
+            if (response == "5/OK")
             {
                 error = 0;
                 threadReceiver.Start();
             }
-            else if (response == "USED")
+            else if (response == "5/USED")
             {
                 error = -1;
             }
@@ -425,6 +435,9 @@ namespace BaboGameClient
 
                 else responseReceived = true;
             }
+            
+            
+            ReceiverArgs.newDataFromServer = 0;
             string response = ReceiverArgs.responseStr;
             int n_pairs = Convert.ToInt32(response.Split('/')[0]);
             string[] rankingPairs = new string[n_pairs];
