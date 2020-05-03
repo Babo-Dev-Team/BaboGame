@@ -298,6 +298,16 @@ void* attendClient (void* args)
 				int err = AddConnected(connectedList, connectedUser);
 				strcpy(response, "5/");
 				strcat(response, "OK");
+				
+				json_object* listJson = connectedListToJson(connectedList);
+				
+				// si modifiquem la llista, cal enviar la nova llista de forma global
+				strcpy(globalResponse, "6/");
+				strcat(globalResponse, json_object_to_json_string(listJson));
+				globalSend = 1;
+				
+				// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+				free(listJson);
 			}
 			else 
 			{
@@ -427,6 +437,7 @@ void* attendClient (void* args)
 		case 0:
 			// Se acabo el servicio para este cliente
 			disconnect = 1;
+			
 			break;
 			
 		default:
@@ -452,10 +463,22 @@ void* attendClient (void* args)
 	close(sock_conn);
 	DelConnectedByName(connectedList, connectedUser->username);
 	
+	
+	
 	// modifiquem el punter a threadArgs per indicar thread disponible
 	pthread_mutex_lock(threadArgs->threadArgs_mutex);
 	threadArgs->connectedUser = NULL; //El punter de l'usuari esborrat ara val NULL	
 	pthread_mutex_unlock(threadArgs->threadArgs_mutex);
+	
+	json_object* listJson = connectedListToJson(connectedList);
+	
+	// si modifiquem la llista, cal enviar la nova llista de forma global
+	strcpy(globalResponse, "6/");
+	strcat(globalResponse, json_object_to_json_string(listJson));
+	sendToAll(threadArgs->senderArgs, globalResponse); 
+	
+	// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+	free(listJson);
 	
 	//Acabar el thread
 	pthread_exit(0);
