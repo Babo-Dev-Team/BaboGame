@@ -39,6 +39,7 @@
             this.showGames_rb = new System.Windows.Forms.RadioButton();
             this.MenúExtres = new System.Windows.Forms.MenuStrip();
             this.Notificacions_btn = new System.Windows.Forms.ToolStripMenuItem();
+            this.NewParty_btn = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).BeginInit();
             this.MenúExtres.SuspendLayout();
             this.SuspendLayout();
@@ -51,10 +52,11 @@
             this.QueryGrid.RowTemplate.Height = 24;
             this.QueryGrid.Size = new System.Drawing.Size(358, 413);
             this.QueryGrid.TabIndex = 0;
+            this.QueryGrid.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.QueryGrid_CellClick);
             // 
             // Send_btn
             // 
-            this.Send_btn.Location = new System.Drawing.Point(187, 395);
+            this.Send_btn.Location = new System.Drawing.Point(278, 395);
             this.Send_btn.Name = "Send_btn";
             this.Send_btn.Size = new System.Drawing.Size(75, 23);
             this.Send_btn.TabIndex = 1;
@@ -151,12 +153,24 @@
             this.Notificacions_btn.Name = "Notificacions_btn";
             this.Notificacions_btn.Size = new System.Drawing.Size(108, 24);
             this.Notificacions_btn.Text = "Notificacions";
+            this.Notificacions_btn.Click += new System.EventHandler(this.Notificacions_btn_Click);
+            // 
+            // NewParty_btn
+            // 
+            this.NewParty_btn.Location = new System.Drawing.Point(91, 357);
+            this.NewParty_btn.Name = "NewParty_btn";
+            this.NewParty_btn.Size = new System.Drawing.Size(149, 69);
+            this.NewParty_btn.TabIndex = 10;
+            this.NewParty_btn.Text = "Nova Partida";
+            this.NewParty_btn.UseVisualStyleBackColor = true;
+            this.NewParty_btn.Click += new System.EventHandler(this.NewParty_btn_Click);
             // 
             // QueriesForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.NewParty_btn);
             this.Controls.Add(this.showGames_rb);
             this.Controls.Add(this.createGame_rb);
             this.Controls.Add(this.ConnectedList_rb);
@@ -192,5 +206,6 @@
         private System.Windows.Forms.RadioButton showGames_rb;
         private System.Windows.Forms.MenuStrip MenúExtres;
         private System.Windows.Forms.ToolStripMenuItem Notificacions_btn;
+        private System.Windows.Forms.Button NewParty_btn;
     }
 }

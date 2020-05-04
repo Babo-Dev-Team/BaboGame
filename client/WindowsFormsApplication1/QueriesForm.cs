@@ -20,11 +20,70 @@ namespace BaboGameClient
         // DataGridUpdateRequested segons el data grid
         NotificationWorker notificationWorker;
 
+        PictureBox NotificationIcon = new PictureBox();
+
+        //Elements del menú dels personatges seleccionats
+        DataGridView PlayersSelected_dg = new DataGridView();
+        TextBox NewPartyName_tb = new TextBox();
+        Button CreateParty_btn = new Button();
+        Button NewPartyBack_btn = new Button();
+        Label NewPartyName_lbl = new Label();
+
+        //Variable que diferenciar a quin menú estàs situat
+        int ScreenSelected = 0;
+
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
             InitializeComponent();
             this.serverHandler = serverHandler;
             this.notificationWorker = notificationWorker;
+            NotificationIcon.ImageLocation = "Babo down hit.png";
+            NotificationIcon.SizeMode = PictureBoxSizeMode.CenterImage;
+            NotificationIcon.Load();
+            NotificationIcon.Refresh();
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Creació dels objectes del menú de la tria de la llista de connectats
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+            //Grid dels jugadors seleccionats
+            PlayersSelected_dg.Size = new Size(250, 200);
+            PlayersSelected_dg.Location = new Point(25, 75);
+            PlayersSelected_dg.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            PlayersSelected_dg.Name = "PlayerSelected_dg";
+            PlayersSelected_dg.TabIndex = 0;
+            PlayersSelected_dg.RowTemplate.Height = 20;
+            PlayersSelected_dg.Enabled = true;
+            PlayersSelected_dg.Visible = false;
+            this.Controls.Add(PlayersSelected_dg);
+            PlayersSelected_dg.CellClick += new DataGridViewCellEventHandler(this.PlayersSelected_dg_CellClick);
+
+            //TextBox del nom de la partida
+            NewPartyName_tb.Location = new Point(125, 35);
+            NewPartyName_tb.Visible = false;
+            this.Controls.Add(NewPartyName_tb);
+
+            //Label del nom de la partida
+            NewPartyName_lbl.Location = new Point(25, 35);
+            NewPartyName_lbl.Visible = false;
+            NewPartyName_lbl.Text = "Nom de la partida:";
+            this.Controls.Add(NewPartyName_lbl);
+
+            //Button de crear la partida
+            CreateParty_btn.Location = new Point(125, 300);
+            CreateParty_btn.Text = "Crea Partida";
+            CreateParty_btn.Size = new Size(120, 60);
+            CreateParty_btn.Visible = false;
+            this.Controls.Add(CreateParty_btn);
+            CreateParty_btn.Click += new EventHandler(this.CreateParty_btn_Click);
+
+            //Button per sortir del menú de seleccionar jugadors
+            NewPartyBack_btn.Location = new Point(25, 300);
+            NewPartyBack_btn.Text = "Surt";
+            NewPartyBack_btn.Size = new Size(80, 60);
+            NewPartyBack_btn.Visible = false;
+            this.Controls.Add(NewPartyBack_btn);
+            NewPartyBack_btn.Click += new EventHandler(this.NewPartyBack_btn_Click);
         }
 
         //------------------------------------------------
@@ -67,6 +126,27 @@ namespace BaboGameClient
                 QueryGrid.Rows.Add(row);
             }
             QueryGrid.Refresh();
+
+            //Borra els usuaris de la llista de usuaris seleccionats que s'hagin desconnectat
+            if((ScreenSelected == 1)&&(notificationWorker.DataGridUpdateRequested == 6))
+            {
+                int i = 0;
+                for(i = 0; i < PlayersSelected_dg.RowCount; i++)
+                {
+                    bool found = false;
+                    int j = 0;
+                    for(j = 0; j < QueryGrid.RowCount; j++)
+                    {
+                        if ((QueryGrid[0, j].Value.ToString() == PlayersSelected_dg[0, i].Value.ToString()) &&
+                            (QueryGrid[1, j].Value.ToString() == PlayersSelected_dg[1, i].Value.ToString()))
+                            found = true;
+                    }
+                    if(!found)
+                    {
+                        PlayersSelected_dg.Rows.RemoveAt(i);
+                    }
+                }
+            }
 
         }
 
@@ -218,6 +298,136 @@ namespace BaboGameClient
             MessageBox.Show("Desconnectant-se...");
             notificationWorker.DataGridUpdateRequested = 0;
             serverHandler.Disconnect();
+        }
+
+        private void Notificacions_btn_Click(object sender, EventArgs e)
+        {
+            ToolStripItem[] InvitationSelection = new ToolStripItem[2];
+            InvitationSelection[0] = new ToolStripButton("Acceptar");
+            InvitationSelection[1] = new ToolStripButton("Rebutjar");
+            ToolStripItem Invitation = new ToolStripMenuItem("Babo t'ha invitat a una partida", NotificationIcon.Image,InvitationSelection);
+            Invitation.Image = NotificationIcon.Image;
+            Notificacions_btn.DropDownItems.Add(Invitation);
+            
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //Menú de selecció de jugadors
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        //Botó que obre el menú
+        //Fa invisibles els objectes innecesàris i fa aparèixer els objectes necessàris d'aquell menú
+        private void NewParty_btn_Click(object sender, EventArgs e)
+        {
+            //Amaga els objectes anteriors
+            QueryGrid.Visible = true;
+            notificationWorker.DataGridUpdateRequested = 6;
+            ScreenSelected = 1;
+            serverHandler.RequestConnected();
+            Send_btn.Visible = false;
+            Characters_rb.Visible = false;
+            ConnectedList_rb.Visible = false;
+            createGame_rb.Visible = false;
+            Ranking_rb.Visible = false;
+            showGames_rb.Visible = false;
+            TimePlayed_rb.Visible = false;
+            queries_tb.Visible = false;
+            NewParty_btn.Visible = false;
+
+            //Activa el grid dels jugadors seleccionats
+            PlayersSelected_dg.Visible = true;
+            PlayersSelected_dg.Rows.Clear();
+            PlayersSelected_dg.Columns.Clear();
+            PlayersSelected_dg.Columns.Add("username", "Usuari");
+            PlayersSelected_dg.Columns.Add("ID", "ID");
+            PlayersSelected_dg.Refresh();
+
+            //Activa el NewPartyName_tb, el NewPartyName_lbl, el NewPartyBack_btn i el CreateParty_btn
+            NewPartyName_tb.Visible = true;
+            NewPartyName_lbl.Visible = true;
+            NewPartyBack_btn.Visible = true;
+            CreateParty_btn.Visible = true;
+        }
+
+        //Selecció de un element de la llista dels jugadors elegits
+        //Quan cliques un jugador el borres
+        private void PlayersSelected_dg_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                PlayersSelected_dg.Rows.RemoveAt(e.RowIndex);
+            }
+            catch { }
+        }
+
+        //Selecció d'un elemeny de la llista de connectats
+        //Quan cliques una cel·la passes l'element a la llista d'elegits
+        private void QueryGrid_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if((notificationWorker.DataGridUpdateRequested == 6)&&(ScreenSelected == 1))
+            {
+                if (e.RowIndex >= 0)
+                {
+                    try
+                    {
+                        string[] rowPlayer = { QueryGrid[0, e.RowIndex].Value.ToString(), QueryGrid[1, e.RowIndex].Value.ToString() };
+                        string[] rowPlayerInList = new string[2];
+                        bool found = false;
+                        int i = 0;
+                        while ((i < PlayersSelected_dg.RowCount) && (!found))
+                        {
+                            rowPlayerInList[0] = QueryGrid[0, i].Value.ToString();
+                            rowPlayerInList[1] = QueryGrid[1, i].Value.ToString();
+                            if (rowPlayer == rowPlayerInList)
+                                found = true;
+                            i++;
+                        }
+                        if (!found)
+                        {
+                            PlayersSelected_dg.Rows.Add(rowPlayer);
+                        }
+                    }
+                    catch
+                    { }
+                }
+            }
+        }
+
+        //Selecciona el botó de crear partida
+        private void CreateParty_btn_Click(object sender, EventArgs e)
+        {
+            if (NewPartyName_tb.Text.Length == 0)
+            {
+                MessageBox.Show("Escriu el nom de la partida!");
+            }
+            else
+            {
+                serverHandler.RequestCreateParty(NewPartyName_tb.Text);
+            }
+        }
+
+        //Selecciona el botó de sortir del menú de selecció de jugadors
+        private void NewPartyBack_btn_Click(object sender, EventArgs e)
+        {
+            //Fa apareixer els objectes del menú principal
+            QueryGrid.Visible = true;
+            ScreenSelected = 0;
+            Send_btn.Visible = true;
+            Characters_rb.Visible = true;
+            ConnectedList_rb.Visible = true;
+            createGame_rb.Visible = true;
+            Ranking_rb.Visible = true;
+            showGames_rb.Visible = true;
+            TimePlayed_rb.Visible = true;
+            queries_tb.Visible = true;
+            NewParty_btn.Visible = true;
+
+            //Desactiva els objectes del menú anterior
+            PlayersSelected_dg.Visible = false;
+            NewPartyName_tb.Visible = false;
+            NewPartyName_lbl.Visible = false;
+            NewPartyBack_btn.Visible = false;
+            CreateParty_btn.Visible = false;
         }
     }
 }
