@@ -90,6 +90,7 @@ namespace BaboGameClient
         // DELEGATE METHODS (USE FROM NOTIFICATION WORKER)
         //------------------------------------------------
 
+        //Actualitza la llista de connectats
         public void UpdateConnectedList(List<ConnectedUser> connectedList)
         {
             this.QueryGrid.Rows.Clear();
@@ -104,8 +105,34 @@ namespace BaboGameClient
                 row[1] = connectedList[i].Id.ToString();
                 this.QueryGrid.Rows.Add(row);
             }
+
+            //Borra els usuaris de la llista de usuaris seleccionats que s'hagin desconnectat
+            if ((ScreenSelected == 1) && (notificationWorker.DataGridUpdateRequested == 6))
+            {
+                int i = 0;
+                for (i = 0; i < PlayersSelected_dg.RowCount - 1; i++)
+                {
+                    bool found = false;
+                    int j = 0;
+                    for (j = 0; j < QueryGrid.RowCount-1; j++)
+                    {
+                        if ((QueryGrid[0, j].Value.ToString() == PlayersSelected_dg[0, i].Value.ToString()) &&
+                            (QueryGrid[1, j].Value.ToString() == PlayersSelected_dg[1, i].Value.ToString()))
+                            found = true;
+                    }
+                    if (!found)
+                    {
+                        try
+                        {
+                            PlayersSelected_dg.Rows.RemoveAt(i);
+                        }
+                        catch { }
+                    }
+                }
+            }
         }
 
+        //Actualitza la llista de personatges en una partida
         public void UpdateCharactersList(string[][] gameCharacters)
         {
             this.QueryGrid.Rows.Clear();
@@ -127,29 +154,9 @@ namespace BaboGameClient
             }
             QueryGrid.Refresh();
 
-            //Borra els usuaris de la llista de usuaris seleccionats que s'hagin desconnectat
-            if((ScreenSelected == 1)&&(notificationWorker.DataGridUpdateRequested == 6))
-            {
-                int i = 0;
-                for(i = 0; i < PlayersSelected_dg.RowCount; i++)
-                {
-                    bool found = false;
-                    int j = 0;
-                    for(j = 0; j < QueryGrid.RowCount; j++)
-                    {
-                        if ((QueryGrid[0, j].Value.ToString() == PlayersSelected_dg[0, i].Value.ToString()) &&
-                            (QueryGrid[1, j].Value.ToString() == PlayersSelected_dg[1, i].Value.ToString()))
-                            found = true;
-                    }
-                    if(!found)
-                    {
-                        PlayersSelected_dg.Rows.RemoveAt(i);
-                    }
-                }
-            }
-
         }
 
+        //Actualitza el ranking
         public void UpdateRanking(string[][] ranking)                   
         {
             QueryGrid.Rows.Clear();
@@ -172,6 +179,7 @@ namespace BaboGameClient
 
         }
 
+        //Envia el missatge del temps jugat
         public void TimePlayedPopup(string TimePlayed)
         {
             if (TimePlayed == null)
@@ -180,6 +188,7 @@ namespace BaboGameClient
                 MessageBox.Show("El jugador " + queries_tb.Text + " ha jugat el temps següent:" + TimePlayed);
         }
 
+        //Enviar el missatge de crear correctament
         public void SignUpPopup(string response)
         {
             if (response == "OK")
@@ -188,14 +197,44 @@ namespace BaboGameClient
                 MessageBox.Show(response);
         }
             
-
+        //Enviar el missatge de crear la partida
         public void CreatePartyPopup(string response)
         {
             if (response == "OK")
                 MessageBox.Show("La partida s'ha creat correctament");
+            else if (response == "ALONE")
+                MessageBox.Show("No has escollit a ningú a part de tú. Les partides són multijugadors");
             else
                 MessageBox.Show(response);
         }
+
+        //Envia la notificació sobre que t'han convidat
+        public void InvitationNotificationMessage (string gameName, string creatorName)
+        {
+            ToolStripItem[] InvitationSelection = new ToolStripItem[2];
+            InvitationSelection[0] = new ToolStripButton("Acceptar");
+            InvitationSelection[1] = new ToolStripButton("Rebutjar");
+            InvitationSelection[0].Click += delegate(object sender,EventArgs e) { AcceptInvitation(sender, e, gameName); };
+            InvitationSelection[1].Click += delegate (object sender, EventArgs e) { RejectInvitation(sender, e, gameName); };
+            ToolStripItem Invitation = new ToolStripMenuItem("'" + creatorName + "' t'ha invitat a la partida '" + gameName + "'" , NotificationIcon.Image, InvitationSelection);
+            Invitation.Image = NotificationIcon.Image;
+            Invitation.Tag = gameName;
+            Notificacions_btn.DropDownItems.Add(Invitation);
+            Notificacions_btn.BackColor = Color.LightGreen;
+        }
+
+        //Resposta de l'usuari per acceptar la invitació
+        private void AcceptInvitation(object sender, EventArgs e, string gameName)
+        {
+            serverHandler.RequestAcceptInvitation(gameName);
+        }
+
+        //Resposta de l'usuari per rebutjar la invitació
+        private void RejectInvitation(object sender, EventArgs e, string gameName)
+        {
+            serverHandler.RequestRejectInvitation(gameName);
+        }
+
         //------------------------------------------------
         // REGULAR METHODS, USE FROM UI
         //------------------------------------------------
@@ -248,6 +287,7 @@ namespace BaboGameClient
                 serverHandler.RequestConnected();
             }
 
+            /*
             else if (createGame_rb.Checked) //Modificat a la nova versió - Albert
             {
                 if(queries_tb.Text.Length == 0)
@@ -289,6 +329,7 @@ namespace BaboGameClient
                     QueryGrid.Rows.Add(row);
                 }
             }
+            */
             else
                 MessageBox.Show("Selecciona alguna opció");
         }
@@ -302,13 +343,7 @@ namespace BaboGameClient
 
         private void Notificacions_btn_Click(object sender, EventArgs e)
         {
-            ToolStripItem[] InvitationSelection = new ToolStripItem[2];
-            InvitationSelection[0] = new ToolStripButton("Acceptar");
-            InvitationSelection[1] = new ToolStripButton("Rebutjar");
-            ToolStripItem Invitation = new ToolStripMenuItem("Babo t'ha invitat a una partida", NotificationIcon.Image,InvitationSelection);
-            Invitation.Image = NotificationIcon.Image;
-            Notificacions_btn.DropDownItems.Add(Invitation);
-            
+            Notificacions_btn.BackColor = Color.Gray;
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -400,9 +435,18 @@ namespace BaboGameClient
             {
                 MessageBox.Show("Escriu el nom de la partida!");
             }
+            else if (PlayersSelected_dg.RowCount <= 1)
+            {
+                MessageBox.Show("No pots jugar sol. Invita algú de la llista clicant a una cel·la de la fila del jugador que vols seleccionar");
+            }
             else
             {
-                serverHandler.RequestCreateParty(NewPartyName_tb.Text);
+                string[] Players = new string[PlayersSelected_dg.RowCount];
+                for(int i=0; i < PlayersSelected_dg.RowCount - 1 ;i++)
+                {
+                    Players[i] = PlayersSelected_dg[0, i].Value.ToString();
+                }
+                serverHandler.RequestCreateParty(NewPartyName_tb.Text, Players);
             }
         }
 

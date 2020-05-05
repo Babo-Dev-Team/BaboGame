@@ -32,6 +32,9 @@ namespace BaboGameClient
         // el mètode delegat per crear un popup com a resposta a la creació de partida
         delegate void CreatePartyPopup(string response);
 
+        // el mètode delegat per la notificació de invitació
+        delegate void InvitationMessage(string gameName, string creatorName);
+
         //------------------------------------------------
         // ATTRIBUTES
         //------------------------------------------------
@@ -146,6 +149,17 @@ namespace BaboGameClient
                     string response = ReceiverArgs.responseStr;
                     CreatePartyPopup createPartyDelegate = new CreatePartyPopup(this.QueriesForm.CreatePartyPopup);
                     QueriesForm.Invoke(createPartyDelegate, new object[] { response });
+                }
+                //Notificació en invitacions
+                else if (responseType == 9)
+                {
+                    string response = ReceiverArgs.responseStr;
+                    string[] splitResponse = response.Split('/');
+                    if (splitResponse[0] == "NOTIFY")
+                    {
+                        InvitationMessage invitationMessageDelegate = new InvitationMessage(this.QueriesForm.InvitationNotificationMessage);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] {splitResponse[1],splitResponse[2]});
+                    }
                 }
             }
         }
