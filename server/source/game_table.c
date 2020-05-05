@@ -113,6 +113,7 @@ PreGameUser* CreatePreGameUser(ConnectedUser* connectedUser)
 	pthread_mutex_lock(connectedUser->user_mutex);
 	preGameUser->socket = connectedUser->socket;
 	preGameUser->id = connectedUser->id;
+	preGameUser->userState = 0; //Defineix al usuari com a pendent de confirmació
 	strcpy(preGameUser->username, connectedUser->username);
 	pthread_mutex_unlock(connectedUser->user_mutex);
 	return preGameUser;
@@ -188,6 +189,7 @@ PreGameState* CreateGame(ConnectedUser* user, char name[GAME_LEN])
 	
 	// creem un PreGameUser a partir del ConnectedUser creador de la partida
 	preGameState->creator = CreatePreGameUser(user);	
+	preGameState->creator->userState = 1; //Defineix el creador com a jugador que ha "acceptat" jugar
 	
 	// afegim el creador a la llista d'usuaris de la partida
 	// encara no ens cal mutex perquè encara no hem retornat preGameState
@@ -322,6 +324,57 @@ int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char 
 	else 
 		ret = 0;
 	pthread_mutex_unlock(gameState->game_mutex);
+	return ret;
+}
+
+// busca l'usuari en la llista i dona la posició
+int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH])
+{
+	pthread_mutex_lock(gameState->game_mutex);
+	int userCount = gameState->userCount;
+	int i = 0;
+	int found = 0;
+	while (i < userCount && !found)
+	{
+		if(!strcmp(gameState->users[i]->username, username))
+		{
+			found = 1;
+		}
+		else 
+				   i++;
+	}
+	pthread_mutex_unlock(gameState->game_mutex);
+	
+	if (found)
+		return i;
+	else 
+		return -1;
+}
+
+// busca la partida en la taula de partides a partir del nom
+PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_LEN])
+{
+	pthread_mutex_lock(gameTable->game_table_mutex);
+	PreGameState* ret;
+	int i = 0;
+	int found = 0;
+	while((i < gameTable->gameCount)&&(!found))
+	{
+		if(!strcmp(gameName,gameTable->createdGames[i]->gameName))
+		   found = 1;
+		else
+			i++;
+	}
+	
+	if(found)
+	{
+		ret = gameTable->createdGames[i];
+	}
+	else
+    {
+		ret = NULL;
+	}
+	pthread_mutex_unlock(gameTable->game_table_mutex);
 	return ret;
 }
 
