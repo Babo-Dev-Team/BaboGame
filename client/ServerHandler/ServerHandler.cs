@@ -174,6 +174,17 @@ namespace BaboGameClient
                     ReceiverArgs.gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
                     break;
 
+                // notificació de invitacions
+                case 9:
+                    string Invitation = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        Invitation = Invitation + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = Invitation;
+                    break;
+
                 default:
                     response = null;
                     break;
@@ -235,9 +246,26 @@ namespace BaboGameClient
             this.SendRequest("6/");
         }
 
-        public void RequestCreateParty(string name)
+        public void RequestCreateParty(string name,string[] players)
         {
-            this.SendRequest("7/" + name + "/");
+            string CreatePartyMsg = "7/ " + name + "/" + (players.Length-1) + "/";
+            for(int i=0; i< players.Length;i++)
+            {
+                CreatePartyMsg += players[i] + "/";
+            }
+
+            this.SendRequest(CreatePartyMsg);
+        }
+
+        //Request de les notificacions de invitació
+        public void RequestAcceptInvitation(string gameName)
+        {
+            this.SendRequest("9/ACCEPT/" + gameName + "/");
+        }
+
+        public void RequestRejectInvitation(string gameName)
+        {
+            this.SendRequest("9/REJECT/" + gameName + "/");
         }
 
         // TODO: Adaptar els metodes deprecated (al final del document) a metodes nous de tipus Request***
