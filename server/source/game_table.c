@@ -37,6 +37,7 @@ void __deletePreGame(PreGameState* game)
 	{
 		__deletePreGameUser(game->users[i]);
 	}
+	pthread_mutex_destroy(game->game_mutex);
 	free(game);
 }
 
@@ -191,6 +192,11 @@ PreGameState* CreateGame(ConnectedUser* user, char name[GAME_LEN])
 	preGameState->creator = CreatePreGameUser(user);	
 	preGameState->creator->userState = 1; //Defineix el creador com a jugador que ha "acceptat" jugar
 	
+	// creem el thread del joc
+	pthread_mutex_t* mutexGame = malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexGame, NULL);
+	preGameState->game_mutex = mutexGame;
+	
 	// afegim el creador a la llista d'usuaris de la partida
 	// encara no ens cal mutex perquè encara no hem retornat preGameState
 	// i a més els mutex no estan inicialitzats en la partida ni els jugadors
@@ -265,11 +271,13 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 int DeleteGameFromTable(GameTable* table, PreGameState* gameState)
 {
 	int ret;
-	pthread_mutex_lock(table->game_table_mutex);	
+	int gameIDpos;
+	pthread_mutex_lock(table->game_table_mutex);
+	gameIDpos = gameState->gameId;
 	if(gameState->gameId != -1) // comprovem que la partida es troba a la llista amb ID valida
 	{
 		__deletePreGame(table->createdGames[gameState->gameId]); // hard delete, esborrem l'objecte per evitar leaks de memoria.
-		table->createdGames[gameState->gameId] = NULL; // posem el punter a NULL indicant espai lliure a la taula de partides
+		table->createdGames[gameIDpos] = NULL; // posem el punter a NULL indicant espai lliure a la taula de partides
 		ret = 0;
 	}
 	else
@@ -330,25 +338,23 @@ int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char 
 // busca l'usuari en la llista i dona la posició
 int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH])
 {
-	pthread_mutex_lock(gameState->game_mutex);
+	//pthread_mutex_lock(gameState->game_mutex);
 	int userCount = gameState->userCount;
 	int i = 0;
 	int found = 0;
-	while (i < userCount && !found)
+	while ((i < userCount) && !found)
 	{
 		if(!strcmp(gameState->users[i]->username, username))
 		{
 			found = 1;
 		}
 		else 
-				   i++;
+		    i++;
 	}
-	pthread_mutex_unlock(gameState->game_mutex);
-	
-	if (found)
-		return i;
-	else 
-		return -1;
+	//pthread_mutex_unlock(gameState->game_mutex);
+	if (!found)
+		i = -1;
+	return i;
 }
 
 // busca la partida en la taula de partides a partir del nom
