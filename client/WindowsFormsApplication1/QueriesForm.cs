@@ -29,15 +29,28 @@ namespace BaboGameClient
         Button NewPartyBack_btn = new Button();
         Label NewPartyName_lbl = new Label();
 
+        //Elements del menú de la partida
+        Label PartyName_lbl = new Label();
+        PictureBox character_pb = new PictureBox();
+        Button LeftChar_btn = new Button();
+        Button RightChar_btn = new Button();
+        Button CancelGame_btn = new Button();
+        Button SelectChar_btn = new Button();
+        Button StartGame_btn = new Button();
+
+        string[] characterSelected = { "Babo", "Limax", "Quim", "Swalot" };
+        int charSelectedPos = 0;
+
         //Variable que diferenciar a quin menú estàs situat
         int ScreenSelected = 0;
+        string gameName;
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
             InitializeComponent();
             this.serverHandler = serverHandler;
             this.notificationWorker = notificationWorker;
-            NotificationIcon.ImageLocation = "Babo down hit.png";
+            NotificationIcon.ImageLocation = "../../../Pictures/Layouts/Babo down hit.png";
             NotificationIcon.SizeMode = PictureBoxSizeMode.CenterImage;
             NotificationIcon.Load();
             NotificationIcon.Refresh();
@@ -84,6 +97,61 @@ namespace BaboGameClient
             NewPartyBack_btn.Visible = false;
             this.Controls.Add(NewPartyBack_btn);
             NewPartyBack_btn.Click += new EventHandler(this.NewPartyBack_btn_Click);
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Creació del menú de selecció de personatges
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+            //Label del nom de partida seleccionat
+            PartyName_lbl.Location = new Point(25, 35);
+            PartyName_lbl.Text = "Partida: Game1";
+            PartyName_lbl.Visible = false;
+            this.Controls.Add(PartyName_lbl);
+
+            //Buttons per canviar el personatge
+            LeftChar_btn.Location = new Point(25,100);
+            LeftChar_btn.Text = "Left";
+            LeftChar_btn.Visible = false;
+            LeftChar_btn.Size = new Size(60, 60);
+            this.Controls.Add(LeftChar_btn);
+            LeftChar_btn.Click += new EventHandler(this.LeftChar_btn_Click);
+
+            RightChar_btn.Location = new Point(240, 100);
+            RightChar_btn.Text = "Right";
+            RightChar_btn.Visible = false;
+            RightChar_btn.Size = new Size(60, 60);
+            this.Controls.Add(RightChar_btn);
+            RightChar_btn.Click += new EventHandler(this.RightChar_btn_Click);
+
+            //PictureBox de la imatge del personatge
+            character_pb.Location = new Point(90, 60);
+            character_pb.Size = new Size(140, 140);
+            character_pb.ImageLocation = "../../../Pictures/Characters/Babo stop.gif";
+            character_pb.Visible = false;
+            character_pb.SizeMode = PictureBoxSizeMode.Zoom;
+            character_pb.Refresh();
+            this.Controls.Add(character_pb);
+
+            //Button per cancellar la partida
+            CancelGame_btn.Location = new Point(225, 300);
+            CancelGame_btn.Text = "Cancel·lar";
+            CancelGame_btn.Size = new Size(80, 25);
+            CancelGame_btn.Visible = false;
+            this.Controls.Add(CancelGame_btn);
+
+            //Button per acceptar la partida
+            StartGame_btn.Location = new Point(225, 330);
+            StartGame_btn.Text = "Acceptar";
+            StartGame_btn.Size = new Size(80, 30);
+            StartGame_btn.Visible = false;
+            this.Controls.Add(StartGame_btn);
+
+            //Button per seleccionar el personatge
+            SelectChar_btn.Location = new Point(25, 300);
+            SelectChar_btn.Text = "Seleccionar Personatge";
+            SelectChar_btn.Size = new Size(80, 60);
+            SelectChar_btn.Visible = false;
+            this.Controls.Add(SelectChar_btn);
         }
 
         //------------------------------------------------
@@ -201,7 +269,38 @@ namespace BaboGameClient
         public void CreatePartyPopup(string response)
         {
             if (response == "OK")
+            {
                 MessageBox.Show("La partida s'ha creat correctament");
+
+                //Fa apareixer els objectes del menú principal
+                QueryGrid.Visible = false;
+                ScreenSelected = 2;
+                Send_btn.Visible = false;
+                Characters_rb.Visible = false;
+                ConnectedList_rb.Visible = false;
+                createGame_rb.Visible = false;
+                Ranking_rb.Visible = false;
+                showGames_rb.Visible = false;
+                TimePlayed_rb.Visible = false;
+                queries_tb.Visible = false;
+                NewParty_btn.Visible = false;
+
+                //Desactiva els objectes del menú anterior
+                PlayersSelected_dg.Visible = false;
+                NewPartyName_tb.Visible = false;
+                NewPartyName_lbl.Visible = false;
+                NewPartyBack_btn.Visible = false;
+                CreateParty_btn.Visible = false;
+
+                //Desactiva els objectes de la selecció del personatge
+                character_pb.Visible = true;
+                PartyName_lbl.Visible = true;
+                RightChar_btn.Visible = true;
+                LeftChar_btn.Visible = true;
+                SelectChar_btn.Visible = true;
+                StartGame_btn.Visible = true;
+                CancelGame_btn.Visible = true;
+            }
             else if (response == "ALONE")
                 MessageBox.Show("No has escollit a ningú a part de tú. Les partides són multijugadors");
             else
@@ -227,6 +326,7 @@ namespace BaboGameClient
         private void AcceptInvitation(object sender, EventArgs e, string gameName)
         {
             serverHandler.RequestAcceptInvitation(gameName);
+            this.gameName = gameName;
         }
 
         //Resposta de l'usuari per rebutjar la invitació
@@ -343,7 +443,7 @@ namespace BaboGameClient
 
         private void Notificacions_btn_Click(object sender, EventArgs e)
         {
-            Notificacions_btn.BackColor = Color.Gray;
+            Notificacions_btn.BackColor = Color.LightGray;
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -382,6 +482,15 @@ namespace BaboGameClient
             NewPartyName_lbl.Visible = true;
             NewPartyBack_btn.Visible = true;
             CreateParty_btn.Visible = true;
+
+            //Desactiva els objectes de la selecció del personatge
+            character_pb.Visible = false;
+            PartyName_lbl.Visible = false;
+            RightChar_btn.Visible = false;
+            LeftChar_btn.Visible = false;
+            SelectChar_btn.Visible = false;
+            StartGame_btn.Visible = false;
+            CancelGame_btn.Visible = false;
         }
 
         //Selecció de un element de la llista dels jugadors elegits
@@ -447,6 +556,7 @@ namespace BaboGameClient
                     Players[i] = PlayersSelected_dg[0, i].Value.ToString();
                 }
                 serverHandler.RequestCreateParty(NewPartyName_tb.Text, Players);
+                gameName = NewPartyName_tb.Text;
             }
         }
 
@@ -472,6 +582,69 @@ namespace BaboGameClient
             NewPartyName_lbl.Visible = false;
             NewPartyBack_btn.Visible = false;
             CreateParty_btn.Visible = false;
+
+            //Desactiva els objectes de la selecció del personatge
+            character_pb.Visible = false;
+            PartyName_lbl.Visible = false;
+            RightChar_btn.Visible = false;
+            LeftChar_btn.Visible = false;
+            SelectChar_btn.Visible = false;
+            StartGame_btn.Visible = false;
+            CancelGame_btn.Visible = false;
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //Menú de la selecció dels personatges
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        //Escollir el personatge
+        public void LeftChar_btn_Click(object sender, EventArgs e)
+        {
+            if (charSelectedPos > 0)
+                charSelectedPos--;
+            else
+                charSelectedPos = 3;
+
+            character_pb.ImageLocation = "../../../Pictures/Characters/"+ characterSelected[charSelectedPos] + " stop.gif";
+            character_pb.Load();
+            character_pb.Refresh();
+        }
+
+        public void RightChar_btn_Click(object sender, EventArgs e)
+        {
+            if (charSelectedPos < 3)
+                charSelectedPos++;
+            else
+                charSelectedPos = 0;
+
+            character_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[charSelectedPos] + " stop.gif";
+            character_pb.Load();
+            character_pb.Refresh();
+        }
+
+        //Començar/Cancel·lar la partida
+        public void StartGame_btn_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+                MessageBox.Show("No s'ha seleccionat cap partida per començar");
+            else
+                serverHandler.RequestStartGame(gameName);
+        }
+        public void CancelGame_btn_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+                MessageBox.Show("No s'ha seleccionat cap partida per començar");
+            else
+                serverHandler.RequestCancelGame(gameName);
+        }
+
+        //Enviar el personatge escollit
+        public void SelectChar_btn_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+                MessageBox.Show("No s'ha seleccionat cap partida per començar");
+            else
+                serverHandler.RequestSelectCharacter(gameName, characterSelected[charSelectedPos]);
         }
     }
 }

@@ -268,6 +268,21 @@ namespace BaboGameClient
             this.SendRequest("9/REJECT/" + gameName + "/");
         }
 
+        public void RequestCancelGame(string gameName)
+        {
+            this.SendRequest("12/CANCEL/" + gameName + "/");
+        }
+
+        public void RequestStartGame(string gameName)
+        {
+            this.SendRequest("12/START/" + gameName + "/");
+        }
+
+        public void RequestSelectCharacter(string gameName, string character)
+        {
+            this.SendRequest("12/START/" + gameName + "/" + character + "/");
+        }
+
         // TODO: Adaptar els metodes deprecated (al final del document) a metodes nous de tipus Request***
 
         // Aquests mètodes no s'han d'actualitzar ja que es segueixen fent servir igual 
