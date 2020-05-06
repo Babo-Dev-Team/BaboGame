@@ -57,6 +57,10 @@ GameTable* CreateGameTable(pthread_mutex_t* mutex);
 void DeleteGameTable(GameTable* table);
 int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char charname[CHAR_LEN]);
 json_object* GameTableToJson(GameTable* table);
+
+PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_LEN]);
+int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH]);
+	
 //------------------------------------------------------------------------------
 
 #endif

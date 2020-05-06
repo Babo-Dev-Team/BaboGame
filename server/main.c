@@ -15,7 +15,7 @@
 #include "connected_list.h"
 #include "game_table.h"
 
-#define SHIVA_PORT 4008//50084
+#define SHIVA_PORT 4009//50084
 
 //#define NMBR_THREADS 100
 
@@ -500,7 +500,7 @@ void* attendClient (void* args)
 			if(strcmp(option,"ACCEPT") == 0)
 			{
 				preGame = GetPreGameStateByName(gameTable, p);
-				printf(preGame->gameId);
+				printf("Game Id: %d\n", preGame->gameId);
 				preGameUserPos = GetPreGameUserPosByName(preGame, username);
 				/*
 				pthread_mutex_lock(preGame->game_mutex);
