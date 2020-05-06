@@ -254,7 +254,7 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 				// Afegim la partida a la taula de partides
 				table->createdGames[emptyPos] = gameState;
 				table->gameCount++;
-				ret = 0;
+				ret = gameState->gameId;
 			}
 			else
 			{
