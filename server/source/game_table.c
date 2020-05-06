@@ -114,6 +114,7 @@ PreGameUser* CreatePreGameUser(ConnectedUser* connectedUser)
 	pthread_mutex_lock(connectedUser->user_mutex);
 	preGameUser->socket = connectedUser->socket;
 	preGameUser->id = connectedUser->id;
+	strcpy(preGameUser->charname,"none");
 	preGameUser->userState = 0; //Defineix al usuari com a pendent de confirmació
 	strcpy(preGameUser->username, connectedUser->username);
 	pthread_mutex_unlock(connectedUser->user_mutex);
@@ -335,6 +336,43 @@ int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char 
 	return ret;
 }
 
+// busca si tots han agafat personatge
+int AllHasCharacter(PreGameState* preGameState)
+{
+	int found=1;
+	int i=0;
+	pthread_mutex_lock(preGameState->game_mutex);
+	while((i<preGameState->userCount)&&(found))
+	{
+		if(!strcmp(preGameState->users[i]->charname,"none"))
+			found=0;
+		else
+			i++;
+	}
+	pthread_mutex_unlock(preGameState->game_mutex);
+	return found;
+}
+
+// busca si queden usuaris
+int IamAloneinGame(PreGameState* preGameState)
+{
+	int i=0;
+	int count = 0;
+	pthread_mutex_lock(preGameState->game_mutex);
+	for(i=0;i<preGameState->userCount;i++)
+	{
+		if((preGameState->users[i]->userState == 0)||(preGameState->users[i]->userState == 1))
+			count=0;
+	}
+	pthread_mutex_unlock(preGameState->game_mutex);
+	int ret;
+	if(count > 1)
+		ret=0;
+	else
+		ret=1;
+	return ret;
+}
+
 // busca l'usuari en la llista i dona la posició
 int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH])
 {
@@ -410,6 +448,34 @@ json_object* GameTableToJson(GameTable* table)
 		}
 	}	
 	pthread_mutex_unlock(table->game_table_mutex);	
+	return gameJson;
+}
+
+//Treure el json de la partida
+json_object* GameStateToJson(PreGameState* preGameState)
+{
+	json_object* gameJson = json_object_new_array();
+	pthread_mutex_lock(preGameState->game_mutex);	
+	for(int i = 0; i < preGameState->userCount; i++)
+	{
+		if (preGameState->users[i] != NULL)
+		{
+			json_object* user = json_object_new_object();
+			
+			json_object* id = json_object_new_int(preGameState->users[i]->id);
+			json_object* username = json_object_new_string(preGameState->users[i]->username);		
+			json_object* charname = json_object_new_string(preGameState->users[i]->charname);
+			json_object* userState = json_object_new_int(preGameState->users[i]->userState);		
+			
+			json_object_object_add(user, "Id", id);
+			json_object_object_add(user, "UserName", username);
+			json_object_object_add(user, "CharName", charname);
+			json_object_object_add(user, "UserState", userState);
+			
+			json_object_array_add(gameJson, user);	
+		}
+	}	
+	pthread_mutex_unlock(preGameState->game_mutex);	
 	return gameJson;
 }
 //------------------------------------------------------------------------------

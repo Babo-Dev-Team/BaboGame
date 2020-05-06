@@ -15,14 +15,14 @@ tab_width=4
 tab_use_spaces=0
 explorer_path=.
 inherits_from=
-current_source=source/game_table.c
+current_source=main.c
 path_char=/
 [source]
 path=main.c
-cursor=502:12
-breakpoint=503
+cursor=17:23
+breakpoint=506
 breakpoint_annotation=
-breakpoint=501
+breakpoint=502
 breakpoint_annotation=
 open=true
 [source]
@@ -35,7 +35,7 @@ cursor=236:23
 open=true
 [source]
 path=source/game_table.c
-cursor=341:1
+cursor=346:52
 open=true
 [header]
 path=source/BBDD_Handler.h
@@ -47,7 +47,7 @@ cursor=0:0
 open=true
 [header]
 path=source/game_table.h
-cursor=0:0
+cursor=64:47
 open=true
 [header]
 path=source/globals.h
