@@ -60,6 +60,9 @@ json_object* GameTableToJson(GameTable* table);
 
 PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_LEN]);
 int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH]);
+json_object* GameStateToJson(PreGameState* preGameState);
+int AllHasCharacter(PreGameState* preGameState);
+int IamAloneinGame(PreGameState* preGameState);
 	
 //------------------------------------------------------------------------------
 
