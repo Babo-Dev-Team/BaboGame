@@ -35,6 +35,12 @@ namespace BaboGameClient
         // el mètode delegat per la notificació de invitació
         delegate void InvitationMessage(string gameName, string creatorName);
 
+        // el mètode delegat per la notificació de invitació confirmada
+        delegate void InvitationMessageConfirmation();
+
+        // el mètode delegat per avisar l'estat de la prepartida
+        delegate void PreGameStateUserDelegate(List<PreGameStateUser> connectedList);
+
         //------------------------------------------------
         // ATTRIBUTES
         //------------------------------------------------
@@ -159,6 +165,76 @@ namespace BaboGameClient
                     {
                         InvitationMessage invitationMessageDelegate = new InvitationMessage(this.QueriesForm.InvitationNotificationMessage);
                         QueriesForm.Invoke(invitationMessageDelegate, new object[] {splitResponse[1],splitResponse[2]});
+                    }
+
+                    else if (splitResponse[0] == "ACCEPTED")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.AcceptedGamePopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+
+                    else if (splitResponse[0] == "REJECTED")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.RejectGamePopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+
+                    else if (splitResponse[0] == "FAIL")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.FailResponseGamePopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+
+                    else if (splitResponse[0] == "LOST")
+                    {
+                        InvitationMessage invitationMessageDelegate = new InvitationMessage(this.QueriesForm.LoseInvitationPopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { splitResponse[1], splitResponse[2] });
+                    }
+                }
+
+                //Notificació de l'actualització del GameStateUser
+                else if (responseType == 10)
+                {
+                    List<PreGameStateUser> gameState = ReceiverArgs.gameState;
+                    PreGameStateUserDelegate userStateDelegate = new PreGameStateUserDelegate(this.QueriesForm.GameStateUpdate);
+                    QueriesForm.Invoke(userStateDelegate, new object[] {gameState});
+                    gameState = null;
+                }
+
+                //Notificacions sobre la selecció de personatges, cancel.lar partides i l'inici d'aquestes
+                else if (responseType == 12)
+                {
+                    string response = ReceiverArgs.responseStr;
+                    string[] splitResponse = response.Split('/');
+                    if (splitResponse[0] == "CHAROK")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.AcceptCharacterPopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] {});
+                    }
+                    else if (splitResponse[0] == "CHARFAIL")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.FailCharacterPopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+                    else if (splitResponse[0] == "START")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.StartGamePopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+                    else if (splitResponse[0] == "NOTALLSELECTED")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.NotAllSelectedPopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+                    else if (splitResponse[0] == "ALONE")
+                    {
+                        InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.AlonePlayerPopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
+                    }
+                    else if (splitResponse[0] == "CANCEL")
+                    {
+                        InvitationMessage invitationMessageDelegate = new InvitationMessage(this.QueriesForm.CancelGamePopup);
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { splitResponse[1], splitResponse[2] });
                     }
                 }
             }

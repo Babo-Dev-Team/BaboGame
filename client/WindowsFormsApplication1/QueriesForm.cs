@@ -37,6 +37,8 @@ namespace BaboGameClient
         Button CancelGame_btn = new Button();
         Button SelectChar_btn = new Button();
         Button StartGame_btn = new Button();
+        Button QuitGame_btn = new Button();
+        RichTextBox ChatGame_rtb = new RichTextBox();
 
         string[] characterSelected = { "Babo", "Limax", "Quim", "Swalot" };
         int charSelectedPos = 0;
@@ -44,6 +46,7 @@ namespace BaboGameClient
         //Variable que diferenciar a quin menú estàs situat
         int ScreenSelected = 0;
         string gameName;
+        ToolStripItem notificationSelection;
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
@@ -138,6 +141,7 @@ namespace BaboGameClient
             CancelGame_btn.Size = new Size(80, 25);
             CancelGame_btn.Visible = false;
             this.Controls.Add(CancelGame_btn);
+            CancelGame_btn.Click += new EventHandler(this.CancelGame_btn_Click);
 
             //Button per acceptar la partida
             StartGame_btn.Location = new Point(225, 330);
@@ -145,6 +149,7 @@ namespace BaboGameClient
             StartGame_btn.Size = new Size(80, 30);
             StartGame_btn.Visible = false;
             this.Controls.Add(StartGame_btn);
+            StartGame_btn.Click += new EventHandler(this.StartGame_btn_Click);
 
             //Button per seleccionar el personatge
             SelectChar_btn.Location = new Point(25, 300);
@@ -152,6 +157,22 @@ namespace BaboGameClient
             SelectChar_btn.Size = new Size(80, 60);
             SelectChar_btn.Visible = false;
             this.Controls.Add(SelectChar_btn);
+            SelectChar_btn.Click += new EventHandler(this.SelectChar_btn_Click);
+
+            //Button per sortir de la partida
+            QuitGame_btn.Location = new Point(225, 300);
+            QuitGame_btn.Text = "Sortir";
+            QuitGame_btn.Size = new Size(80, 25);
+            QuitGame_btn.Visible = false;
+            this.Controls.Add(QuitGame_btn);
+            QuitGame_btn.Click += new EventHandler(this.QuitGame_btn_Click);
+
+            //RichTextBox
+            ChatGame_rtb.Visible = false;
+            ChatGame_rtb.Size = new Size(250,350);
+            ChatGame_rtb.Location = new Point(300,25);
+            this.Controls.Add(ChatGame_rtb);
+            ChatGame_rtb.Text = "";
         }
 
         //------------------------------------------------
@@ -300,6 +321,9 @@ namespace BaboGameClient
                 SelectChar_btn.Visible = true;
                 StartGame_btn.Visible = true;
                 CancelGame_btn.Visible = true;
+                QuitGame_btn.Visible = false;
+                ChatGame_rtb.Visible = true;
+                PartyName_lbl.Text = "Partida: " + gameName;
             }
             else if (response == "ALONE")
                 MessageBox.Show("No has escollit a ningú a part de tú. Les partides són multijugadors");
@@ -313,28 +337,231 @@ namespace BaboGameClient
             ToolStripItem[] InvitationSelection = new ToolStripItem[2];
             InvitationSelection[0] = new ToolStripButton("Acceptar");
             InvitationSelection[1] = new ToolStripButton("Rebutjar");
-            InvitationSelection[0].Click += delegate(object sender,EventArgs e) { AcceptInvitation(sender, e, gameName); };
-            InvitationSelection[1].Click += delegate (object sender, EventArgs e) { RejectInvitation(sender, e, gameName); };
-            ToolStripItem Invitation = new ToolStripMenuItem("'" + creatorName + "' t'ha invitat a la partida '" + gameName + "'" , NotificationIcon.Image, InvitationSelection);
+            ToolStripItem Invitation = new ToolStripMenuItem("'" + creatorName + "' t'ha invitat a la partida '" + gameName + "'", NotificationIcon.Image, InvitationSelection);
+            InvitationSelection[0].Click += delegate(object sender,EventArgs e) { AcceptInvitation(sender, e, gameName, Invitation); };
+            InvitationSelection[1].Click += delegate (object sender, EventArgs e) { RejectInvitation(sender, e, gameName, Invitation); };
             Invitation.Image = NotificationIcon.Image;
             Invitation.Tag = gameName;
             Notificacions_btn.DropDownItems.Add(Invitation);
             Notificacions_btn.BackColor = Color.LightGreen;
         }
 
+        //S'ha confirmat l'acceptació de la partida
+        public void AcceptedGamePopup()
+        {
+            MessageBox.Show("Has entrat a la partida");
+
+            //Fa apareixer els objectes del menú principal
+            QueryGrid.Visible = false;
+            ScreenSelected = 2;
+            Send_btn.Visible = false;
+            Characters_rb.Visible = false;
+            ConnectedList_rb.Visible = false;
+            createGame_rb.Visible = false;
+            Ranking_rb.Visible = false;
+            showGames_rb.Visible = false;
+            TimePlayed_rb.Visible = false;
+            queries_tb.Visible = false;
+            NewParty_btn.Visible = false;
+
+            //Desactiva els objectes del menú anterior
+            PlayersSelected_dg.Visible = false;
+            NewPartyName_tb.Visible = false;
+            NewPartyName_lbl.Visible = false;
+            NewPartyBack_btn.Visible = false;
+            CreateParty_btn.Visible = false;
+
+            //Desactiva els objectes de la selecció del personatge
+            character_pb.Visible = true;
+            PartyName_lbl.Visible = true;
+            RightChar_btn.Visible = true;
+            LeftChar_btn.Visible = true;
+            SelectChar_btn.Visible = true;
+            StartGame_btn.Visible = false;
+            CancelGame_btn.Visible = false;
+            QuitGame_btn.Visible = true;
+            ChatGame_rtb.Visible = true;
+            PartyName_lbl.Text = "Partida: " + gameName;
+            Notificacions_btn.DropDownItems.Remove(notificationSelection);
+        }
+
+        //S'ha confirmat el rebuig a la partida
+        public void RejectGamePopup()
+        {
+            MessageBox.Show("Has rebutjat correctament la partida");
+            Notificacions_btn.DropDownItems.Remove(notificationSelection);
+        }
+
+        //Hi ha hagut algún error rebutjant la partida
+        public void FailResponseGamePopup()
+        {
+            MessageBox.Show("No s'ha pogut acceptar/rebutjar la invitació");
+        }
+
+        //Han començat sense tú
+        public void LoseInvitationPopup(string gameName, string creatorName)
+        {
+            MessageBox.Show("Has perdut la oportunitat de jugar a una partida");
+            ToolStripItem[] InvitationSelection = new ToolStripItem[2];
+            InvitationSelection[0] = new ToolStripButton("Acceptar");
+            InvitationSelection[1] = new ToolStripButton("Rebutjar");
+            ToolStripItem Invitation = new ToolStripMenuItem("'" + creatorName + "' t'ha invitat a la partida '" + gameName + "'", NotificationIcon.Image, InvitationSelection);
+            InvitationSelection[0].Click += delegate (object sender, EventArgs e) { AcceptInvitation(sender, e, gameName, Invitation); };
+            InvitationSelection[1].Click += delegate (object sender, EventArgs e) { RejectInvitation(sender, e, gameName, Invitation); };
+            Invitation.Image = NotificationIcon.Image;
+            Invitation.Tag = gameName;
+            Notificacions_btn.DropDownItems.Remove(Invitation);
+        }
+
         //Resposta de l'usuari per acceptar la invitació
-        private void AcceptInvitation(object sender, EventArgs e, string gameName)
+        private void AcceptInvitation(object sender, EventArgs e, string gameName, ToolStripItem invitation)
         {
             serverHandler.RequestAcceptInvitation(gameName);
             this.gameName = gameName;
+            notificationSelection = invitation;
         }
 
         //Resposta de l'usuari per rebutjar la invitació
-        private void RejectInvitation(object sender, EventArgs e, string gameName)
+        private void RejectInvitation(object sender, EventArgs e, string gameName, ToolStripItem invitation)
         {
             serverHandler.RequestRejectInvitation(gameName);
+            notificationSelection = invitation;
         }
 
+        //Actualització de l'estat de la partida
+        public void GameStateUpdate(List<PreGameStateUser> gameState)
+        {
+            ChatGame_rtb.Text += "ACTUALITZACIÓ \n\n";
+            for(int i=0; i < gameState.Count; i++)
+            {
+                ChatGame_rtb.Text += "ID = " + gameState[i].Id + "\n";
+                ChatGame_rtb.Text += "Usuari = " + gameState[i].UserName + "\n";
+                if (gameState[i].CharName == null)
+                    ChatGame_rtb.Text += "Personatge = no seleccionat\n";
+                else
+                    ChatGame_rtb.Text += "Character = " + gameState[i].CharName + "\n";
+                if (gameState[i].UserState == 0)
+                    ChatGame_rtb.Text += "Estat = pendent d'acceptar";
+                else if (gameState[i].UserState == 1)
+                    ChatGame_rtb.Text += "Estat = Acceptat";
+                else if (gameState[i].UserState == -1)
+                    ChatGame_rtb.Text += "Estat = Rebutjat";
+
+                ChatGame_rtb.Text += "\n";
+            }
+        }
+
+        //Acceptar personatge
+        public void AcceptCharacterPopup()
+        {
+            MessageBox.Show("El teu personatge s'ha seleccionat correctament");
+        }
+
+        //Error en seleccionar el personatge
+        public void FailCharacterPopup()
+        {
+            MessageBox.Show("El teu personatge no s'ha pogut seleccionar");
+        }
+
+        //Error en seleccionar el personatge
+        public void StartGamePopup()
+        {
+            MessageBox.Show("Comença la partida");
+        }
+
+        //Error en no haver escollit tothom personatge
+        public void NotAllSelectedPopup()
+        {
+            MessageBox.Show("Tots els jugadors no han escollit personatge");
+        }
+
+        //Popup per cancel·lar el joc
+        public void CancelGamePopup(string gameName, string creatorName)
+        {
+            if(ScreenSelected == 2)
+            {
+                MessageBox.Show("S'ha cancel·lat la partida");
+                //Fa apareixer els objectes del menú principal
+                QueryGrid.Visible = true;
+                ScreenSelected = 0;
+                Send_btn.Visible = true;
+                Characters_rb.Visible = true;
+                ConnectedList_rb.Visible = true;
+                createGame_rb.Visible = true;
+                Ranking_rb.Visible = true;
+                showGames_rb.Visible = true;
+                TimePlayed_rb.Visible = true;
+                queries_tb.Visible = true;
+                NewParty_btn.Visible = true;
+
+                //Desactiva els objectes del menú anterior
+                PlayersSelected_dg.Visible = false;
+                NewPartyName_tb.Visible = false;
+                NewPartyName_lbl.Visible = false;
+                NewPartyBack_btn.Visible = false;
+                CreateParty_btn.Visible = false;
+
+                //Desactiva els objectes de la selecció del personatge
+                character_pb.Visible = false;
+                PartyName_lbl.Visible = false;
+                RightChar_btn.Visible = false;
+                LeftChar_btn.Visible = false;
+                SelectChar_btn.Visible = false;
+                StartGame_btn.Visible = false;
+                CancelGame_btn.Visible = false;
+                QuitGame_btn.Visible = false;
+                ChatGame_rtb.Visible = false;
+            }
+            else
+            {
+                MessageBox.Show("La partida " + gameName + " s'ha cancel·lat");
+                ToolStripItem[] InvitationSelection = new ToolStripItem[2];
+                InvitationSelection[0] = new ToolStripButton("Acceptar");
+                InvitationSelection[1] = new ToolStripButton("Rebutjar");
+                ToolStripItem Invitation = new ToolStripMenuItem("'" + creatorName + "' t'ha invitat a la partida '" + gameName + "'", NotificationIcon.Image, InvitationSelection);
+                InvitationSelection[0].Click += delegate (object sender, EventArgs e) { AcceptInvitation(sender, e, gameName, Invitation); };
+                InvitationSelection[1].Click += delegate (object sender, EventArgs e) { RejectInvitation(sender, e, gameName, Invitation); };
+                Invitation.Image = NotificationIcon.Image;
+                Invitation.Tag = gameName;
+                Notificacions_btn.DropDownItems.Remove(Invitation);
+            }
+        }
+
+        //Et fa fora per quedar-te sol en la partida
+        public void AlonePlayerPopup()
+        {
+            MessageBox.Show("T'has quedat sol en la partida, la partida s'ha cancel·lat");
+            //Fa apareixer els objectes del menú principal
+            QueryGrid.Visible = true;
+            ScreenSelected = 0;
+            Send_btn.Visible = true;
+            Characters_rb.Visible = true;
+            ConnectedList_rb.Visible = true;
+            createGame_rb.Visible = true;
+            Ranking_rb.Visible = true;
+            showGames_rb.Visible = true;
+            TimePlayed_rb.Visible = true;
+            queries_tb.Visible = true;
+            NewParty_btn.Visible = true;
+
+            //Desactiva els objectes del menú anterior
+            PlayersSelected_dg.Visible = false;
+            NewPartyName_tb.Visible = false;
+            NewPartyName_lbl.Visible = false;
+            NewPartyBack_btn.Visible = false;
+            CreateParty_btn.Visible = false;
+
+            //Desactiva els objectes de la selecció del personatge
+            character_pb.Visible = false;
+            PartyName_lbl.Visible = false;
+            RightChar_btn.Visible = false;
+            LeftChar_btn.Visible = false;
+            SelectChar_btn.Visible = false;
+            StartGame_btn.Visible = false;
+            CancelGame_btn.Visible = false;
+            QuitGame_btn.Visible = false;
+            ChatGame_rtb.Visible = false;
+        }
         //------------------------------------------------
         // REGULAR METHODS, USE FROM UI
         //------------------------------------------------
@@ -491,6 +718,8 @@ namespace BaboGameClient
             SelectChar_btn.Visible = false;
             StartGame_btn.Visible = false;
             CancelGame_btn.Visible = false;
+            QuitGame_btn.Visible = false;
+            ChatGame_rtb.Visible = false;
         }
 
         //Selecció de un element de la llista dels jugadors elegits
@@ -591,6 +820,8 @@ namespace BaboGameClient
             SelectChar_btn.Visible = false;
             StartGame_btn.Visible = false;
             CancelGame_btn.Visible = false;
+            QuitGame_btn.Visible = false;
+            ChatGame_rtb.Visible = false;
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -636,6 +867,47 @@ namespace BaboGameClient
                 MessageBox.Show("No s'ha seleccionat cap partida per començar");
             else
                 serverHandler.RequestCancelGame(gameName);
+        }
+
+        //QuitGame
+        public void QuitGame_btn_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+                MessageBox.Show("No s'ha seleccionat cap partida per començar");
+            else
+            {
+                serverHandler.RequestRejectInvitation(gameName);
+                //Fa apareixer els objectes del menú principal
+                QueryGrid.Visible = true;
+                ScreenSelected = 0;
+                Send_btn.Visible = true;
+                Characters_rb.Visible = true;
+                ConnectedList_rb.Visible = true;
+                createGame_rb.Visible = true;
+                Ranking_rb.Visible = true;
+                showGames_rb.Visible = true;
+                TimePlayed_rb.Visible = true;
+                queries_tb.Visible = true;
+                NewParty_btn.Visible = true;
+
+                //Desactiva els objectes del menú anterior
+                PlayersSelected_dg.Visible = false;
+                NewPartyName_tb.Visible = false;
+                NewPartyName_lbl.Visible = false;
+                NewPartyBack_btn.Visible = false;
+                CreateParty_btn.Visible = false;
+
+                //Desactiva els objectes de la selecció del personatge
+                character_pb.Visible = false;
+                PartyName_lbl.Visible = false;
+                RightChar_btn.Visible = false;
+                LeftChar_btn.Visible = false;
+                SelectChar_btn.Visible = false;
+                StartGame_btn.Visible = false;
+                CancelGame_btn.Visible = false;
+                QuitGame_btn.Visible = false;
+                ChatGame_rtb.Visible = false;
+            }
         }
 
         //Enviar el personatge escollit
