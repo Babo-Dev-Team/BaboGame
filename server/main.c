@@ -31,6 +31,14 @@ typedef struct SenderArgs{
 	pthread_cond_t* sender_signal;
 }SenderArgs;
 
+typedef struct GameSenderArgs{
+	char gameResponse[SERVER_RSP_LEN];
+	int userState;
+	PreGameState* game;
+	pthread_mutex_t* gameSender_mutex;
+	pthread_cond_t* gameSender_signal;
+}GameSenderArgs;
+
 // Arugments que es passen a cada thread
 typedef struct ThreadArgs{
 	ConnectedList* connectedList;			// punter a la llista de connectats
@@ -38,12 +46,13 @@ typedef struct ThreadArgs{
 	GameTable* gameTable;					// punter a la taula de partides	
 	pthread_mutex_t* threadArgs_mutex;	
 	SenderArgs* senderArgs;
+	GameSenderArgs** gameSenderArgs;
 }ThreadArgs;
 
 //------------------------------------------------------------------------------
 
 // funció per enviar a tothom, activa el thread globalSender
-int sendToAll (SenderArgs* args, char response[SERVER_RSP_LEN])
+void sendToAll (SenderArgs* args, char response[SERVER_RSP_LEN])
 {
 	// adquirim el lock del sender (alliberat pel pthread_mutex_wait en el seu thread)
 	pthread_mutex_lock(args->sender_mutex);
@@ -58,6 +67,76 @@ int sendToAll (SenderArgs* args, char response[SERVER_RSP_LEN])
 //------------------------------------------------------------------------------
 // THREAD FUNCTIONS
 //------------------------------------------------------------------------------
+
+// funció per enviar a tothom, activa el thread globalSender
+void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userState)
+{
+	// adquirim el lock del sender (alliberat pel pthread_mutex_wait en el seu thread)
+	pthread_mutex_lock(args->gameSender_mutex);
+	strcpy(args->gameResponse, response);
+	args->userState = userState;
+	
+	// ara indiquem al thread que s'executi
+	pthread_cond_signal(args->gameSender_signal);
+	
+	pthread_mutex_unlock(args->gameSender_mutex);
+}
+
+
+void* gameSender (void* args)
+{
+	// bloquegem els threadArgs perquè volem que ningú més accedeixi als ThreadArgs del sender
+	//pthread_mutex_lock(((ThreadArgs*)args)->threadArgs_mutex);
+	GameSenderArgs* senderArgs = (GameSenderArgs*) args;
+	//SenderArgs* gameSenderArgs = threadArgs->senderArgs;
+	
+	// inicialitzem un array de sockets actius
+	int activeSocketList[MAX_GAME_USRCOUNT];
+	int userStates[MAX_GAME_USRCOUNT];
+	for (int i = 0; i < MAX_GAME_USRCOUNT; i++)
+	{
+		activeSocketList[i] = -1;
+		userStates[i] = -2;
+	}
+	
+	while(1)
+	{	
+		// hem de bloquejar els senderArgs per a que 
+		// pthread_condition_wait s'executi correctament
+		pthread_mutex_lock(senderArgs->gameSender_mutex);
+		
+		// alliberem els args per a que la funcio sendToAll els pugui modificar
+		// i esperem que ens andiqui amb el sender_signal que tenim dades per enviar
+		pthread_cond_wait(senderArgs->gameSender_signal, senderArgs->gameSender_mutex);
+		
+		// consultem els sockets actius a la llista de connectats	
+		
+		// la idea 'es que durant la partida, el thread de calcul cridi directament la funcio sendtogame.
+		
+		pthread_mutex_lock(senderArgs->game->game_mutex);
+		int n_users = senderArgs->game->userCount;
+		for(int i = 0; i < n_users; i++)
+		{
+			activeSocketList[i] = senderArgs->game->users[i]->socket;
+			userStates[i] = senderArgs->game->users[i]->userState;
+		}
+		pthread_mutex_unlock(senderArgs->game->game_mutex);
+		strcat(senderArgs->gameResponse, "|");
+		// enviem a tots els sockets actius
+		printf("Sending to game users with User State = %d\n", senderArgs->userState);
+		for (int i = 0; i < n_users; i++)
+		{		
+			if (senderArgs->userState == userStates[i])
+			{
+				printf ("GAME ID %d NOTIFICATION for %s = %s\n", senderArgs->game->gameId, senderArgs->game->users[i]->username, senderArgs->gameResponse);
+				write (activeSocketList[i], senderArgs->gameResponse, strlen(senderArgs->gameResponse));			
+			}
+		}
+		// desbloquegem per si sortíssim del loop
+		pthread_mutex_unlock(senderArgs->gameSender_mutex);
+	}
+	//pthread_mutex_unlock(threadArgs->threadArgs_mutex);
+}
 
 // sender globa, envia a tots els connectats.
 // fa anar un senyal pthread. El sender estarà inactiu fins que es cridi 
@@ -128,6 +207,7 @@ void* attendClient (void* args)
 	ConnectedUser* connectedUser = threadArgs->connectedUser;
 	ConnectedList* connectedList = threadArgs->connectedList;
 	GameTable* gameTable = threadArgs->gameTable;
+	GameSenderArgs** gameSenderArgs = threadArgs->gameSenderArgs;
 
 	// guardem el socket en una variable local
 	sock_conn = connectedUser->socket;
@@ -151,11 +231,17 @@ void* attendClient (void* args)
 	char gameName[GAME_LEN];
 	
 	char request[CLIENT_REQ_LEN];
+	char request_string[CLIENT_REQ_LEN];
 	char response[SERVER_RSP_LEN];
 	char globalResponse[SERVER_RSP_LEN];
+	char gameNotification[SERVER_RSP_LEN];
 	
 	// aquest flag indica si cal enviar alguna notificació de forma global
 	int globalSend;
+	int gameSend;
+	int gameSendUserState;
+	
+	int gameId;
 	
 	int disconnect = 0;
 	while(!disconnect)
@@ -168,12 +254,20 @@ void* attendClient (void* args)
 		
 		// marcamos el final de string
 		request[request_length]='\0';
-		
+		strcpy(request_string, request);
 		char *p = strtok(request, "/");
 		int request_code =  atoi(p); // sacamos el request_code del request
+		int request_enable = 1;
 		printf("Request: %d\n", request_code);
 		
+		// resetegem l'estat de les strings i flags de resposta
+		strcpy(response, "");
+		strcpy(gameNotification, "");
+		strcpy(globalResponse, "");
 		globalSend = 0;
+		gameSend = 0;
+		gameSendUserState = -1;
+		
 		switch (request_code)
 		{	
 			// request 1 -> Total time played by user query
@@ -338,7 +432,8 @@ void* attendClient (void* args)
 		// 7/partida1 -> JSON PreGameState o EXISTS
 		case 7:
 		{
-			strcpy(gameName, strtok(NULL, "/"));
+			p = strtok(NULL,"/");
+			strcpy(gameName, p);
 			printf("Create Game: %s\n", gameName);
 			if (GameNameAvailable(gameTable, gameName))
 			{
@@ -350,14 +445,14 @@ void* attendClient (void* args)
 				// vàlid i podem assignar també l'usuari. A partir d'aquí, la partida i els
 				// seus usaris comparteixen mutex amb la taula de partides.
 				// si la partida no es pot crear, la funció ja esborra la partida
-				int err = AddGameToGameTable(gameTable, preGame);
-				if (err == -2)
+				gameId = AddGameToGameTable(gameTable, preGame);
+				if (gameId == -2)
 				{
 					printf("Crear partida FAIL: EXISTS\n");
 					strcpy(response, "7/");
 					strcat(response, "EXISTS");
 				}
-				else if (err == -1)
+				else if (gameId == -1)
 				{
 					printf("Crear partida FAIL: TABLE FULL\n");
 					strcpy(response, "7/");
@@ -367,13 +462,104 @@ void* attendClient (void* args)
 				{
 					// assignem a preGameUser el creador de la partida,
 					// que és l'usuari que gestiona el thread de tipus PreGameUser
-					printf("Crear partida OK\n");
+					printf("Id partida: %d\n", gameId); 
+					printf("Creant partida\n");
+					printf("%s\n", request_string);
 					pthread_mutex_lock(preGame->game_mutex);
 					preGameUser = preGame->creator;
 					pthread_mutex_unlock(preGame->game_mutex);
-					// TODO: retornar partida per JSON
-					strcpy(response, "7/");
-					strcat(response, "OK");
+					
+					
+					// posem els usuaris escollits a la llista jugadors de la partida
+					p = strtok(NULL,"/");
+					int playersCount = atoi(p);
+					printf("Numer of players:%d\n", playersCount);
+					
+					int i=0;
+					for(i=0; i<playersCount;i++)
+					{
+						p = strtok(NULL,"/");
+						
+						//Busquem el punter del jugador a invitar en el connectedList
+						int playerConnectedListPos = GetConnectedPos(connectedList, p);
+						PreGameUser* player;
+
+						if(playerConnectedListPos != -1)
+						{
+							pthread_mutex_lock(threadArgs->threadArgs_mutex);
+							player = CreatePreGameUser(connectedList->connected[playerConnectedListPos]);
+							pthread_mutex_unlock(threadArgs->threadArgs_mutex);
+						}
+						else
+					    {
+							player = NULL;
+							printf("Afegir jugador FAIL: NOCONNECTLIST\n");
+						}
+						//Afegim el jugador al preGame
+						if(player != NULL)
+						{
+							if(GetPreGameUserPosByName(preGame,player->username) == -1)
+							{
+								AddPreGameUser(preGame,player);
+							}
+							else
+						    {
+								printf("Afegir jugador FAIL: ALREADYEXIST\n");
+							}
+						}
+					}
+					
+					// Comprovem que hi hagi suficients jugadors i els enviem l'avis
+					pthread_mutex_lock(preGame->game_mutex);
+					printf("UserCount: %d\n",preGame->userCount);
+					pthread_mutex_unlock(preGame->game_mutex);
+					if(preGame->userCount > 1)
+					{
+					
+						// TODO: retornar partida per JSON
+						printf("Crear partida OK\n");
+						strcpy(response, "7/");
+						strcat(response, "OK");
+						
+						// Enviem l'avis als altres membres
+						//char notify_group[SERVER_RSP_LEN];
+						pthread_mutex_lock(preGame->game_mutex);
+						
+						// escrivim la notificacio de partida
+						sprintf(gameNotification, "9/NOTIFY/%s/%s/",preGame->gameName,preGame->creator->username);
+						//printf("GAME GROUP NOTIFICATION: %s\n",gameName);
+						pthread_mutex_unlock(preGame->game_mutex);
+						
+						// passem als arguments del sender la partida que ha de servir
+						// com que ho passarem als args amb index igual a la id de la partida,
+						// li estem assignant la funcio de fer de sender de la partida N al
+						// Sender Thread amb index N dins l'array de threads.
+						pthread_mutex_lock(gameSenderArgs[gameId]->gameSender_mutex);
+						gameSenderArgs[gameId]->game = preGame;
+						pthread_mutex_unlock(gameSenderArgs[gameId]->gameSender_mutex);
+						//sendToGame(gameSenderArgs[gameId], gameNotification, 0);
+						
+						// indiquem que volem que s'envii la notifiacio als usuaris amb estat 0 al final del switch
+						gameSend = 1;
+						gameSendUserState = 0;
+						
+						/*for(int i=0;i<preGame->userCount;i++)
+						{
+							if(preGame->users[i]->userState == 0)
+								write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+						}*/
+					}
+					else
+				    {
+						
+						//Eliminem la partida
+						//DeleteGameFromTable(gameTable,preGame);
+						
+						printf("Crear partida FAIL: ALONE\n");
+						strcpy(response, "7/");
+						strcat(response, "ALONE");
+					}
+					
 				}
 			}
 			else 
@@ -407,6 +593,162 @@ void* attendClient (void* args)
 		// si la partida no existeix o esta en curs, no se'l deixa entrar.
 		case 9:
 		{
+			printf("%s\n",request_string);
+			
+			p = strtok(NULL,"/");
+			char option [20];
+			strcpy(option,p);
+			p = strtok(NULL,"/");
+			int preGameUserPos;
+			
+			
+			
+			//Accepta la peticio d'entrar en el joc
+			if(strcmp(option,"ACCEPT") == 0)
+			{
+				preGame = GetPreGameStateByName(gameTable, p);
+				if(preGame != NULL)
+				{
+					preGameUserPos = GetPreGameUserPosByName(preGame, username);
+					
+					pthread_mutex_lock(preGame->game_mutex);
+					gameId = preGame->gameId;
+					printf("Game Id: %d\n", gameId);
+					if(preGameUserPos != -1)
+					{
+						preGameUser = preGame->users[preGameUserPos];
+						preGameUser->userState = 1; //Marca la partida com a acceptada
+					}
+					pthread_mutex_unlock(preGame->game_mutex);
+					
+					if(preGameUserPos != -1)
+					{
+						//Missatge per comunicar al usari que acceptava
+						printf("%s accepta la partida %s\n", username, p);
+						strcpy(response, "9/");
+						strcat(response, "ACCEPTED");
+						
+						//char notify_group [SERVER_RSP_LEN];
+						json_object* gameStateJson = GameStateToJson(preGame);
+						strcpy(gameNotification, "10/");
+						strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
+						//strcat(notify_group, "|");
+						//strcpy(response, json_object_to_json_string(listJson));
+						
+						// DESTRUIR LLISTA JSON!!!
+						// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+						free(gameStateJson);
+						
+						//Enviem el missatges
+						//printf("GAME GROUP NOTIFICATION: %s\n",gameName);
+						//sendToGame(gameSenderArgs[gameId], gameNotification, 1);
+						gameSend = 1;
+						gameSendUserState = 1;
+						/*pthread_mutex_lock(preGame->game_mutex);
+						for(int i=0;i<preGame->userCount;i++)
+						{
+							if(preGame->users[i]->userState == 1)
+								write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+						}
+						pthread_mutex_unlock(preGame->game_mutex);
+						*/
+						
+					}
+					else
+					{
+						printf("Acceptar partida FAIL: USER ISN'T IN GAME\n");
+						strcpy(response, "9/");
+						strcat(response, "FAIL");
+					}
+				
+				}
+				else
+			    {
+					printf("Acceptar partida FAIL: GAME DOESN'T EXISTS\n");
+					strcpy(response, "9/");
+					strcat(response, "FAIL");
+				}
+				
+			}
+			//Rebutja la peticio d'entrar en el joc
+			else if (strcmp(option, "REJECT") == 0)
+			{
+				PreGameState* preGameRejected;
+				preGameRejected = GetPreGameStateByName(gameTable, p);
+				if(preGameRejected != NULL)
+				{
+					preGameUserPos = GetPreGameUserPosByName(preGameRejected, username);
+					pthread_mutex_lock(preGameRejected->game_mutex);
+					gameId = preGameRejected->gameId;
+					if(preGameUserPos != -1)
+					{
+						preGameRejected->users[preGameUserPos]->userState = -1; //Marca la partida com a rebutjada
+					}
+					pthread_mutex_unlock(preGameRejected->game_mutex);
+					
+					if(preGameUserPos != -1)
+					{
+						printf("%s rebutja la partida %s\n", username, p);
+						strcpy(response, "9/");
+						strcat(response, "REJECTED");
+						
+						//char notify_group [SERVER_RSP_LEN];
+
+						
+						/*pthread_mutex_lock(preGameRejected->game_mutex);
+						for(int i=0;i<preGameRejected->userCount;i++)
+						{
+							if(preGameRejected->users[i]->userState == 1)
+								write(preGameRejected->users[i]->socket, notify_group, strlen(notify_group));
+						}
+						pthread_mutex_unlock(preGameRejected->game_mutex);
+						*/
+						if(IamAloneinGame(preGameRejected))
+						{
+							char creator [USRN_LENGTH];
+							strcpy(creator, preGameRejected->creator->username);
+							pthread_mutex_lock(preGameRejected->game_mutex);
+							printf("%s is alone in %s\n", creator, preGameRejected->gameName);
+							char creatorResponse [SERVER_RSP_LEN];
+							strcpy(creatorResponse, "12/");
+							strcat(creatorResponse, "ALONE|");
+							printf("Creator %s = %s\n", creator, creatorResponse);
+							write(preGameRejected->creator->socket, creatorResponse, strlen(creatorResponse));
+							pthread_mutex_unlock(preGameRejected->game_mutex);							
+							DeleteGameFromTable(gameTable,preGameRejected);
+							preGame = NULL;
+							gameId = -1;
+						}
+						else 
+						{
+							json_object* gameStateJson = GameStateToJson(preGameRejected);
+							strcpy(gameNotification, "10/");
+							strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
+
+							// DESTRUIR LLISTA JSON!!!
+							// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+							free(gameStateJson);
+							
+							gameSend = 1;
+							gameSendUserState = 1;
+						}
+					}
+					else
+					{
+						printf("Rebutjar partida FAIL: USER ISN'T IN GAME\n");
+						strcpy(response, "9/");
+						strcat(response, "FAIL");
+					}
+				
+				}
+				else
+				{
+					printf("Rebutjar partida FAIL: GAME DOESN'T EXISTS\n");
+					strcpy(response, "9/");
+					strcat(response, "FAIL");
+				}
+			}
+			
 			break;
 		}
 		
@@ -430,6 +772,121 @@ void* attendClient (void* args)
 		{
 			break;
 		}
+		
+		//codi perque els usuaris es connectin per xat
+		case 11:
+		{
+			break;
+		}
+		
+		//Inici de la partida
+		case 12:
+		{
+			printf("%s\n",request_string);
+			
+			p = strtok(NULL,"/");
+			char option [20];
+			strcpy(option,p);
+			if (strcmp(option, "CHARACTER") == 0)
+			{
+				p = strtok(NULL,"/");
+				int ret = PreGameAssignChar(preGame,username,p);
+				if(ret == 1)
+				{
+					//Missatge per comunicar al usari que acceptava
+					printf("%s selecciona a %s\n", username, p);
+					strcpy(response, "12/");
+					strcat(response, "CHAROK");
+		
+					char notify_group [SERVER_RSP_LEN];
+					json_object* gameStateJson = GameStateToJson(preGame);
+					strcpy(notify_group, "10/");
+					strcat(notify_group, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
+					strcat(notify_group, "|");
+					//strcpy(response, json_object_to_json_string(listJson));
+					
+					// DESTRUIR LLISTA JSON!!!
+					// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+					free(gameStateJson);
+					
+					//Enviem el missatges
+					printf("GAME GROUP NOTIFICATION: %s\n",gameName);
+					
+					pthread_mutex_lock(preGame->game_mutex);
+					for(int i=0;i<preGame->userCount;i++)
+					{
+						if(preGame->users[i]->userState == 1)
+							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+					}
+					pthread_mutex_unlock(preGame->game_mutex);
+				}
+				else
+			    {
+					//Missatge per comunicar al usari que acceptava
+					printf("%s no pot seleccionar a %s\n", username, p);
+					strcpy(response, "12/");
+					strcat(response, "CHARFAIL");
+				}
+			}
+			else if (strcmp(option, "START") == 0)
+			{
+				if(AllHasCharacter(preGame))
+				{
+					printf("Comença la partida %s\n", gameName);
+					request_enable = 0;
+					
+					char notify_group[SERVER_RSP_LEN];
+					pthread_mutex_lock(preGame->game_mutex);
+					strcpy(notify_group, "12/START");
+					printf("GAME GROUP NOTIFICATION STARTED: %s\n",gameName);
+					strcat(notify_group, "|");
+					
+					for(int i=0;i<preGame->userCount;i++)
+					{
+						if(preGame->users[i]->userState == 1)
+							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+					}
+					
+					sprintf(notify_group, "9/LOSE/%s/%s/",preGame->gameName,preGame->creator->username);
+					strcat(notify_group, "|");
+					
+					for(int i=0;i<preGame->userCount;i++)
+					{
+						if(preGame->users[i]->userState == 0)
+							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+					}
+					
+					pthread_mutex_unlock(preGame->game_mutex);
+					
+				}
+				
+				else
+			    {
+					printf("No ha triat tothom el seu personatge en %s\n", gameName);
+					strcpy(response, "12/");
+					strcat(response, "NOTALLSELECTED");
+				}
+			}
+			else if (strcmp(option, "CANCEL") == 0)
+			{
+				char notify_group[SERVER_RSP_LEN];
+				request_enable = 0;
+				pthread_mutex_lock(preGame->game_mutex);
+				sprintf(notify_group, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
+				printf("GAME GROUP NOTIFICATION CANCELLED: %s\n",gameName);
+				strcat(notify_group, "|");
+				
+				for(int i=0;i<preGame->userCount;i++)
+				{
+					if((preGame->users[i]->userState == 1)||(preGame->users[i]->userState == 0))
+						write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+				}
+				pthread_mutex_unlock(preGame->game_mutex);
+				
+				DeleteGameFromTable(gameTable,preGame);
+			}
+			break;
+		}
 			
 		
 		// request 0 -> Disconnect	
@@ -446,11 +903,16 @@ void* attendClient (void* args)
 		}
 		
 		// Enviamos response siempre que no se haya recibido request de disconnect
-		if(request_code)
+		if((request_code)&&(request_enable))
 		{	
 			strcat(response, "|");
 			printf("%s = %s\n", threadArgs->connectedUser->username, response);
 			write (sock_conn, response, strlen(response));	
+		}
+		
+		if (gameSend)
+		{
+			sendToGame(gameSenderArgs[gameId], gameNotification, gameSendUserState);
 		}
 		
 		// enviem notificacions globals
@@ -518,8 +980,9 @@ int main(int argc, char *argv[])
 		printf("Error en el Listen");
 	
 	//CONNEXIÓ
-	pthread_t thread[CNCTD_LST_LENGTH];
+	pthread_t threadConnected[CNCTD_LST_LENGTH];
 	pthread_t senderThread;		// creem el thread del sender global
+	//pthread_t gameSenderThread;
 	//int sockets[CNCTD_LST_LENGTH];
 	
 	// Llista de connectats.
@@ -569,6 +1032,42 @@ int main(int argc, char *argv[])
 	// creem el thread del sender
 	pthread_create(&senderThread, NULL, globalSender, &senderThreadArgs);
 	
+	// inicialitzem els threadArgs que passarem al thread per enviar a partides
+	/*ThreadArgs gameSenderThreadArgs;
+	pthread_mutex_t* mutexGameSenderThreadArgs = malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexGameSenderThreadArgs, NULL);	
+	gameSenderThreadArgs.connectedList = NULL;
+	gameSenderThreadArgs.gameTable = gameTable;
+	gameSenderThreadArgs.connectedUser = NULL;
+	gameSenderThreadArgs.threadArgs_mutex = mutexSenderThreadArgs;
+	gameSenderThreadArgs.senderArgs = NULL;
+	
+	pthread_create(&gameSenderThread, NULL, gameSender, &gameSenderThreadArgs);
+	*/
+
+	
+	// inicialitzem els arguments dels senders de cada partida i arrenquem els threads
+	pthread_t threadGameSender[MAX_GAMES];
+	GameSenderArgs* gameSenderArgs[MAX_GAMES];
+	for (int i = 0; i < MAX_GAMES; i++)
+	{
+		gameSenderArgs[i] = malloc(sizeof(GameSenderArgs));
+	}
+	//pthread_mutex_t* gameSenderMutex[MAX_GAMES];
+	for(int i = 0; i < MAX_GAMES; i++)
+	{
+		gameSenderArgs[i]->game = NULL;
+		//gameSenderArgs[i].gameResponse = NULL;
+		gameSenderArgs[i]->gameSender_mutex = malloc(sizeof(pthread_mutex_t));
+		pthread_mutex_init(gameSenderArgs[i]->gameSender_mutex, NULL);
+		gameSenderArgs[i]->gameSender_signal = malloc(sizeof(pthread_cond_t));
+		pthread_cond_init(gameSenderArgs[i]->gameSender_signal , NULL);
+		gameSenderArgs[i]->userState = 0;
+	}
+	
+	
+	
+	
 	// passem a threadArgs els punters a la taula de partides
 	// i la llista d'usuaris connectats, iguals per cada element.
 	// assignem a cada element de l'array el mutex per accedir als arguments dels threads
@@ -583,6 +1082,13 @@ int main(int argc, char *argv[])
 		threadArgs[i].connectedUser = NULL;
 		threadArgs[i].threadArgs_mutex = mutexThreadArgs;
 		threadArgs[i].senderArgs = &senderArgs;
+		threadArgs[i].gameSenderArgs = gameSenderArgs;
+	}
+	
+	
+	for (int i = 0; i < MAX_GAMES; i++)
+	{
+		pthread_create(&threadGameSender[i], NULL, gameSender, gameSenderArgs[i]);
 	}
 	
 	// Atenem infinites peticions
@@ -647,7 +1153,7 @@ int main(int argc, char *argv[])
 				threadArgs[i].connectedUser->socket = sock_conn;
 				
 				// creem el thread
-				pthread_create(&thread[i], NULL, attendClient, &threadArgs[i]);
+				pthread_create(&threadConnected[i], NULL, attendClient, &threadArgs[i]);
 				pthread_mutex_unlock(mutexThreadArgs);
 				printf("Iterator: %d\n", i);
 			}			

@@ -15,9 +15,10 @@ namespace BaboGameClient
     public partial class LoginMenu : Form
     {
         // Paràmetres de connexió
-        public const int shiva_port = 50084;
+        public const int shiva_port = 4012;//50084;
         public const string shiva_ip = "147.83.117.22";
         public const string local_ip = "192.168.56.103";
+        public const string local2_ip = "192.168.56.101";
 
         ServerHandler serverHandler;
 
@@ -55,7 +56,7 @@ namespace BaboGameClient
                 return;
             }
             
-            int error = serverHandler.Connect(shiva_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            int error = serverHandler.Connect(local2_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error == -1)
             {
                 MessageBox.Show("Connection Error.");
@@ -91,7 +92,7 @@ namespace BaboGameClient
                 MessageBox.Show("Els camps estan buits!");
                 return;
             }
-            int error = serverHandler.Connect(shiva_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            int error = serverHandler.Connect(local2_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");

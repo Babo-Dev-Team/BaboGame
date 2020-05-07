@@ -25,6 +25,14 @@ namespace BaboGameClient
         public int Playing { get; set; }
     }
 
+    public class PreGameStateUser
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; }
+        public string CharName { get; set; }
+        public int UserState { get; set; }
+    }
+
     // arguments estàtics per passar informació entre el thread del Receiver i el thread principal.
     // Les dades les agafarà el Notification Worker directament, i pel monogame la idea és fer anar 
     // el Server Handler i mode realtime al receiver
@@ -32,6 +40,7 @@ namespace BaboGameClient
     {
         public static List<ConnectedUser> connectedList;    // llistes per parsejar el JSON
         public static List<PreGameState> gameTable;
+        public static List<PreGameStateUser> gameState;
         public static string responseStr;                   // resposta per string
         public static int newDataFromServer;                // Flag pel mode Realtime
         public static Socket server;                        // el socket per llegir
@@ -174,6 +183,33 @@ namespace BaboGameClient
                     ReceiverArgs.gameTable = JsonSerializer.Deserialize<List<PreGameState>>(splitResponse[1]);
                     break;
 
+                // notificació de invitacions
+                case 9:
+                    string Invitation = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        Invitation = Invitation + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = Invitation;
+                    break;
+
+                // notificació d'avís en el joc
+                case 10:
+                    ReceiverArgs.gameState = JsonSerializer.Deserialize<List<PreGameStateUser>>(splitResponse[1]);
+                    break;
+
+                // notificacions d'estat del joc
+                case 12:
+                    string gameStr = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        gameStr = gameStr + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = gameStr;
+                    break;
+
                 default:
                     response = null;
                     break;
@@ -235,9 +271,41 @@ namespace BaboGameClient
             this.SendRequest("6/");
         }
 
-        public void RequestCreateParty(string name)
+        public void RequestCreateParty(string name,string[] players)
         {
-            this.SendRequest("7/" + name + "/");
+            string CreatePartyMsg = "7/ " + name + "/" + (players.Length-1) + "/";
+            for(int i=0; i< players.Length;i++)
+            {
+                CreatePartyMsg += players[i] + "/";
+            }
+
+            this.SendRequest(CreatePartyMsg);
+        }
+
+        //Request de les notificacions de invitació
+        public void RequestAcceptInvitation(string gameName)
+        {
+            this.SendRequest("9/ACCEPT/" + gameName + "/");
+        }
+
+        public void RequestRejectInvitation(string gameName)
+        {
+            this.SendRequest("9/REJECT/" + gameName + "/");
+        }
+
+        public void RequestCancelGame(string gameName)
+        {
+            this.SendRequest("12/CANCEL/");
+        }
+
+        public void RequestStartGame(string gameName)
+        {
+            this.SendRequest("12/START/");
+        }
+
+        public void RequestSelectCharacter(string gameName, string character)
+        {
+            this.SendRequest("12/CHARACTER/" + character + "/");
         }
 
         // TODO: Adaptar els metodes deprecated (al final del document) a metodes nous de tipus Request***
