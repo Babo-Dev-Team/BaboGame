@@ -15,7 +15,7 @@
 #include "connected_list.h"
 #include "game_table.h"
 
-#define SHIVA_PORT 4010//50084
+#define SHIVA_PORT 50084
 
 //#define NMBR_THREADS 100
 
@@ -257,6 +257,7 @@ void* attendClient (void* args)
 		strcpy(request_string, request);
 		char *p = strtok(request, "/");
 		int request_code =  atoi(p); // sacamos el request_code del request
+		int request_enable = 1;
 		printf("Request: %d\n", request_code);
 		
 		// resetegem l'estat de les strings i flags de resposta
@@ -832,6 +833,7 @@ void* attendClient (void* args)
 				if(AllHasCharacter(preGame))
 				{
 					printf("Comença la partida %s\n", gameName);
+					request_enable = 0;
 					
 					char notify_group[SERVER_RSP_LEN];
 					pthread_mutex_lock(preGame->game_mutex);
@@ -868,6 +870,7 @@ void* attendClient (void* args)
 			else if (strcmp(option, "CANCEL") == 0)
 			{
 				char notify_group[SERVER_RSP_LEN];
+				request_enable = 0;
 				pthread_mutex_lock(preGame->game_mutex);
 				sprintf(notify_group, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
 				printf("GAME GROUP NOTIFICATION CANCELLED: %s\n",gameName);
@@ -900,7 +903,7 @@ void* attendClient (void* args)
 		}
 		
 		// Enviamos response siempre que no se haya recibido request de disconnect
-		if(request_code)
+		if((request_code)&&(request_enable))
 		{	
 			strcat(response, "|");
 			printf("%s = %s\n", threadArgs->connectedUser->username, response);
