@@ -1,5 +1,4 @@
 # BaboGame
-Degut a que ens havíem deixat de fer el README, deixo les tasques de cada membre de les últimes versions:
 
 ## Versió 1 - Connexió servidor-client
 
