@@ -15,7 +15,7 @@
 #include "connected_list.h"
 #include "game_table.h"
 
-#define SHIVA_PORT 50084
+#define SHIVA_PORT 50086
 
 //#define NMBR_THREADS 100
 
@@ -776,6 +776,40 @@ void* attendClient (void* args)
 		//codi perque els usuaris es connectin per xat
 		case 11:
 		{
+			printf("%s\n",request_string);
+			
+			p = strtok(NULL,"/");
+			char message [200];
+			strcpy(message,p);
+			
+			//Missatge per comunicar al usuari que acceptava
+			printf("Missatge rebut: %s\n", message);
+			
+			char notify_group [SERVER_RSP_LEN];
+			
+			strcpy(notify_group, "11/");
+			pthread_mutex_lock(connectedUser->user_mutex);
+			strcat(notify_group,connectedUser->username);
+			pthread_mutex_unlock(connectedUser->user_mutex);
+			strcat(notify_group,"/");
+			strcat(notify_group, message);
+			strcat(notify_group, "|");
+			request_enable = 0;
+			//strcpy(response, json_object_to_json_string(listJson));
+			
+
+			
+			//Enviem el missatges
+			printf("GAME GROUP CHAT MESSAGE: %s\n",preGame->gameName);
+			
+			pthread_mutex_lock(preGame->game_mutex);
+			for(int i=0;i<preGame->userCount;i++)
+			{
+				if(preGame->users[i]->userState == 1)
+					write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+			}
+			pthread_mutex_unlock(preGame->game_mutex);
+			
 			break;
 		}
 		
