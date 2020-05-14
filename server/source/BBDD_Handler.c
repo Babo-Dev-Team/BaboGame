@@ -212,8 +212,8 @@ int BBDD_connect ()
 	}
 	
 	// init connection
-	conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
-	//conn = mysql_real_connect (conn, "localhost","root", "mysql", "BaboGameBBDD", 0, NULL, 0);
+	//conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
+	conn = mysql_real_connect (conn, "localhost","root", "mysql", "BaboGameBBDD", 0, NULL, 0);
 	if (conn == NULL) 
 	{
 		printf ("Error while initializing connection: %u %s\n", mysql_errno(conn), mysql_error(conn));

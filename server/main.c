@@ -15,7 +15,7 @@
 #include "connected_list.h"
 #include "game_table.h"
 
-#define SHIVA_PORT 50084
+#define SHIVA_PORT 50086
 
 //#define NMBR_THREADS 100
 
