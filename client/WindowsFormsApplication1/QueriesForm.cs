@@ -21,51 +21,97 @@ namespace BaboGameClient
         // DataGridUpdateRequested segons el data grid
         NotificationWorker notificationWorker;
 
-        PictureBox NotificationIcon = new PictureBox();
+        PictureBox NotificationIcon;
 
         //Elements del menú dels personatges seleccionats
-        DataGridView PlayersSelected_dg = new DataGridView();
-        TextBox NewPartyName_tb = new TextBox();
-        Button CreateParty_btn = new Button();
-        Button NewPartyBack_btn = new Button();
-        Label NewPartyName_lbl = new Label();
+        DataGridView PlayersSelected_dg;
+        TextBox NewPartyName_tb;
+        Button CreateParty_btn;
+        Button NewPartyBack_btn;
+        Label NewPartyName_lbl;
 
         //Elements del menú de la partida
-        Label PartyName_lbl = new Label();
-        PictureBox character_pb = new PictureBox();
-        Button LeftChar_btn = new Button();
-        Button RightChar_btn = new Button();
-        Button CancelGame_btn = new Button();
-        Button SelectChar_btn = new Button();
-        Button StartGame_btn = new Button();
-        Button QuitGame_btn = new Button();
-        RichTextBox ChatGame_rtb = new RichTextBox();
-        Panel ChattingPanel = new Panel();
-        Button Chatting_btn = new Button();
-        TextBox Chatting_tb = new TextBox();
-        Panel StickersPanel = new Panel();
-        Button Stickers_btn = new Button();
-        Label CharName_lbl = new Label();
-        Label CharDescription_lbl = new Label();
+        Label PartyName_lbl;
+        PictureBox character_pb;
+        Button LeftChar_btn;
+        Button RightChar_btn;
+        Button CancelGame_btn;
+        Button SelectChar_btn;
+        Button StartGame_btn;
+        Button QuitGame_btn;
+        RichTextBox ChatGame_rtb;
+        Panel ChattingPanel;
+        Button Chatting_btn;
+        TextBox Chatting_tb;
+        Panel StickersPanel;
+        Button Stickers_btn;
+        Label CharName_lbl;
+        Label CharDescription_lbl;
 
-        string[] characterSelected = { "Babo", "Limax", "Kaler", "Swalot" };
-        string[] characterDescription =
-        {
-            "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal?",//Babo
-            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac no gaire salat.",//Limax
-            "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude?",//Kaler
-            "Swalot, pokémon tipus verí. Com no té dens, es traga tot d'un sol cop amb la seva enorme boca. " //Swalot
-        };
-        int charSelectedPos = 0;
+        string[] characterSelected;
+        string[] characterDescription;
+        int charSelectedPos;
 
         //Variable que diferenciar a quin menú estàs situat
-        int ScreenSelected = 0;
+        int ScreenSelected;
         string gameName;
         ToolStripItem notificationSelection;
         ToolStripItem stikerSelecton;
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
+
+            this.NotificationIcon = new PictureBox();
+
+            //Elements del menú dels personatges seleccionats
+            PlayersSelected_dg = new DataGridView();
+            NewPartyName_tb = new TextBox();
+            CreateParty_btn = new Button();
+            NewPartyBack_btn = new Button();
+            NewPartyName_lbl = new Label();
+
+            //Elements del menú de la partida
+            PartyName_lbl = new Label();
+            character_pb = new PictureBox();
+            LeftChar_btn = new Button();
+            RightChar_btn = new Button();
+            CancelGame_btn = new Button();
+            SelectChar_btn = new Button();
+            StartGame_btn = new Button();
+            QuitGame_btn = new Button();
+            ChatGame_rtb = new RichTextBox();
+            ChattingPanel = new Panel();
+            Chatting_btn = new Button();
+            Chatting_tb = new TextBox();
+            StickersPanel = new Panel();
+            Stickers_btn = new Button();
+            CharName_lbl = new Label();
+            CharDescription_lbl = new Label();
+
+            characterSelected = new string[] { "Babo", "Limax", "Kaler", "Swalot" };
+
+            characterDescription = new string[] 
+            {
+            "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal?",//Babo
+            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac no gaire salat.",//Limax
+            "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude?",//Kaler
+            "Swalot, pokémon tipus verí. Com no té dens, es traga tot d'un sol cop amb la seva enorme boca. " //Swalot
+            };
+            charSelectedPos = 0;
+
+            //Variable que diferenciar a quin menú estàs situat
+            ScreenSelected = 0;
+
+
+
+
+
+
+
+
+
+
+
             InitializeComponent();
             this.serverHandler = serverHandler;
             this.notificationWorker = notificationWorker;
@@ -133,30 +179,17 @@ namespace BaboGameClient
             //LeftChar_btn.Text = "Left";
             LeftChar_btn.Visible = false;
             LeftChar_btn.Size = new Size(64, 64);
-            this.Controls.Add(LeftChar_btn);
             LeftChar_btn.Click += new EventHandler(this.LeftChar_btn_Click);
-            PictureBox leftImage = new PictureBox();
-            leftImage.ImageLocation = "../../../Pictures/Layouts/left.png";
-            leftImage.Size = LeftChar_btn.Size;
-            leftImage.SizeMode = PictureBoxSizeMode.Zoom;
-            leftImage.Load();
-            leftImage.Refresh();
-            LeftChar_btn.BackgroundImage = leftImage.Image;
-
+            LeftChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
+            this.Controls.Add(LeftChar_btn);
 
             RightChar_btn.Location = new Point(240, 100);
             //RightChar_btn.Text = "Right";
             RightChar_btn.Visible = false;
             RightChar_btn.Size = new Size(64, 64);
-            this.Controls.Add(RightChar_btn);
             RightChar_btn.Click += new EventHandler(this.RightChar_btn_Click);
-            PictureBox rightImage = new PictureBox();
-            rightImage.ImageLocation = "../../../Pictures/Layouts/right.png";
-            rightImage.Size = RightChar_btn.Size;
-            rightImage.SizeMode = PictureBoxSizeMode.Zoom;
-            rightImage.Load();
-            rightImage.Refresh();
-            RightChar_btn.BackgroundImage = rightImage.Image;
+            RightChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/right.png");
+            this.Controls.Add(RightChar_btn);
 
             //PictureBox de la imatge del personatge
             character_pb.Location = new Point(90, 60);
@@ -1126,7 +1159,7 @@ namespace BaboGameClient
             character_pb.Load();
             character_pb.Refresh();
             CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
-            CharDescription_lbl.Text = characterDescription[charSelectedPos];
+            CharDescription_lbl.Text = characterDescription[charSelectedPos];           
         }
 
         public void RightChar_btn_Click(object sender, EventArgs e)
@@ -1135,7 +1168,7 @@ namespace BaboGameClient
                 charSelectedPos++;
             else
                 charSelectedPos = 0;
-
+                
             character_pb.Image.Dispose();
             character_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[charSelectedPos] + " stop.gif";
             character_pb.Load();
