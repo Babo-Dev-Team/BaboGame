@@ -15,7 +15,7 @@
 #include "connected_list.h"
 #include "game_table.h"
 
-#define SHIVA_PORT 50086
+#define SHIVA_PORT 50084
 
 //#define NMBR_THREADS 100
 
@@ -73,22 +73,39 @@ void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userSt
 {
 	// adquirim el lock del sender (alliberat pel pthread_mutex_wait en el seu thread)
 	pthread_mutex_lock(args->gameSender_mutex);
-	strcpy(args->gameResponse, response);
+	int waitNotified = 0;
+	int unlocked = 0;
+	
+	// si el gameSender no ha processat les dades anteiors però ens deixa
+	// adquirie el lock, és perquè encara no ha sortit del pthread_condition_wait.
+	// el que fem és anar alliberant el mutex i esperar que el sender adquireixi el mutex
+	// i envii la informació. podem llegir userState perquè és un int32 (atomic)
+	while (args->userState != -2)
+	{
+		pthread_mutex_unlock(args->gameSender_mutex);
+		unlocked = 1;
+		if(!waitNotified)
+		{
+			printf("sendToGame: Waiting for the game sender to wake up...\n");
+			waitNotified = 1;
+		}
+	}
+	if (unlocked)
+	{
+		pthread_mutex_lock(args->gameSender_mutex);
+	}
 	args->userState = userState;
-	
-	// ara indiquem al thread que s'executi
 	pthread_cond_signal(args->gameSender_signal);
-	
+	strcpy(args->gameResponse, response);
+
+	// ara indiquem al thread que s'executi
 	pthread_mutex_unlock(args->gameSender_mutex);
 }
 
 
 void* gameSender (void* args)
 {
-	// bloquegem els threadArgs perquè volem que ningú més accedeixi als ThreadArgs del sender
-	//pthread_mutex_lock(((ThreadArgs*)args)->threadArgs_mutex);
 	GameSenderArgs* senderArgs = (GameSenderArgs*) args;
-	//SenderArgs* gameSenderArgs = threadArgs->senderArgs;
 	
 	// inicialitzem un array de sockets actius
 	int activeSocketList[MAX_GAME_USRCOUNT];
@@ -103,15 +120,25 @@ void* gameSender (void* args)
 	{	
 		// hem de bloquejar els senderArgs per a que 
 		// pthread_condition_wait s'executi correctament
-		pthread_mutex_lock(senderArgs->gameSender_mutex);
+		pthread_mutex_lock(senderArgs->gameSender_mutex);	
 		
-		// alliberem els args per a que la funcio sendToAll els pugui modificar
-		// i esperem que ens andiqui amb el sender_signal que tenim dades per enviar
-		pthread_cond_wait(senderArgs->gameSender_signal, senderArgs->gameSender_mutex);
-		
+		// indiquem posant userState a -2 que estem esperant per rebre noves dades.
+		// No farem res fins que sendToGame no ens passi info i un userState valid per enviar
+		senderArgs->userState = -2;
+		while(senderArgs->userState == -2)
+		{
+			printf("game sender entering sleep\n");
+			// alliberem els args per a que la funcio sendToAll els pugui modificar
+			// i esperem que ens indiqui amb el sender_signal que tenim dades per enviar
+			if(pthread_cond_wait(senderArgs->gameSender_signal, senderArgs->gameSender_mutex))
+			{
+				printf("game sender CONDITION WAIT ERROR\n");
+			}
+		}
 		// consultem els sockets actius a la llista de connectats	
 		
-		// la idea 'es que durant la partida, el thread de calcul cridi directament la funcio sendtogame.
+		// la idea es que durant la partida, el thread de calcul cridi directament la funcio sendtogame.
+		printf("game sender waking up\n");
 		
 		pthread_mutex_lock(senderArgs->game->game_mutex);
 		int n_users = senderArgs->game->userCount;
@@ -122,6 +149,7 @@ void* gameSender (void* args)
 		}
 		pthread_mutex_unlock(senderArgs->game->game_mutex);
 		strcat(senderArgs->gameResponse, "|");
+		
 		// enviem a tots els sockets actius
 		printf("Sending to game users with User State = %d\n", senderArgs->userState);
 		for (int i = 0; i < n_users; i++)
@@ -131,8 +159,7 @@ void* gameSender (void* args)
 				printf ("GAME ID %d NOTIFICATION for %s = %s\n", senderArgs->game->gameId, senderArgs->game->users[i]->username, senderArgs->gameResponse);
 				write (activeSocketList[i], senderArgs->gameResponse, strlen(senderArgs->gameResponse));			
 			}
-		}
-		// desbloquegem per si sortíssim del loop
+		}	
 		pthread_mutex_unlock(senderArgs->gameSender_mutex);
 	}
 	//pthread_mutex_unlock(threadArgs->threadArgs_mutex);
@@ -236,10 +263,13 @@ void* attendClient (void* args)
 	char globalResponse[SERVER_RSP_LEN];
 	char gameNotification[SERVER_RSP_LEN];
 	
-	// aquest flag indica si cal enviar alguna notificació de forma global
+	// aquests flag indica si cal enviar alguna notificació de forma global
 	int globalSend;
 	int gameSend;
 	int gameSendUserState;
+	
+	// aquest flag indica si cal enviar resposta a l'usuari que fa el request
+	int userSend;
 	
 	int gameId;
 	
@@ -257,13 +287,15 @@ void* attendClient (void* args)
 		strcpy(request_string, request);
 		char *p = strtok(request, "/");
 		int request_code =  atoi(p); // sacamos el request_code del request
-		int request_enable = 1;
 		printf("Request: %d\n", request_code);
 		
 		// resetegem l'estat de les strings i flags de resposta
 		strcpy(response, "");
 		strcpy(gameNotification, "");
 		strcpy(globalResponse, "");
+		
+		// per defecte, habilitem la resposta a l'usuari i deshabilitem respostes globals
+		userSend = 1;
 		globalSend = 0;
 		gameSend = 0;
 		gameSendUserState = -1;
@@ -632,27 +664,9 @@ void* attendClient (void* args)
 						json_object* gameStateJson = GameStateToJson(preGame);
 						strcpy(gameNotification, "10/");
 						strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
-						//strcat(notify_group, "|");
-						//strcpy(response, json_object_to_json_string(listJson));
-						
-						// DESTRUIR LLISTA JSON!!!
-						// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
-						free(gameStateJson);
-						
-						//Enviem el missatges
-						//printf("GAME GROUP NOTIFICATION: %s\n",gameName);
-						//sendToGame(gameSenderArgs[gameId], gameNotification, 1);
 						gameSend = 1;
-						gameSendUserState = 1;
-						/*pthread_mutex_lock(preGame->game_mutex);
-						for(int i=0;i<preGame->userCount;i++)
-						{
-							if(preGame->users[i]->userState == 1)
-								write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-						}
-						pthread_mutex_unlock(preGame->game_mutex);
-						*/
-						
+						gameSendUserState = 1;						
+						free(gameStateJson);												
 					}
 					else
 					{
@@ -691,18 +705,7 @@ void* attendClient (void* args)
 						printf("%s rebutja la partida %s\n", username, p);
 						strcpy(response, "9/");
 						strcat(response, "REJECTED");
-						
-						//char notify_group [SERVER_RSP_LEN];
-
-						
-						/*pthread_mutex_lock(preGameRejected->game_mutex);
-						for(int i=0;i<preGameRejected->userCount;i++)
-						{
-							if(preGameRejected->users[i]->userState == 1)
-								write(preGameRejected->users[i]->socket, notify_group, strlen(notify_group));
-						}
-						pthread_mutex_unlock(preGameRejected->game_mutex);
-						*/
+			
 						if(IamAloneinGame(preGameRejected))
 						{
 							char creator [USRN_LENGTH];
@@ -723,14 +726,10 @@ void* attendClient (void* args)
 						{
 							json_object* gameStateJson = GameStateToJson(preGameRejected);
 							strcpy(gameNotification, "10/");
-							strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
-
-							// DESTRUIR LLISTA JSON!!!
-							// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
-							free(gameStateJson);
-							
+							strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));							
 							gameSend = 1;
 							gameSendUserState = 1;
+							free(gameStateJson);
 						}
 					}
 					else
@@ -783,33 +782,16 @@ void* attendClient (void* args)
 			strcpy(message,p);
 			
 			//Missatge per comunicar al usuari que acceptava
-			printf("Missatge rebut: %s\n", message);
-			
-			char notify_group [SERVER_RSP_LEN];
-			
-			strcpy(notify_group, "11/");
+			printf("Missatge rebut: %s\n", message);			
+			strcpy(gameNotification, "11/");
 			pthread_mutex_lock(connectedUser->user_mutex);
-			strcat(notify_group,connectedUser->username);
+			strcat(gameNotification,connectedUser->username);
 			pthread_mutex_unlock(connectedUser->user_mutex);
-			strcat(notify_group,"/");
-			strcat(notify_group, message);
-			strcat(notify_group, "|");
-			request_enable = 0;
-			//strcpy(response, json_object_to_json_string(listJson));
-			
-
-			
-			//Enviem el missatges
-			printf("GAME GROUP CHAT MESSAGE: %s\n",preGame->gameName);
-			
-			pthread_mutex_lock(preGame->game_mutex);
-			for(int i=0;i<preGame->userCount;i++)
-			{
-				if(preGame->users[i]->userState == 1)
-					write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-			}
-			pthread_mutex_unlock(preGame->game_mutex);
-			
+			strcat(gameNotification,"/");
+			strcat(gameNotification, message);
+			gameSend = 1;
+			gameSendUserState = 1;
+			userSend = 0;
 			break;
 		}
 		
@@ -831,28 +813,12 @@ void* attendClient (void* args)
 					printf("%s selecciona a %s\n", username, p);
 					strcpy(response, "12/");
 					strcat(response, "CHAROK");
-		
-					char notify_group [SERVER_RSP_LEN];
 					json_object* gameStateJson = GameStateToJson(preGame);
-					strcpy(notify_group, "10/");
-					strcat(notify_group, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
-					strcat(notify_group, "|");
-					//strcpy(response, json_object_to_json_string(listJson));
-					
-					// DESTRUIR LLISTA JSON!!!
-					// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+					strcpy(gameNotification, "10/");
+					strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
+					gameSend = 1;
+					gameSendUserState = 1;
 					free(gameStateJson);
-					
-					//Enviem el missatges
-					printf("GAME GROUP NOTIFICATION: %s\n",gameName);
-					
-					pthread_mutex_lock(preGame->game_mutex);
-					for(int i=0;i<preGame->userCount;i++)
-					{
-						if(preGame->users[i]->userState == 1)
-							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-					}
-					pthread_mutex_unlock(preGame->game_mutex);
 				}
 				else
 			    {
@@ -866,23 +832,26 @@ void* attendClient (void* args)
 			{
 				if(AllHasCharacter(preGame))
 				{
+					char notif2[SERVER_RSP_LEN];
+					char notif3[SERVER_RSP_LEN];
 					printf("Comença la partida %s\n", gameName);
-					request_enable = 0;
-					
-					char notify_group[SERVER_RSP_LEN];
-					pthread_mutex_lock(preGame->game_mutex);
-					strcpy(notify_group, "12/START");
-					printf("GAME GROUP NOTIFICATION STARTED: %s\n",gameName);
-					strcat(notify_group, "|");
-					
-					for(int i=0;i<preGame->userCount;i++)
+					userSend = 0;
+					gameSend = 0;
+					strcpy(notif2, "12/START");
+					sendToGame(gameSenderArgs[gameId], notif2, 1);
+					/*for(int i=0;i<preGame->userCount;i++)
 					{
 						if(preGame->users[i]->userState == 1)
 							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
 					}
+					*/
 					
-					sprintf(notify_group, "9/LOSE/%s/%s/",preGame->gameName,preGame->creator->username);
-					strcat(notify_group, "|");
+					//sleep(1);
+					pthread_mutex_lock(preGame->game_mutex);
+					sprintf(notif3, "9/LOSE/%s/%s/",preGame->gameName,preGame->creator->username);
+					pthread_mutex_unlock(preGame->game_mutex);
+					sendToGame(gameSenderArgs[gameId], notif3, 0); 
+					/*strcat(notify_group, "|");
 					
 					for(int i=0;i<preGame->userCount;i++)
 					{
@@ -891,7 +860,7 @@ void* attendClient (void* args)
 					}
 					
 					pthread_mutex_unlock(preGame->game_mutex);
-					
+					*/
 				}
 				
 				else
@@ -903,20 +872,12 @@ void* attendClient (void* args)
 			}
 			else if (strcmp(option, "CANCEL") == 0)
 			{
-				char notify_group[SERVER_RSP_LEN];
-				request_enable = 0;
+				userSend = 0;
+				gameSend = 0;
 				pthread_mutex_lock(preGame->game_mutex);
-				sprintf(notify_group, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
-				printf("GAME GROUP NOTIFICATION CANCELLED: %s\n",gameName);
-				strcat(notify_group, "|");
-				
-				for(int i=0;i<preGame->userCount;i++)
-				{
-					if((preGame->users[i]->userState == 1)||(preGame->users[i]->userState == 0))
-						write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-				}
-				pthread_mutex_unlock(preGame->game_mutex);
-				
+				sprintf(gameNotification, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
+				sendToGame(gameSenderArgs[gameId], gameNotification, 0); 
+				sendToGame(gameSenderArgs[gameId], gameNotification, 1); 
 				DeleteGameFromTable(gameTable,preGame);
 			}
 			break;
@@ -937,7 +898,7 @@ void* attendClient (void* args)
 		}
 		
 		// Enviamos response siempre que no se haya recibido request de disconnect
-		if((request_code)&&(request_enable))
+		if((request_code)&&(userSend))
 		{	
 			strcat(response, "|");
 			printf("%s = %s\n", threadArgs->connectedUser->username, response);
