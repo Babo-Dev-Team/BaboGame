@@ -42,4 +42,6 @@ Vídeo de la versió 4 fet per Joel Compte
 
 Versió 5 generada per Joel Compte Prades
 
-Versió 5 verificada per Albert Compte Prades
+Versió 5 revisada per Albert Compte Prades
+
+Vídeo de la versió 5 fet per Joaquim Broquetas
