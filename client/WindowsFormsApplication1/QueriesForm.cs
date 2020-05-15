@@ -93,13 +93,13 @@ namespace BaboGameClient
             characterDescription = new string[] 
             {
             "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal?",//Babo
-            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac no gaire salat.",//Limax
+            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac una mica salat.",//Limax
             "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude?",//Kaler
-            "Swalot, pokémon tipus verí. Com no té dens, es traga tot d'un sol cop amb la seva enorme boca. " //Swalot
+            "Swalot, pokémon tipus verí. Com no té dents, es traga tot d'un sol cop amb la seva enorme boca. " //Swalot
             };
             charSelectedPos = 0;
 
-            //Variable que diferenciar a quin menú estàs situat
+            //Variable que diferencia a quin menú estàs situat
             ScreenSelected = 0;
 
 
