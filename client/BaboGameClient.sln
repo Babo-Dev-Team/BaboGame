@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormMenuSystem", "WindowsFo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHandler", "ServerHandler\ServerHandler.csproj", "{FA9B0C70-2ABD-416D-8580-8916C515AB4C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaboGame_test_2", "..\..\Babo-Dev-Team\BaboGame_test_2\BaboGame_test_2\BaboGame_test_2.csproj", "{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FA9B0C70-2ABD-416D-8580-8916C515AB4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA9B0C70-2ABD-416D-8580-8916C515AB4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA9B0C70-2ABD-416D-8580-8916C515AB4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

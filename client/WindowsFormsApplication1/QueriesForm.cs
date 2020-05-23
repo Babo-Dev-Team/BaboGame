@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.IO;
+using BaboGame_test_2;
 
 namespace BaboGameClient
 {
@@ -615,6 +616,9 @@ namespace BaboGameClient
         public void StartGamePopup()
         {
             MessageBox.Show("Comença la partida");
+            BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
+
+            BaboGame.Run();
         }
 
         //Error en no haver escollit tothom personatge
