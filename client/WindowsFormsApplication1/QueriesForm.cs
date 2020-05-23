@@ -616,9 +616,11 @@ namespace BaboGameClient
         public void StartGamePopup()
         {
             MessageBox.Show("Comença la partida");
-            BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
+            //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
+            //BaboGame.Run();
 
-            BaboGame.Run();
+            using (var game = new Game1())
+            game.Run();
         }
 
         //Error en no haver escollit tothom personatge

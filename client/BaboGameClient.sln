@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormMenuSystem", "WindowsFo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHandler", "ServerHandler\ServerHandler.csproj", "{FA9B0C70-2ABD-416D-8580-8916C515AB4C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaboGame_test_2", "..\..\Babo-Dev-Team\BaboGame_test_2\BaboGame_test_2\BaboGame_test_2.csproj", "{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaboGame_test_2", "BaboGame_test_2\BaboGame_test_2.csproj", "{65A4B36D-92AB-420B-B2EE-BE333F26BFB7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
