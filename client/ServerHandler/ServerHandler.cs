@@ -199,6 +199,17 @@ namespace BaboGameClient
                     ReceiverArgs.gameState = JsonSerializer.Deserialize<List<PreGameStateUser>>(splitResponse[1]);
                     break;
 
+                //Missatges del xat de la partida
+                case 11:
+                    string message = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        message = message + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = message;
+                    break;
+
                 // notificacions d'estat del joc
                 case 12:
                     string gameStr = splitResponse[1];
@@ -291,6 +302,11 @@ namespace BaboGameClient
         public void RequestRejectInvitation(string gameName)
         {
             this.SendRequest("9/REJECT/" + gameName + "/");
+        }
+
+        public void RequestChatMessage(string message)
+        {
+            this.SendRequest("11/" + message + "/");
         }
 
         public void RequestCancelGame(string gameName)

@@ -147,6 +147,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Babo-Dev-Team\BaboGame_test_2\BaboGame_test_2\BaboGame_test_2.csproj">
+      <Project>{65a4b36d-92ab-420b-b2ee-be333f26bfb7}</Project>
+      <Name>BaboGame_test_2</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ServerHandler\ServerHandler.csproj">
       <Project>{fa9b0c70-2abd-416d-8580-8916c515ab4c}</Project>
       <Name>ServerHandler</Name>

@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.IO;
+using BaboGame_test_2;
 
 namespace BaboGameClient
 {
@@ -20,36 +22,97 @@ namespace BaboGameClient
         // DataGridUpdateRequested segons el data grid
         NotificationWorker notificationWorker;
 
-        PictureBox NotificationIcon = new PictureBox();
+        PictureBox NotificationIcon;
 
         //Elements del menú dels personatges seleccionats
-        DataGridView PlayersSelected_dg = new DataGridView();
-        TextBox NewPartyName_tb = new TextBox();
-        Button CreateParty_btn = new Button();
-        Button NewPartyBack_btn = new Button();
-        Label NewPartyName_lbl = new Label();
+        DataGridView PlayersSelected_dg;
+        TextBox NewPartyName_tb;
+        Button CreateParty_btn;
+        Button NewPartyBack_btn;
+        Label NewPartyName_lbl;
 
         //Elements del menú de la partida
-        Label PartyName_lbl = new Label();
-        PictureBox character_pb = new PictureBox();
-        Button LeftChar_btn = new Button();
-        Button RightChar_btn = new Button();
-        Button CancelGame_btn = new Button();
-        Button SelectChar_btn = new Button();
-        Button StartGame_btn = new Button();
-        Button QuitGame_btn = new Button();
-        RichTextBox ChatGame_rtb = new RichTextBox();
+        Label PartyName_lbl;
+        PictureBox character_pb;
+        Button LeftChar_btn;
+        Button RightChar_btn;
+        Button CancelGame_btn;
+        Button SelectChar_btn;
+        Button StartGame_btn;
+        Button QuitGame_btn;
+        RichTextBox ChatGame_rtb;
+        Panel ChattingPanel;
+        Button Chatting_btn;
+        TextBox Chatting_tb;
+        Panel StickersPanel;
+        Button Stickers_btn;
+        Label CharName_lbl;
+        Label CharDescription_lbl;
 
-        string[] characterSelected = { "Babo", "Limax", "Quim", "Swalot" };
-        int charSelectedPos = 0;
+        string[] characterSelected;
+        string[] characterDescription;
+        int charSelectedPos;
 
         //Variable que diferenciar a quin menú estàs situat
-        int ScreenSelected = 0;
+        int ScreenSelected;
         string gameName;
         ToolStripItem notificationSelection;
+        ToolStripItem stikerSelecton;
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
+
+            this.NotificationIcon = new PictureBox();
+
+            //Elements del menú dels personatges seleccionats
+            PlayersSelected_dg = new DataGridView();
+            NewPartyName_tb = new TextBox();
+            CreateParty_btn = new Button();
+            NewPartyBack_btn = new Button();
+            NewPartyName_lbl = new Label();
+
+            //Elements del menú de la partida
+            PartyName_lbl = new Label();
+            character_pb = new PictureBox();
+            LeftChar_btn = new Button();
+            RightChar_btn = new Button();
+            CancelGame_btn = new Button();
+            SelectChar_btn = new Button();
+            StartGame_btn = new Button();
+            QuitGame_btn = new Button();
+            ChatGame_rtb = new RichTextBox();
+            ChattingPanel = new Panel();
+            Chatting_btn = new Button();
+            Chatting_tb = new TextBox();
+            StickersPanel = new Panel();
+            Stickers_btn = new Button();
+            CharName_lbl = new Label();
+            CharDescription_lbl = new Label();
+
+            characterSelected = new string[] { "Babo", "Limax", "Kaler", "Swalot" };
+
+            characterDescription = new string[] 
+            {
+            "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal?",//Babo
+            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac una mica salat.",//Limax
+            "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude?",//Kaler
+            "Swalot, pokémon tipus verí. Com no té dents, es traga tot d'un sol cop amb la seva enorme boca. " //Swalot
+            };
+            charSelectedPos = 0;
+
+            //Variable que diferencia a quin menú estàs situat
+            ScreenSelected = 0;
+
+
+
+
+
+
+
+
+
+
+
             InitializeComponent();
             this.serverHandler = serverHandler;
             this.notificationWorker = notificationWorker;
@@ -58,6 +121,7 @@ namespace BaboGameClient
             NotificationIcon.Load();
             NotificationIcon.Refresh();
 
+            
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Creació dels objectes del menú de la tria de la llista de connectats
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,18 +177,20 @@ namespace BaboGameClient
 
             //Buttons per canviar el personatge
             LeftChar_btn.Location = new Point(25,100);
-            LeftChar_btn.Text = "Left";
+            //LeftChar_btn.Text = "Left";
             LeftChar_btn.Visible = false;
-            LeftChar_btn.Size = new Size(60, 60);
-            this.Controls.Add(LeftChar_btn);
+            LeftChar_btn.Size = new Size(64, 64);
             LeftChar_btn.Click += new EventHandler(this.LeftChar_btn_Click);
+            LeftChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
+            this.Controls.Add(LeftChar_btn);
 
             RightChar_btn.Location = new Point(240, 100);
-            RightChar_btn.Text = "Right";
+            //RightChar_btn.Text = "Right";
             RightChar_btn.Visible = false;
-            RightChar_btn.Size = new Size(60, 60);
-            this.Controls.Add(RightChar_btn);
+            RightChar_btn.Size = new Size(64, 64);
             RightChar_btn.Click += new EventHandler(this.RightChar_btn_Click);
+            RightChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/right.png");
+            this.Controls.Add(RightChar_btn);
 
             //PictureBox de la imatge del personatge
             character_pb.Location = new Point(90, 60);
@@ -134,6 +200,20 @@ namespace BaboGameClient
             character_pb.SizeMode = PictureBoxSizeMode.Zoom;
             character_pb.Refresh();
             this.Controls.Add(character_pb);
+
+            //Label del nom del personatge
+            CharName_lbl.Location = new Point(25, 200);
+            CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
+            CharName_lbl.Visible = false;
+            this.Controls.Add(CharName_lbl);
+
+            //Label de la descripció del personatge
+            CharDescription_lbl.Location = new Point(25, 230);
+            CharDescription_lbl.Text = characterDescription[charSelectedPos];
+            CharDescription_lbl.Size = new Size(150, 60);
+            CharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
+            CharDescription_lbl.Visible = false;
+            this.Controls.Add(CharDescription_lbl);
 
             //Button per cancellar la partida
             CancelGame_btn.Location = new Point(225, 300);
@@ -170,9 +250,58 @@ namespace BaboGameClient
             //RichTextBox
             ChatGame_rtb.Visible = false;
             ChatGame_rtb.Size = new Size(250,350);
-            ChatGame_rtb.Location = new Point(300,25);
+            ChatGame_rtb.Location = new Point(325,25);
+            ChatGame_rtb.ReadOnly = true;
             this.Controls.Add(ChatGame_rtb);
             ChatGame_rtb.Text = "";
+
+            //ChatPanel
+            ChattingPanel.Size = new Size(250,270); //Mides del panell
+            ChattingPanel.Location = new Point(625,25); //posició del panell
+            ChattingPanel.Visible = false;
+            this.Controls.Add(ChattingPanel);
+            ChattingPanel.BackColor = Color.WhiteSmoke;
+            ChattingPanel.AutoScroll = false;
+            ChattingPanel.VerticalScroll.Visible = true;
+            ChattingPanel.VerticalScroll.Enabled = true;
+            ChattingPanel.AutoScroll = true;
+            ChattingPanel.Refresh();
+
+            //StickersPanel
+            StickersPanel.Size = new Size(250, 120); //Mides del panell
+            StickersPanel.Location = new Point(625, 175); //posició del panell
+            StickersPanel.Visible = false;
+            this.Controls.Add(StickersPanel);
+            StickersPanel.BringToFront();
+            StickersPanel.BackColor = Color.LightYellow;
+            StickersPanel.AutoScroll = false;
+            StickersPanel.HorizontalScroll.Enabled = true;
+            StickersPanel.HorizontalScroll.Visible = true;
+            StickersPanel.AutoScroll = true;
+            StickersPanel.Refresh();
+
+            //Chatting_Btn
+            Chatting_btn.Location = new Point(625, 300);
+            Chatting_btn.Text = "Xateja";
+            Chatting_btn.Size = new Size(80, 25);
+            Chatting_btn.Visible = false;
+            this.Controls.Add(Chatting_btn);
+            Chatting_btn.Click += new EventHandler(this.Chatting_btn_Click);
+
+            //Stickers_Btn
+            Stickers_btn.Location = new Point(625, 325);
+            Stickers_btn.Text = "Adhesius";
+            Stickers_btn.Size = new Size(80, 25);
+            Stickers_btn.Visible = false;
+            this.Controls.Add(Stickers_btn);
+            Stickers_btn.Click += new EventHandler(this.Stickers_btn_Click);
+
+            //Chattting_tb
+            Chatting_tb.Location = new Point(725, 300);
+            Chatting_tb.Visible = false;
+            this.Controls.Add(Chatting_tb);
+
+
         }
 
         //------------------------------------------------
@@ -324,6 +453,15 @@ namespace BaboGameClient
                 QuitGame_btn.Visible = false;
                 ChatGame_rtb.Visible = true;
                 PartyName_lbl.Text = "Partida: " + gameName;
+                Chatting_btn.Visible = true;
+                Chatting_tb.Visible = true;
+                ChattingPanel.Visible = true;
+                StickersPanel.Visible = false;
+                Stickers_btn.Visible = true;
+                CharName_lbl.Visible = true;
+                CharDescription_lbl.Visible = true;
+
+                this.Width = 900;
             }
             else if (response == "ALONE")
                 MessageBox.Show("No has escollit a ningú a part de tú. Les partides són multijugadors");
@@ -383,6 +521,15 @@ namespace BaboGameClient
             ChatGame_rtb.Visible = true;
             PartyName_lbl.Text = "Partida: " + gameName;
             Notificacions_btn.DropDownItems.Remove(notificationSelection);
+            Chatting_btn.Visible = true;
+            Chatting_tb.Visible = true;
+            ChattingPanel.Visible = true;
+            StickersPanel.Visible = false;
+            Stickers_btn.Visible = true;
+            CharName_lbl.Visible = true;
+            CharDescription_lbl.Visible = true;
+
+            this.Width = 900;
         }
 
         //S'ha confirmat el rebuig a la partida
@@ -412,6 +559,8 @@ namespace BaboGameClient
             Invitation.Tag = gameName;
             Notificacions_btn.DropDownItems.Remove(Invitation);
         }
+
+
 
         //Resposta de l'usuari per acceptar la invitació
         private void AcceptInvitation(object sender, EventArgs e, string gameName, ToolStripItem invitation)
@@ -467,6 +616,9 @@ namespace BaboGameClient
         public void StartGamePopup()
         {
             MessageBox.Show("Comença la partida");
+            BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
+
+            BaboGame.Run();
         }
 
         //Error en no haver escollit tothom personatge
@@ -494,6 +646,7 @@ namespace BaboGameClient
                 queries_tb.Visible = true;
                 NewParty_btn.Visible = true;
 
+
                 //Desactiva els objectes del menú anterior
                 PlayersSelected_dg.Visible = false;
                 NewPartyName_tb.Visible = false;
@@ -511,6 +664,15 @@ namespace BaboGameClient
                 CancelGame_btn.Visible = false;
                 QuitGame_btn.Visible = false;
                 ChatGame_rtb.Visible = false;
+                Chatting_btn.Visible = false;
+                Chatting_tb.Visible = false;
+                ChattingPanel.Visible = false;
+                StickersPanel.Visible = false;
+                Stickers_btn.Visible = false;
+                CharName_lbl.Visible = false;
+                CharDescription_lbl.Visible = false;
+
+                this.Width = 616;
             }
             else
             {
@@ -561,6 +723,90 @@ namespace BaboGameClient
             CancelGame_btn.Visible = false;
             QuitGame_btn.Visible = false;
             ChatGame_rtb.Visible = false;
+            Chatting_btn.Visible = false;
+            Chatting_tb.Visible = false;
+            ChattingPanel.Visible = false;
+            StickersPanel.Visible = false;
+            Stickers_btn.Visible = false;
+            CharName_lbl.Visible = false;
+            CharDescription_lbl.Visible = false;
+
+            this.Width = 616;
+        }
+
+        int panelcursor = 0;
+
+        public void SentMessageChat(string username, string message)
+        {
+            if (message.Length > 0)
+            {
+                bool Image = true;
+                string[] messageReceived = message.Split('}');
+                if (messageReceived.Length < 2)
+                    Image = false;
+                if (Image)
+                {
+                    PictureBox sticker = new PictureBox();
+                    sticker.Size = new Size(120, 120);
+                    sticker.SizeMode = PictureBoxSizeMode.Zoom;
+                    string ImageName = messageReceived[0].Split('{')[1];
+                    try
+                    {
+                        sticker.ImageLocation = "../../../Pictures/Stickers/" + ImageName + ".png";
+                    }
+                    catch
+                    {
+                        Image = false;
+                    }
+
+                    if (Image)
+                    {
+                        Label text = new Label();
+                        text.Text = username + ":";
+                        text.BackColor = Color.PaleGreen;
+                        text.MaximumSize = new Size(ChattingPanel.Width, ChattingPanel.Height);
+                        text.AutoSize = true;
+                        text.Location = new Point(0, panelcursor - ChattingPanel.VerticalScroll.Value);
+                        panelcursor += text.Height + 10;
+                        ChattingPanel.Controls.Add(text);
+                        sticker.Location = new Point(0, panelcursor - ChattingPanel.VerticalScroll.Value);
+                        Chatting_tb.Text = "";
+                        panelcursor += sticker.Height + 10;
+                        ChattingPanel.Controls.Add(sticker);
+                        ChattingPanel.Refresh();
+                    }
+                    else
+                    {
+                        
+                        Label text = new Label();
+                        text.Text = username + ": " + message;
+                        text.BackColor = Color.PaleGreen;
+                        text.MaximumSize = new Size(ChattingPanel.Width, ChattingPanel.Height);
+                        text.AutoSize = true;
+                        text.Location = new Point(0, panelcursor - ChattingPanel.VerticalScroll.Value);
+                        Chatting_tb.Text = "";
+                        panelcursor += sticker.Height + 10;
+                        ChattingPanel.Controls.Add(text);
+                        ChattingPanel.Refresh();
+                        
+                    }
+                }
+                else
+                {
+                    Label text = new Label();
+                    text.Text = username + ": " + message;
+                    text.BackColor = Color.PaleGreen;
+                    text.MaximumSize = new Size(ChattingPanel.Width, ChattingPanel.Height);
+                    text.AutoSize = true;
+                    text.Location = new Point(0, panelcursor - ChattingPanel.VerticalScroll.Value);
+                    Chatting_tb.Text = "";
+                    panelcursor += text.Height + 10;
+                    ChattingPanel.Controls.Add(text);
+
+                }
+
+            }
+            
         }
         //------------------------------------------------
         // REGULAR METHODS, USE FROM UI
@@ -673,6 +919,64 @@ namespace BaboGameClient
             Notificacions_btn.BackColor = Color.LightGray;
         }
 
+        private void Chatting_btn_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(Chatting_tb.Text))
+            {
+                MessageBox.Show("Els camps estan buits!");
+                return;
+            }
+            else
+            {
+                serverHandler.RequestChatMessage(Chatting_tb.Text);
+            }
+
+        }
+
+        private void Stickers_btn_Click(object sender, EventArgs e)
+        {
+            if(StickersPanel.Visible==true)
+            {
+                StickersPanel.Visible = false;
+            }
+            else
+            {
+                StickersPanel.Visible = true;
+                DirectoryInfo stickerFolder = new DirectoryInfo("../../../Pictures/Stickers");
+                FileInfo[] stickers = stickerFolder.GetFiles();
+                List<string> stickersNames = new List<string>();
+                int ImageCursor = 0;
+                StickersPanel.HorizontalScroll.Value = 0;
+                StickersPanel.Controls.Clear();
+                foreach(FileInfo sticker in stickers)
+                {
+                    stickersNames.Add(sticker.Name);
+                }
+                foreach(string stickerName in stickersNames)
+                {
+                    //ChatGame_rtb.Text += stickerName + "\n";
+                    string stickerSelected = stickerName.Split('.')[0];
+                    PictureBox StickerImage = new PictureBox();
+                    StickerImage.Size = new Size(80, 80);
+                    StickerImage.Location = new Point(ImageCursor + 10, 10);
+                    ImageCursor += 120;
+                    StickerImage.ImageLocation = "../../../Pictures/Stickers/" + stickerName;
+                    StickerImage.Load();
+                    StickerImage.SizeMode = PictureBoxSizeMode.Zoom;
+                    StickerImage.Refresh();
+                    StickersPanel.Controls.Add(StickerImage);
+                    StickerImage.Click += delegate { StickerSelected_Click(sender, e, stickerSelected); };
+                    
+                }
+            }
+        }
+
+        private void StickerSelected_Click (object sender, EventArgs e, string StickerName)
+        {
+            Chatting_tb.Text = "{" + StickerName + "}";
+            serverHandler.RequestChatMessage(Chatting_tb.Text);
+        }
+
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //Menú de selecció de jugadors
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -720,6 +1024,15 @@ namespace BaboGameClient
             CancelGame_btn.Visible = false;
             QuitGame_btn.Visible = false;
             ChatGame_rtb.Visible = false;
+            Chatting_btn.Visible = false;
+            Chatting_tb.Visible = false;
+            ChattingPanel.Visible = false;
+            StickersPanel.Visible = false;
+            Stickers_btn.Visible = false;
+            CharName_lbl.Visible = false;
+            CharDescription_lbl.Visible = false;
+
+            this.Width = 616;
         }
 
         //Selecció de un element de la llista dels jugadors elegits
@@ -822,6 +1135,15 @@ namespace BaboGameClient
             CancelGame_btn.Visible = false;
             QuitGame_btn.Visible = false;
             ChatGame_rtb.Visible = false;
+            Chatting_btn.Visible = false;
+            Chatting_tb.Visible = false;
+            ChattingPanel.Visible = false;
+            StickersPanel.Visible = false;
+            Stickers_btn.Visible = false;
+            CharName_lbl.Visible = false;
+            CharDescription_lbl.Visible = false;
+
+            this.Width = 616;
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -836,9 +1158,12 @@ namespace BaboGameClient
             else
                 charSelectedPos = 3;
 
+            character_pb.Image.Dispose();
             character_pb.ImageLocation = "../../../Pictures/Characters/"+ characterSelected[charSelectedPos] + " stop.gif";
             character_pb.Load();
             character_pb.Refresh();
+            CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
+            CharDescription_lbl.Text = characterDescription[charSelectedPos];           
         }
 
         public void RightChar_btn_Click(object sender, EventArgs e)
@@ -847,10 +1172,13 @@ namespace BaboGameClient
                 charSelectedPos++;
             else
                 charSelectedPos = 0;
-
+                
+            character_pb.Image.Dispose();
             character_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[charSelectedPos] + " stop.gif";
             character_pb.Load();
             character_pb.Refresh();
+            CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
+            CharDescription_lbl.Text = characterDescription[charSelectedPos];
         }
 
         //Començar/Cancel·lar la partida
@@ -907,6 +1235,15 @@ namespace BaboGameClient
                 CancelGame_btn.Visible = false;
                 QuitGame_btn.Visible = false;
                 ChatGame_rtb.Visible = false;
+                Chatting_btn.Visible = false;
+                Chatting_tb.Visible = false;
+                ChattingPanel.Visible = false;
+                StickersPanel.Visible = false;
+                Stickers_btn.Visible = false;
+                CharName_lbl.Visible = false;
+                CharDescription_lbl.Visible = false;
+
+                this.Width = 616;
             }
         }
 
@@ -917,6 +1254,16 @@ namespace BaboGameClient
                 MessageBox.Show("No s'ha seleccionat cap partida per començar");
             else
                 serverHandler.RequestSelectCharacter(gameName, characterSelected[charSelectedPos]);
+        }
+
+        private void QueriesForm_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
