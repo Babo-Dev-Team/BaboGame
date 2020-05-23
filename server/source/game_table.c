@@ -37,6 +37,7 @@ void __deletePreGame(PreGameState* game)
 	{
 		__deletePreGameUser(game->users[i]);
 	}
+	pthread_mutex_destroy(game->game_mutex);
 	free(game);
 }
 
@@ -113,6 +114,8 @@ PreGameUser* CreatePreGameUser(ConnectedUser* connectedUser)
 	pthread_mutex_lock(connectedUser->user_mutex);
 	preGameUser->socket = connectedUser->socket;
 	preGameUser->id = connectedUser->id;
+	strcpy(preGameUser->charname,"none");
+	preGameUser->userState = 0; //Defineix al usuari com a pendent de confirmació
 	strcpy(preGameUser->username, connectedUser->username);
 	pthread_mutex_unlock(connectedUser->user_mutex);
 	return preGameUser;
@@ -188,6 +191,12 @@ PreGameState* CreateGame(ConnectedUser* user, char name[GAME_LEN])
 	
 	// creem un PreGameUser a partir del ConnectedUser creador de la partida
 	preGameState->creator = CreatePreGameUser(user);	
+	preGameState->creator->userState = 1; //Defineix el creador com a jugador que ha "acceptat" jugar
+	
+	// creem el thread del joc
+	pthread_mutex_t* mutexGame = malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexGame, NULL);
+	preGameState->game_mutex = mutexGame;
 	
 	// afegim el creador a la llista d'usuaris de la partida
 	// encara no ens cal mutex perquè encara no hem retornat preGameState
@@ -246,7 +255,7 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 				// Afegim la partida a la taula de partides
 				table->createdGames[emptyPos] = gameState;
 				table->gameCount++;
-				ret = 0;
+				ret = gameState->gameId;
 			}
 			else
 			{
@@ -263,11 +272,13 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 int DeleteGameFromTable(GameTable* table, PreGameState* gameState)
 {
 	int ret;
-	pthread_mutex_lock(table->game_table_mutex);	
+	int gameIDpos;
+	pthread_mutex_lock(table->game_table_mutex);
+	gameIDpos = gameState->gameId;
 	if(gameState->gameId != -1) // comprovem que la partida es troba a la llista amb ID valida
 	{
 		__deletePreGame(table->createdGames[gameState->gameId]); // hard delete, esborrem l'objecte per evitar leaks de memoria.
-		table->createdGames[gameState->gameId] = NULL; // posem el punter a NULL indicant espai lliure a la taula de partides
+		table->createdGames[gameIDpos] = NULL; // posem el punter a NULL indicant espai lliure a la taula de partides
 		ret = 0;
 	}
 	else
@@ -325,6 +336,92 @@ int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char 
 	return ret;
 }
 
+// busca si tots han agafat personatge
+int AllHasCharacter(PreGameState* preGameState)
+{
+	int found=1;
+	int i=0;
+	pthread_mutex_lock(preGameState->game_mutex);
+	while((i<preGameState->userCount)&&(found))
+	{
+		if(!strcmp(preGameState->users[i]->charname,"none"))
+			found=0;
+		else
+			i++;
+	}
+	pthread_mutex_unlock(preGameState->game_mutex);
+	return found;
+}
+
+// busca si queden usuaris
+int IamAloneinGame(PreGameState* preGameState)
+{
+	int i=0;
+	int count = 0;
+	pthread_mutex_lock(preGameState->game_mutex);
+	for(i=0;i<preGameState->userCount;i++)
+	{
+		if((preGameState->users[i]->userState == 0)||(preGameState->users[i]->userState == 1))
+			count=0;
+	}
+	pthread_mutex_unlock(preGameState->game_mutex);
+	int ret;
+	if(count > 1)
+		ret=0;
+	else
+		ret=1;
+	return ret;
+}
+
+// busca l'usuari en la llista i dona la posició
+int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH])
+{
+	//pthread_mutex_lock(gameState->game_mutex);
+	int userCount = gameState->userCount;
+	int i = 0;
+	int found = 0;
+	while ((i < userCount) && !found)
+	{
+		if(!strcmp(gameState->users[i]->username, username))
+		{
+			found = 1;
+		}
+		else 
+		    i++;
+	}
+	//pthread_mutex_unlock(gameState->game_mutex);
+	if (!found)
+		i = -1;
+	return i;
+}
+
+// busca la partida en la taula de partides a partir del nom
+PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_LEN])
+{
+	pthread_mutex_lock(gameTable->game_table_mutex);
+	PreGameState* ret;
+	int i = 0;
+	int found = 0;
+	while((i < gameTable->gameCount)&&(!found))
+	{
+		if(!strcmp(gameName,gameTable->createdGames[i]->gameName))
+		   found = 1;
+		else
+			i++;
+	}
+	
+	if(found)
+	{
+		ret = gameTable->createdGames[i];
+	}
+	else
+    {
+		ret = NULL;
+	}
+	pthread_mutex_unlock(gameTable->game_table_mutex);
+	return ret;
+}
+
 json_object* GameTableToJson(GameTable* table)
 {
 	json_object* gameJson = json_object_new_array();
@@ -351,6 +448,34 @@ json_object* GameTableToJson(GameTable* table)
 		}
 	}	
 	pthread_mutex_unlock(table->game_table_mutex);	
+	return gameJson;
+}
+
+//Treure el json de la partida
+json_object* GameStateToJson(PreGameState* preGameState)
+{
+	json_object* gameJson = json_object_new_array();
+	pthread_mutex_lock(preGameState->game_mutex);	
+	for(int i = 0; i < preGameState->userCount; i++)
+	{
+		if (preGameState->users[i] != NULL)
+		{
+			json_object* user = json_object_new_object();
+			
+			json_object* id = json_object_new_int(preGameState->users[i]->id);
+			json_object* username = json_object_new_string(preGameState->users[i]->username);		
+			json_object* charname = json_object_new_string(preGameState->users[i]->charname);
+			json_object* userState = json_object_new_int(preGameState->users[i]->userState);		
+			
+			json_object_object_add(user, "Id", id);
+			json_object_object_add(user, "UserName", username);
+			json_object_object_add(user, "CharName", charname);
+			json_object_object_add(user, "UserState", userState);
+			
+			json_object_array_add(gameJson, user);	
+		}
+	}	
+	pthread_mutex_unlock(preGameState->game_mutex);	
 	return gameJson;
 }
 //------------------------------------------------------------------------------

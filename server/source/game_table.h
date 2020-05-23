@@ -14,6 +14,7 @@
 typedef struct PreGameUser{
 	int id;									// ID usuari
 	int socket;								// socket associat a l'usuari
+	int userState;							// estat de l'usuari, permet saver si ha sigut invitat i si ha acceptat la invitació
 	char username[USRN_LENGTH];				// nom d'usuati
 	char charname[CHAR_LEN];				// personatge seleccionat per la partida
 	pthread_mutex_t* user_mutex;			// mutex de l'usuari
@@ -56,6 +57,13 @@ GameTable* CreateGameTable(pthread_mutex_t* mutex);
 void DeleteGameTable(GameTable* table);
 int PreGameAssignChar(PreGameState* gameState, char username[USRN_LENGTH], char charname[CHAR_LEN]);
 json_object* GameTableToJson(GameTable* table);
+
+PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_LEN]);
+int GetPreGameUserPosByName(PreGameState* gameState, char username[USRN_LENGTH]);
+json_object* GameStateToJson(PreGameState* preGameState);
+int AllHasCharacter(PreGameState* preGameState);
+int IamAloneinGame(PreGameState* preGameState);
+	
 //------------------------------------------------------------------------------
 
 #endif

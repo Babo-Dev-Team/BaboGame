@@ -95,7 +95,7 @@ char* BBDD_time_played(char username[USRN_LENGTH])
 		int seconds = raw_time % 60;
 		int minutes = ((raw_time - seconds) / 60) % 60;
 		int hours = ((raw_time - seconds - (minutes * 60)) / 3600) % 24;
-		sprintf(time_played, "%d:%d:%d\n", hours, minutes, seconds);
+		sprintf(time_played, "%d:%d:%d", hours, minutes, seconds);
 	}
 	return time_played;
 }
@@ -212,7 +212,8 @@ int BBDD_connect ()
 	}
 	
 	// init connection
-	conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
+	//conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
+	conn = mysql_real_connect (conn, "localhost","root", "mysql", "BaboGameBBDD", 0, NULL, 0);
 	if (conn == NULL) 
 	{
 		printf ("Error while initializing connection: %u %s\n", mysql_errno(conn), mysql_error(conn));
