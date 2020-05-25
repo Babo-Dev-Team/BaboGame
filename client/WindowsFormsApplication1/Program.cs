@@ -41,6 +41,8 @@ namespace BaboGameClient
         // el mètode delegat per avisar l'estat de la prepartida
         delegate void PreGameStateUserDelegate(List<PreGameStateUser> connectedList);
 
+        //el mètode delegat pels missatges del xat
+        delegate void ChatMessage(string username, string message);
         //------------------------------------------------
         // ATTRIBUTES
         //------------------------------------------------
@@ -66,7 +68,7 @@ namespace BaboGameClient
                 int responseType = ReceiverArgs.responseType;
 
                 // si hem rebut una update de dades (data grid), actualitzem el data grid
-                if(responseType == DataGridUpdateRequested)
+                if (responseType == DataGridUpdateRequested)
                 {
                     // Actualitzem la llista de connectats
                     if (this.DataGridUpdateRequested == 6)
@@ -97,7 +99,7 @@ namespace BaboGameClient
                 {
                     string CharacterList = ReceiverArgs.responseStr;
                     CharacterListDelegate characterDelegate = new CharacterListDelegate(this.QueriesForm.UpdateCharactersList);
-                    
+
                     int n_pairs = Convert.ToInt32(CharacterList.Split('/')[0]);
                     string[] playerCharPairs = new string[n_pairs];
                     string[][] playerChars = new string[n_pairs][];
@@ -119,10 +121,10 @@ namespace BaboGameClient
                 }
 
                 //Mostra el ranking
-                else if (responseType == 2)                  
+                else if (responseType == 2)
                 {
                     string response = ReceiverArgs.responseStr;
-                    RankingDelegate rankingDelegate = new RankingDelegate(this.QueriesForm.UpdateRanking);                    
+                    RankingDelegate rankingDelegate = new RankingDelegate(this.QueriesForm.UpdateRanking);
                     int n_pairs = Convert.ToInt32(response.Split('/')[0]);
                     string[] rankingPairs = new string[n_pairs];
                     string[][] ranking = new string[n_pairs][];
@@ -164,7 +166,7 @@ namespace BaboGameClient
                     if (splitResponse[0] == "NOTIFY")
                     {
                         InvitationMessage invitationMessageDelegate = new InvitationMessage(this.QueriesForm.InvitationNotificationMessage);
-                        QueriesForm.Invoke(invitationMessageDelegate, new object[] {splitResponse[1],splitResponse[2]});
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { splitResponse[1], splitResponse[2] });
                     }
 
                     else if (splitResponse[0] == "ACCEPTED")
@@ -197,8 +199,16 @@ namespace BaboGameClient
                 {
                     List<PreGameStateUser> gameState = ReceiverArgs.gameState;
                     PreGameStateUserDelegate userStateDelegate = new PreGameStateUserDelegate(this.QueriesForm.GameStateUpdate);
-                    QueriesForm.Invoke(userStateDelegate, new object[] {gameState});
+                    QueriesForm.Invoke(userStateDelegate, new object[] { gameState });
                     gameState = null;
+                }
+                //Missatges del Xat
+                else if (responseType == 11)
+                {
+                    string response = ReceiverArgs.responseStr;
+                    string[] splitResponse = response.Split('/');
+                    ChatMessage ChatDelegate = new ChatMessage(this.QueriesForm.SentMessageChat);
+                    QueriesForm.Invoke(ChatDelegate, new object[] {splitResponse[0], splitResponse[1]});
                 }
 
                 //Notificacions sobre la selecció de personatges, cancel.lar partides i l'inici d'aquestes
@@ -209,7 +219,7 @@ namespace BaboGameClient
                     if (splitResponse[0] == "CHAROK")
                     {
                         InvitationMessageConfirmation invitationMessageDelegate = new InvitationMessageConfirmation(this.QueriesForm.AcceptCharacterPopup);
-                        QueriesForm.Invoke(invitationMessageDelegate, new object[] {});
+                        QueriesForm.Invoke(invitationMessageDelegate, new object[] { });
                     }
                     else if (splitResponse[0] == "CHARFAIL")
                     {
