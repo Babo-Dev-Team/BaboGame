@@ -35,8 +35,6 @@
             this.Ranking_rb = new System.Windows.Forms.RadioButton();
             this.Characters_rb = new System.Windows.Forms.RadioButton();
             this.ConnectedList_rb = new System.Windows.Forms.RadioButton();
-            this.createGame_rb = new System.Windows.Forms.RadioButton();
-            this.showGames_rb = new System.Windows.Forms.RadioButton();
             this.MenúExtres = new System.Windows.Forms.MenuStrip();
             this.Notificacions_btn = new System.Windows.Forms.ToolStripMenuItem();
             this.NewParty_btn = new System.Windows.Forms.Button();
@@ -47,20 +45,20 @@
             // QueryGrid
             // 
             this.QueryGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.QueryGrid.Location = new System.Drawing.Point(322, 20);
-            this.QueryGrid.Margin = new System.Windows.Forms.Padding(2);
+            this.QueryGrid.Location = new System.Drawing.Point(429, 25);
+            this.QueryGrid.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.QueryGrid.Name = "QueryGrid";
             this.QueryGrid.RowTemplate.Height = 24;
-            this.QueryGrid.Size = new System.Drawing.Size(268, 336);
+            this.QueryGrid.Size = new System.Drawing.Size(357, 414);
             this.QueryGrid.TabIndex = 0;
             this.QueryGrid.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.QueryGrid_CellClick);
             // 
             // Send_btn
             // 
-            this.Send_btn.Location = new System.Drawing.Point(208, 321);
-            this.Send_btn.Margin = new System.Windows.Forms.Padding(2);
+            this.Send_btn.Location = new System.Drawing.Point(277, 395);
+            this.Send_btn.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Send_btn.Name = "Send_btn";
-            this.Send_btn.Size = new System.Drawing.Size(56, 19);
+            this.Send_btn.Size = new System.Drawing.Size(75, 23);
             this.Send_btn.TabIndex = 1;
             this.Send_btn.Text = "Envia";
             this.Send_btn.UseVisualStyleBackColor = true;
@@ -68,19 +66,19 @@
             // 
             // queries_tb
             // 
-            this.queries_tb.Location = new System.Drawing.Point(112, 64);
-            this.queries_tb.Margin = new System.Windows.Forms.Padding(2);
+            this.queries_tb.Location = new System.Drawing.Point(149, 79);
+            this.queries_tb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.queries_tb.Name = "queries_tb";
-            this.queries_tb.Size = new System.Drawing.Size(144, 20);
+            this.queries_tb.Size = new System.Drawing.Size(191, 22);
             this.queries_tb.TabIndex = 2;
             // 
             // TimePlayed_rb
             // 
             this.TimePlayed_rb.AutoSize = true;
-            this.TimePlayed_rb.Location = new System.Drawing.Point(112, 108);
-            this.TimePlayed_rb.Margin = new System.Windows.Forms.Padding(2);
+            this.TimePlayed_rb.Location = new System.Drawing.Point(149, 133);
+            this.TimePlayed_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.TimePlayed_rb.Name = "TimePlayed_rb";
-            this.TimePlayed_rb.Size = new System.Drawing.Size(154, 17);
+            this.TimePlayed_rb.Size = new System.Drawing.Size(204, 21);
             this.TimePlayed_rb.TabIndex = 3;
             this.TimePlayed_rb.TabStop = true;
             this.TimePlayed_rb.Text = "Temps jugat per un jugador";
@@ -89,10 +87,10 @@
             // Ranking_rb
             // 
             this.Ranking_rb.AutoSize = true;
-            this.Ranking_rb.Location = new System.Drawing.Point(112, 142);
-            this.Ranking_rb.Margin = new System.Windows.Forms.Padding(2);
+            this.Ranking_rb.Location = new System.Drawing.Point(149, 175);
+            this.Ranking_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Ranking_rb.Name = "Ranking_rb";
-            this.Ranking_rb.Size = new System.Drawing.Size(123, 17);
+            this.Ranking_rb.Size = new System.Drawing.Size(160, 21);
             this.Ranking_rb.TabIndex = 4;
             this.Ranking_rb.TabStop = true;
             this.Ranking_rb.Text = "Ranking de jugadors";
@@ -101,10 +99,10 @@
             // Characters_rb
             // 
             this.Characters_rb.AutoSize = true;
-            this.Characters_rb.Location = new System.Drawing.Point(112, 179);
-            this.Characters_rb.Margin = new System.Windows.Forms.Padding(2);
+            this.Characters_rb.Location = new System.Drawing.Point(149, 220);
+            this.Characters_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Characters_rb.Name = "Characters_rb";
-            this.Characters_rb.Size = new System.Drawing.Size(195, 17);
+            this.Characters_rb.Size = new System.Drawing.Size(260, 21);
             this.Characters_rb.TabIndex = 5;
             this.Characters_rb.TabStop = true;
             this.Characters_rb.Text = "Personatges utilitzats en una partida";
@@ -113,38 +111,14 @@
             // ConnectedList_rb
             // 
             this.ConnectedList_rb.AutoSize = true;
-            this.ConnectedList_rb.Location = new System.Drawing.Point(112, 213);
-            this.ConnectedList_rb.Margin = new System.Windows.Forms.Padding(2);
+            this.ConnectedList_rb.Location = new System.Drawing.Point(149, 262);
+            this.ConnectedList_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ConnectedList_rb.Name = "ConnectedList_rb";
-            this.ConnectedList_rb.Size = new System.Drawing.Size(120, 17);
+            this.ConnectedList_rb.Size = new System.Drawing.Size(155, 21);
             this.ConnectedList_rb.TabIndex = 6;
             this.ConnectedList_rb.TabStop = true;
             this.ConnectedList_rb.Text = "Llista de connectats";
             this.ConnectedList_rb.UseVisualStyleBackColor = true;
-            // 
-            // createGame_rb
-            // 
-            this.createGame_rb.AutoSize = true;
-            this.createGame_rb.Location = new System.Drawing.Point(112, 246);
-            this.createGame_rb.Margin = new System.Windows.Forms.Padding(2);
-            this.createGame_rb.Name = "createGame_rb";
-            this.createGame_rb.Size = new System.Drawing.Size(85, 17);
-            this.createGame_rb.TabIndex = 7;
-            this.createGame_rb.TabStop = true;
-            this.createGame_rb.Text = "Crear partida";
-            this.createGame_rb.UseVisualStyleBackColor = true;
-            // 
-            // showGames_rb
-            // 
-            this.showGames_rb.AutoSize = true;
-            this.showGames_rb.Location = new System.Drawing.Point(112, 268);
-            this.showGames_rb.Margin = new System.Windows.Forms.Padding(2);
-            this.showGames_rb.Name = "showGames_rb";
-            this.showGames_rb.Size = new System.Drawing.Size(89, 17);
-            this.showGames_rb.TabIndex = 8;
-            this.showGames_rb.TabStop = true;
-            this.showGames_rb.Text = "Llista partides";
-            this.showGames_rb.UseVisualStyleBackColor = true;
             // 
             // MenúExtres
             // 
@@ -153,24 +127,24 @@
             this.Notificacions_btn});
             this.MenúExtres.Location = new System.Drawing.Point(0, 0);
             this.MenúExtres.Name = "MenúExtres";
-            this.MenúExtres.Padding = new System.Windows.Forms.Padding(4, 2, 0, 2);
-            this.MenúExtres.Size = new System.Drawing.Size(600, 24);
+            this.MenúExtres.Padding = new System.Windows.Forms.Padding(5, 2, 0, 2);
+            this.MenúExtres.Size = new System.Drawing.Size(800, 28);
             this.MenúExtres.TabIndex = 9;
             this.MenúExtres.Text = "menuStrip1";
             // 
             // Notificacions_btn
             // 
             this.Notificacions_btn.Name = "Notificacions_btn";
-            this.Notificacions_btn.Size = new System.Drawing.Size(89, 20);
+            this.Notificacions_btn.Size = new System.Drawing.Size(108, 24);
             this.Notificacions_btn.Text = "Notificacions";
             this.Notificacions_btn.Click += new System.EventHandler(this.Notificacions_btn_Click);
             // 
             // NewParty_btn
             // 
-            this.NewParty_btn.Location = new System.Drawing.Point(68, 290);
-            this.NewParty_btn.Margin = new System.Windows.Forms.Padding(2);
+            this.NewParty_btn.Location = new System.Drawing.Point(91, 357);
+            this.NewParty_btn.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.NewParty_btn.Name = "NewParty_btn";
-            this.NewParty_btn.Size = new System.Drawing.Size(112, 56);
+            this.NewParty_btn.Size = new System.Drawing.Size(149, 69);
             this.NewParty_btn.TabIndex = 10;
             this.NewParty_btn.Text = "Nova Partida";
             this.NewParty_btn.UseVisualStyleBackColor = true;
@@ -178,12 +152,10 @@
             // 
             // QueriesForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(600, 366);
+            this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.NewParty_btn);
-            this.Controls.Add(this.showGames_rb);
-            this.Controls.Add(this.createGame_rb);
             this.Controls.Add(this.ConnectedList_rb);
             this.Controls.Add(this.Characters_rb);
             this.Controls.Add(this.Ranking_rb);
@@ -193,7 +165,7 @@
             this.Controls.Add(this.QueryGrid);
             this.Controls.Add(this.MenúExtres);
             this.MainMenuStrip = this.MenúExtres;
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Name = "QueriesForm";
             this.Text = "QueriesForm";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.QueriesForm_FormClosing);
@@ -215,8 +187,6 @@
         private System.Windows.Forms.RadioButton Ranking_rb;
         private System.Windows.Forms.RadioButton Characters_rb;
         private System.Windows.Forms.RadioButton ConnectedList_rb;
-        private System.Windows.Forms.RadioButton createGame_rb;
-        private System.Windows.Forms.RadioButton showGames_rb;
         private System.Windows.Forms.MenuStrip MenúExtres;
         private System.Windows.Forms.ToolStripMenuItem Notificacions_btn;
         private System.Windows.Forms.Button NewParty_btn;

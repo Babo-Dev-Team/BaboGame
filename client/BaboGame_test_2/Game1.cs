@@ -6,6 +6,7 @@ using System.Text;
 using System.Linq;
 using System;
 using System.Timers;
+using BaboGameClient;
 
 namespace BaboGame_test_2
 {
@@ -18,9 +19,10 @@ namespace BaboGame_test_2
         SpriteBatch spriteBatch;
         private SpriteFont _font;
         Debugger debugger;
+        ServerHandler serverHandler;
 
-
-
+        bool testMode; //Mode de pràctiques offline
+        bool playable; //Poder controlar el personatge
 
         private List<Character> characterSprites;           // Personatges (inclòs el jugador)
         private List<Projectile> projectileSprites;         // Projectils, creats per projectileEngine
@@ -52,6 +54,15 @@ namespace BaboGame_test_2
             Content.RootDirectory = "Content";
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
+        }
+
+        public Game1(ServerHandler serverHandler)
+        {
+            graphics = new GraphicsDeviceManager(this);
+            Content.RootDirectory = "Content";
+            graphics.PreferredBackBufferHeight = 720;
+            graphics.PreferredBackBufferWidth = 1280;
+            this.serverHandler = serverHandler;
         }
 
         /// <summary>
@@ -204,30 +215,37 @@ namespace BaboGame_test_2
             if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
                 graphics.ToggleFullScreen();
 
-            
+
+
+
 
             // Detectem inputs al teclat
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
-            // Actualitzem direcció i moviment del playerChar segons els inputs
-            playerChar.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - playerChar.Position);
-           
-            if (inputManager.RightCtrlActive())
+
+            if (playable)
             {
-                playerChar.MoveRight();
-            }
-            if (inputManager.LeftCtrlActive())
-            {
-                playerChar.MoveLeft();
-            }
-            if (inputManager.UpCtrlActive())
-            {
-                playerChar.MoveUp();
-            }
-            if (inputManager.DownCtrlActive())
-            {
-                playerChar.MoveDown();
+
+                // Actualitzem direcció i moviment del playerChar segons els inputs
+                playerChar.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - playerChar.Position);
+
+                if (inputManager.RightCtrlActive())
+                {
+                    playerChar.MoveRight();
+                }
+                if (inputManager.LeftCtrlActive())
+                {
+                    playerChar.MoveLeft();
+                }
+                if (inputManager.UpCtrlActive())
+                {
+                    playerChar.MoveUp();
+                }
+                if (inputManager.DownCtrlActive())
+                {
+                    playerChar.MoveDown();
+                }
             }
             
             
@@ -275,15 +293,18 @@ namespace BaboGame_test_2
             else if (playerChar3.Position.Y < 0)
                 Slug3Direction2 = false;
 
-            // llançem projectils segons els inputs del jugador
-            inputManager.DetectMouseClicks();
-            projectileManager.Update(gameTime, inputManager.GetMouseWheelValue(), overlaySprites,characterSprites);
-            if (inputManager.LeftMouseClick())
+            if (playable)
             {
-                Vector2 projOrigin = playerChar.Position;
-                Vector2 projTarget = inputManager.GetMousePosition();
-                int shooterID = 1; // caldrà gestionar els ID's des del server
-                projectileManager.AddProjectile(projOrigin, projTarget, shooterID);
+                // llançem projectils segons els inputs del jugador
+                inputManager.DetectMouseClicks();
+                projectileManager.Update(gameTime, inputManager.GetMouseWheelValue(), overlaySprites, characterSprites);
+                if (inputManager.LeftMouseClick())
+                {
+                    Vector2 projOrigin = playerChar.Position;
+                    Vector2 projTarget = inputManager.GetMousePosition();
+                    int shooterID = 1; // caldrà gestionar els ID's des del server
+                    projectileManager.AddProjectile(projOrigin, projTarget, shooterID);
+                }
             }
 
             //if (EnemyShoot.Next(0,32) == 0) //--------------------------- Babo prova
@@ -373,6 +394,12 @@ namespace BaboGame_test_2
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
             SlimeTime++;
+        }
+
+        //Actualitzar la llista JSON
+        private void UpdateOnline()
+        {
+
         }
         
 

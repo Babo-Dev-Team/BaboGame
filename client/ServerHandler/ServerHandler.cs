@@ -33,6 +33,25 @@ namespace BaboGameClient
         public int UserState { get; set; }
     }
 
+    //Informació del joc
+    public class GameState
+    {
+        int playable;
+        List<CharacterState> charactersStatesList;
+    }
+
+    public class CharacterState
+    {
+        string charName;
+        int characterID;
+        float PositionX;
+        float PositionY;
+        float VelocityX;
+        float VelocityY;
+    }
+
+    
+
     // arguments estàtics per passar informació entre el thread del Receiver i el thread principal.
     // Les dades les agafarà el Notification Worker directament, i pel monogame la idea és fer anar 
     // el Server Handler i mode realtime al receiver
@@ -220,7 +239,7 @@ namespace BaboGameClient
                     }
                     ReceiverArgs.responseStr = gameStr;
                     break;
-
+                
                 default:
                     response = null;
                     break;
