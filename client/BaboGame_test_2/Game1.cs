@@ -23,6 +23,7 @@ namespace BaboGame_test_2
 
         bool testMode; //Mode de pràctiques offline
         bool playable; //Poder controlar el personatge
+        Texture2D backgroundImage;
 
         private List<Character> characterSprites;           // Personatges (inclòs el jugador)
         private List<Projectile> projectileSprites;         // Projectils, creats per projectileEngine
@@ -414,6 +415,10 @@ namespace BaboGame_test_2
             // TODO: Add your drawing code here
             spriteBatch.Begin(SpriteSortMode.FrontToBack, null, SamplerState.LinearWrap);
             //spriteBatch.Begin(SpriteSortMode.FrontToBack);
+            //Fons
+            backgroundImage = Content.Load<Texture2D>("Scenario/Scenario1");
+            float backGroundScale = Math.Max(((float)graphics.PreferredBackBufferWidth / (float)backgroundImage.Width), ((float)graphics.PreferredBackBufferHeight / (float)backgroundImage.Height));
+            spriteBatch.Draw(backgroundImage, new Vector2(0, 0), null, Color.White, 0f, new Vector2(0, 0), backGroundScale, SpriteEffects.None, 0f);
 
             debugger.DrawText(spriteBatch);
 

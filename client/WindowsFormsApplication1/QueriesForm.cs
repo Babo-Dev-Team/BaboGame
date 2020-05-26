@@ -57,7 +57,7 @@ namespace BaboGameClient
         int ScreenSelected;
         string gameName;
         ToolStripItem notificationSelection;
-        ToolStripItem stikerSelecton;
+        ToolStripItem stickerSelector;
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
@@ -428,9 +428,9 @@ namespace BaboGameClient
                 Send_btn.Visible = false;
                 Characters_rb.Visible = false;
                 ConnectedList_rb.Visible = false;
-                createGame_rb.Visible = false;
+                //createGame_rb.Visible = false;
                 Ranking_rb.Visible = false;
-                showGames_rb.Visible = false;
+                //showGames_rb.Visible = false;
                 TimePlayed_rb.Visible = false;
                 queries_tb.Visible = false;
                 NewParty_btn.Visible = false;
@@ -495,9 +495,9 @@ namespace BaboGameClient
             Send_btn.Visible = false;
             Characters_rb.Visible = false;
             ConnectedList_rb.Visible = false;
-            createGame_rb.Visible = false;
+            //createGame_rb.Visible = false;
             Ranking_rb.Visible = false;
-            showGames_rb.Visible = false;
+            //showGames_rb.Visible = false;
             TimePlayed_rb.Visible = false;
             queries_tb.Visible = false;
             NewParty_btn.Visible = false;
@@ -641,9 +641,9 @@ namespace BaboGameClient
                 Send_btn.Visible = true;
                 Characters_rb.Visible = true;
                 ConnectedList_rb.Visible = true;
-                createGame_rb.Visible = true;
+               // createGame_rb.Visible = true;
                 Ranking_rb.Visible = true;
-                showGames_rb.Visible = true;
+                //showGames_rb.Visible = true;
                 TimePlayed_rb.Visible = true;
                 queries_tb.Visible = true;
                 NewParty_btn.Visible = true;
@@ -701,9 +701,9 @@ namespace BaboGameClient
             Send_btn.Visible = true;
             Characters_rb.Visible = true;
             ConnectedList_rb.Visible = true;
-            createGame_rb.Visible = true;
+            //createGame_rb.Visible = true;
             Ranking_rb.Visible = true;
-            showGames_rb.Visible = true;
+            //showGames_rb.Visible = true;
             TimePlayed_rb.Visible = true;
             queries_tb.Visible = true;
             NewParty_btn.Visible = true;
@@ -995,9 +995,9 @@ namespace BaboGameClient
             Send_btn.Visible = false;
             Characters_rb.Visible = false;
             ConnectedList_rb.Visible = false;
-            createGame_rb.Visible = false;
+            //createGame_rb.Visible = false;
             Ranking_rb.Visible = false;
-            showGames_rb.Visible = false;
+            //showGames_rb.Visible = false;
             TimePlayed_rb.Visible = false;
             queries_tb.Visible = false;
             NewParty_btn.Visible = false;
@@ -1113,9 +1113,9 @@ namespace BaboGameClient
             Send_btn.Visible = true;
             Characters_rb.Visible = true;
             ConnectedList_rb.Visible = true;
-            createGame_rb.Visible = true;
+            //createGame_rb.Visible = true;
             Ranking_rb.Visible = true;
-            showGames_rb.Visible = true;
+            //showGames_rb.Visible = true;
             TimePlayed_rb.Visible = true;
             queries_tb.Visible = true;
             NewParty_btn.Visible = true;
@@ -1213,9 +1213,9 @@ namespace BaboGameClient
                 Send_btn.Visible = true;
                 Characters_rb.Visible = true;
                 ConnectedList_rb.Visible = true;
-                createGame_rb.Visible = true;
+                //createGame_rb.Visible = true;
                 Ranking_rb.Visible = true;
-                showGames_rb.Visible = true;
+                //showGames_rb.Visible = true;
                 TimePlayed_rb.Visible = true;
                 queries_tb.Visible = true;
                 NewParty_btn.Visible = true;
