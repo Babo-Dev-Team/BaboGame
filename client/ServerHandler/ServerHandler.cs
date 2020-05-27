@@ -36,18 +36,20 @@ namespace BaboGameClient
     //Informació del joc
     public class GameState
     {
+        int gameID;
         int playable;
-        List<CharacterState> charactersStatesList;
+        int nPlayers;
+        List<CharacterState> characterStatesList;
     }
 
     public class CharacterState
     {
-        string charName;
-        int characterID;
-        float PositionX;
-        float PositionY;
-        float VelocityX;
-        float VelocityY;
+        //string charName;
+        int charID;
+        float posX;
+        float posY;
+        float velX;
+        float velY;
     }
 
     
