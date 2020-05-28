@@ -36,18 +36,20 @@ namespace BaboGameClient
     //Informació del joc
     public class GameState
     {
+        int gameID;
         int playable;
-        List<CharacterState> charactersStatesList;
+        int nPlayers;
+        List<CharacterState> characterStatesList;
     }
 
     public class CharacterState
     {
-        string charName;
-        int characterID;
-        float PositionX;
-        float PositionY;
-        float VelocityX;
-        float VelocityY;
+        //string charName;
+        int charID;
+        float posX;
+        float posY;
+        float velX;
+        float velY;
     }
 
     
@@ -121,6 +123,10 @@ namespace BaboGameClient
                 // esperem a rebre una resposta del servidor
                 response = this.ReceiveReponse();
 
+                while (ReceiverArgs.newDataFromServer != 0)
+                {
+                    Thread.Sleep(3);
+                }
                 // si podem escriure perquè l'update anterior s'ha processat, ho fem.
                 // si no podem escriure, descartem l'update i seguim escoltant.
                 if (ReceiverArgs.newDataFromServer == 0)
@@ -129,7 +135,7 @@ namespace BaboGameClient
 
                     // avisem que hi ha un nou update
                     ReceiverArgs.newDataFromServer = 1;
-                }
+                } 
             }
         }
 
@@ -239,7 +245,15 @@ namespace BaboGameClient
                     }
                     ReceiverArgs.responseStr = gameStr;
                     break;
-                
+                case 101:
+                    ReceiverArgs.responseStr = splitResponse[1];
+                    break;
+                case 102:
+                    ReceiverArgs.responseStr = splitResponse[1];
+                    break;
+                case 103:
+                    ReceiverArgs.responseStr = splitResponse[1];
+                    break;
                 default:
                     response = null;
                     break;
@@ -343,6 +357,27 @@ namespace BaboGameClient
             this.SendRequest("12/CHARACTER/" + character + "/");
         }
 
+
+        public void RequestInitState()
+        {
+            this.SendRequest("101/HELLO/");
+        }
+
+        public void SwitchToRealtimeMode()
+        {
+            threadReceiver.Abort();
+            ThreadStart threadStart = delegate { this.Receiver.StartRealtimeMode(); };
+            threadReceiver = new Thread(threadStart);
+            threadReceiver.Start();
+        }
+
+        public void SwitchToNotificationMode()
+        {
+            threadReceiver.Abort();
+            ThreadStart threadStart = delegate { this.Receiver.StartNotificationMode(); };
+            threadReceiver = new Thread(threadStart);
+            threadReceiver.Start();
+        }
         // TODO: Adaptar els metodes deprecated (al final del document) a metodes nous de tipus Request***
 
         // Aquests mètodes no s'han d'actualitzar ja que es segueixen fent servir igual 

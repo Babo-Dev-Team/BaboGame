@@ -49,6 +49,10 @@ namespace BaboGameClient
         Label CharName_lbl;
         Label CharDescription_lbl;
 
+        //Elements del menú principal
+        Button NewParty_btn;
+        Button Training_btn;
+
         string[] characterSelected;
         string[] characterDescription;
         int charSelectedPos;
@@ -89,6 +93,10 @@ namespace BaboGameClient
             CharName_lbl = new Label();
             CharDescription_lbl = new Label();
 
+            //Element del menú principal
+            NewParty_btn = new Button();
+            Training_btn = new Button();
+
             characterSelected = new string[] { "Babo", "Limax", "Kaler", "Swalot" };
 
             characterDescription = new string[] 
@@ -102,15 +110,6 @@ namespace BaboGameClient
 
             //Variable que diferencia a quin menú estàs situat
             ScreenSelected = 0;
-
-
-
-
-
-
-
-
-
 
 
             InitializeComponent();
@@ -301,7 +300,95 @@ namespace BaboGameClient
             Chatting_tb.Visible = false;
             this.Controls.Add(Chatting_tb);
 
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Creació del menú principal
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //NewParty_Btn
+            NewParty_btn.Location = new Point(225, 200);
+            NewParty_btn.Text = "Nova Partida";
+            NewParty_btn.Size = new Size(150, 60);
+            NewParty_btn.Visible = false;
+            this.Controls.Add(NewParty_btn);
+            NewParty_btn.Click += new EventHandler(this.NewParty_btn_Click);
 
+            //Training_Btn
+            Training_btn.Location = new Point(225, 100);
+            Training_btn.Text = "Entrenament";
+            Training_btn.Size = new Size(150, 60);
+            Training_btn.Visible = false;
+            this.Controls.Add(Training_btn);
+            Training_btn.Click += new EventHandler(this.Training_btn_Click);
+
+            ScreenSelected = 0;
+            UpdateScreen();
+        }
+
+        public void UpdateScreen()
+        {
+            bool MainScreen = false;
+            bool QueriesScreen = false;
+            bool CreatePartyScreen = false;
+            bool SelectCharacterOnlineScreen = false;
+
+            //Canvia les variables visibles dels objectes segons el número de pantalla
+
+            if (ScreenSelected == 1) //Menú de les Queries
+                QueriesScreen = true;
+            else if (ScreenSelected == 2) //Menú de crear la partida
+                CreatePartyScreen = true;
+            else if (ScreenSelected == 3) //Menú de triar el personatge
+                SelectCharacterOnlineScreen = true;
+            else //Menú principal
+                MainScreen = true;
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+            //MainScreen
+            NewParty_btn.Visible = MainScreen;
+            Training_btn.Visible = MainScreen;
+
+            //QueriesScreen
+            QueryGrid.Visible = QueriesScreen||CreatePartyScreen;
+            Send_btn.Visible = QueriesScreen;
+            Characters_rb.Visible = QueriesScreen;
+            ConnectedList_rb.Visible = QueriesScreen;
+            //createGame_rb.Visible = QueriesScreen;
+            Ranking_rb.Visible = QueriesScreen;
+            //showGames_rb.Visible = QueriesScreen;
+            TimePlayed_rb.Visible = QueriesScreen;
+            queries_tb.Visible = QueriesScreen;
+
+            //CreatePartyScreen
+            PlayersSelected_dg.Visible = CreatePartyScreen;
+            NewPartyName_tb.Visible = CreatePartyScreen;
+            NewPartyName_lbl.Visible = CreatePartyScreen;
+            NewPartyBack_btn.Visible = CreatePartyScreen;
+            CreateParty_btn.Visible = CreatePartyScreen;
+
+            //SelectCharacterOnlineScreen
+            character_pb.Visible = SelectCharacterOnlineScreen;
+            PartyName_lbl.Visible = SelectCharacterOnlineScreen;
+            RightChar_btn.Visible = SelectCharacterOnlineScreen;
+            LeftChar_btn.Visible = SelectCharacterOnlineScreen;
+            SelectChar_btn.Visible = SelectCharacterOnlineScreen;
+            StartGame_btn.Visible = SelectCharacterOnlineScreen;
+            CancelGame_btn.Visible = SelectCharacterOnlineScreen;
+            QuitGame_btn.Visible = SelectCharacterOnlineScreen;
+            ChatGame_rtb.Visible = SelectCharacterOnlineScreen;
+            PartyName_lbl.Text = "Partida: " + gameName;
+            Chatting_btn.Visible = SelectCharacterOnlineScreen;
+            Chatting_tb.Visible = SelectCharacterOnlineScreen;
+            ChattingPanel.Visible = SelectCharacterOnlineScreen;
+            StickersPanel.Visible = false;
+            Stickers_btn.Visible = SelectCharacterOnlineScreen;
+            CharName_lbl.Visible = SelectCharacterOnlineScreen;
+            CharDescription_lbl.Visible = SelectCharacterOnlineScreen;
+
+            if(SelectCharacterOnlineScreen)
+                this.Width = 900;
+            else
+                this.Width = 616;
+            
         }
 
         //------------------------------------------------
@@ -422,46 +509,11 @@ namespace BaboGameClient
             {
                 MessageBox.Show("La partida s'ha creat correctament");
 
-                //Fa apareixer els objectes del menú principal
-                QueryGrid.Visible = false;
-                ScreenSelected = 2;
-                Send_btn.Visible = false;
-                Characters_rb.Visible = false;
-                ConnectedList_rb.Visible = false;
-                //createGame_rb.Visible = false;
-                Ranking_rb.Visible = false;
-                //showGames_rb.Visible = false;
-                TimePlayed_rb.Visible = false;
-                queries_tb.Visible = false;
-                NewParty_btn.Visible = false;
-
-                //Desactiva els objectes del menú anterior
-                PlayersSelected_dg.Visible = false;
-                NewPartyName_tb.Visible = false;
-                NewPartyName_lbl.Visible = false;
-                NewPartyBack_btn.Visible = false;
-                CreateParty_btn.Visible = false;
-
-                //Desactiva els objectes de la selecció del personatge
-                character_pb.Visible = true;
-                PartyName_lbl.Visible = true;
-                RightChar_btn.Visible = true;
-                LeftChar_btn.Visible = true;
-                SelectChar_btn.Visible = true;
+                ScreenSelected = 3;
+                UpdateScreen();
                 StartGame_btn.Visible = true;
                 CancelGame_btn.Visible = true;
                 QuitGame_btn.Visible = false;
-                ChatGame_rtb.Visible = true;
-                PartyName_lbl.Text = "Partida: " + gameName;
-                Chatting_btn.Visible = true;
-                Chatting_tb.Visible = true;
-                ChattingPanel.Visible = true;
-                StickersPanel.Visible = false;
-                Stickers_btn.Visible = true;
-                CharName_lbl.Visible = true;
-                CharDescription_lbl.Visible = true;
-
-                this.Width = 900;
             }
             else if (response == "ALONE")
                 MessageBox.Show("No has escollit a ningú a part de tú. Les partides són multijugadors");
@@ -489,47 +541,14 @@ namespace BaboGameClient
         {
             MessageBox.Show("Has entrat a la partida");
 
-            //Fa apareixer els objectes del menú principal
-            QueryGrid.Visible = false;
-            ScreenSelected = 2;
-            Send_btn.Visible = false;
-            Characters_rb.Visible = false;
-            ConnectedList_rb.Visible = false;
-            //createGame_rb.Visible = false;
-            Ranking_rb.Visible = false;
-            //showGames_rb.Visible = false;
-            TimePlayed_rb.Visible = false;
-            queries_tb.Visible = false;
-            NewParty_btn.Visible = false;
+            ScreenSelected = 3;
+            UpdateScreen();
 
-            //Desactiva els objectes del menú anterior
-            PlayersSelected_dg.Visible = false;
-            NewPartyName_tb.Visible = false;
-            NewPartyName_lbl.Visible = false;
-            NewPartyBack_btn.Visible = false;
-            CreateParty_btn.Visible = false;
-
-            //Desactiva els objectes de la selecció del personatge
-            character_pb.Visible = true;
-            PartyName_lbl.Visible = true;
-            RightChar_btn.Visible = true;
-            LeftChar_btn.Visible = true;
-            SelectChar_btn.Visible = true;
             StartGame_btn.Visible = false;
             CancelGame_btn.Visible = false;
             QuitGame_btn.Visible = true;
-            ChatGame_rtb.Visible = true;
-            PartyName_lbl.Text = "Partida: " + gameName;
-            Notificacions_btn.DropDownItems.Remove(notificationSelection);
-            Chatting_btn.Visible = true;
-            Chatting_tb.Visible = true;
-            ChattingPanel.Visible = true;
-            StickersPanel.Visible = false;
-            Stickers_btn.Visible = true;
-            CharName_lbl.Visible = true;
-            CharDescription_lbl.Visible = true;
 
-            this.Width = 900;
+            Notificacions_btn.DropDownItems.Remove(notificationSelection);
         }
 
         //S'ha confirmat el rebuig a la partida
@@ -615,11 +634,12 @@ namespace BaboGameClient
         //Error en seleccionar el personatge
         public void StartGamePopup()
         {
+            serverHandler.SwitchToRealtimeMode();
             MessageBox.Show("Comença la partida");
             //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
             //BaboGame.Run();
 
-            using (var game = new Game1())
+            using (var game = new Game1(this.serverHandler))
             game.Run();
         }
 
@@ -632,49 +652,11 @@ namespace BaboGameClient
         //Popup per cancel·lar el joc
         public void CancelGamePopup(string gameName, string creatorName)
         {
-            if(ScreenSelected == 2)
+            if(ScreenSelected == 3)
             {
                 MessageBox.Show("S'ha cancel·lat la partida");
-                //Fa apareixer els objectes del menú principal
-                QueryGrid.Visible = true;
                 ScreenSelected = 0;
-                Send_btn.Visible = true;
-                Characters_rb.Visible = true;
-                ConnectedList_rb.Visible = true;
-               // createGame_rb.Visible = true;
-                Ranking_rb.Visible = true;
-                //showGames_rb.Visible = true;
-                TimePlayed_rb.Visible = true;
-                queries_tb.Visible = true;
-                NewParty_btn.Visible = true;
-
-
-                //Desactiva els objectes del menú anterior
-                PlayersSelected_dg.Visible = false;
-                NewPartyName_tb.Visible = false;
-                NewPartyName_lbl.Visible = false;
-                NewPartyBack_btn.Visible = false;
-                CreateParty_btn.Visible = false;
-
-                //Desactiva els objectes de la selecció del personatge
-                character_pb.Visible = false;
-                PartyName_lbl.Visible = false;
-                RightChar_btn.Visible = false;
-                LeftChar_btn.Visible = false;
-                SelectChar_btn.Visible = false;
-                StartGame_btn.Visible = false;
-                CancelGame_btn.Visible = false;
-                QuitGame_btn.Visible = false;
-                ChatGame_rtb.Visible = false;
-                Chatting_btn.Visible = false;
-                Chatting_tb.Visible = false;
-                ChattingPanel.Visible = false;
-                StickersPanel.Visible = false;
-                Stickers_btn.Visible = false;
-                CharName_lbl.Visible = false;
-                CharDescription_lbl.Visible = false;
-
-                this.Width = 616;
+                UpdateScreen();
             }
             else
             {
@@ -695,45 +677,8 @@ namespace BaboGameClient
         public void AlonePlayerPopup()
         {
             MessageBox.Show("T'has quedat sol en la partida, la partida s'ha cancel·lat");
-            //Fa apareixer els objectes del menú principal
-            QueryGrid.Visible = true;
             ScreenSelected = 0;
-            Send_btn.Visible = true;
-            Characters_rb.Visible = true;
-            ConnectedList_rb.Visible = true;
-            //createGame_rb.Visible = true;
-            Ranking_rb.Visible = true;
-            //showGames_rb.Visible = true;
-            TimePlayed_rb.Visible = true;
-            queries_tb.Visible = true;
-            NewParty_btn.Visible = true;
-
-            //Desactiva els objectes del menú anterior
-            PlayersSelected_dg.Visible = false;
-            NewPartyName_tb.Visible = false;
-            NewPartyName_lbl.Visible = false;
-            NewPartyBack_btn.Visible = false;
-            CreateParty_btn.Visible = false;
-
-            //Desactiva els objectes de la selecció del personatge
-            character_pb.Visible = false;
-            PartyName_lbl.Visible = false;
-            RightChar_btn.Visible = false;
-            LeftChar_btn.Visible = false;
-            SelectChar_btn.Visible = false;
-            StartGame_btn.Visible = false;
-            CancelGame_btn.Visible = false;
-            QuitGame_btn.Visible = false;
-            ChatGame_rtb.Visible = false;
-            Chatting_btn.Visible = false;
-            Chatting_tb.Visible = false;
-            ChattingPanel.Visible = false;
-            StickersPanel.Visible = false;
-            Stickers_btn.Visible = false;
-            CharName_lbl.Visible = false;
-            CharDescription_lbl.Visible = false;
-
-            this.Width = 616;
+            UpdateScreen();
         }
 
         int panelcursor = 0;
@@ -987,54 +932,23 @@ namespace BaboGameClient
         //Fa invisibles els objectes innecesàris i fa aparèixer els objectes necessàris d'aquell menú
         private void NewParty_btn_Click(object sender, EventArgs e)
         {
-            //Amaga els objectes anteriors
-            QueryGrid.Visible = true;
+ 
             notificationWorker.DataGridUpdateRequested = 6;
-            ScreenSelected = 1;
             serverHandler.RequestConnected();
-            Send_btn.Visible = false;
-            Characters_rb.Visible = false;
-            ConnectedList_rb.Visible = false;
-            //createGame_rb.Visible = false;
-            Ranking_rb.Visible = false;
-            //showGames_rb.Visible = false;
-            TimePlayed_rb.Visible = false;
-            queries_tb.Visible = false;
-            NewParty_btn.Visible = false;
-
-            //Activa el grid dels jugadors seleccionats
-            PlayersSelected_dg.Visible = true;
+            
             PlayersSelected_dg.Rows.Clear();
             PlayersSelected_dg.Columns.Clear();
             PlayersSelected_dg.Columns.Add("username", "Usuari");
             PlayersSelected_dg.Columns.Add("ID", "ID");
             PlayersSelected_dg.Refresh();
 
-            //Activa el NewPartyName_tb, el NewPartyName_lbl, el NewPartyBack_btn i el CreateParty_btn
-            NewPartyName_tb.Visible = true;
-            NewPartyName_lbl.Visible = true;
-            NewPartyBack_btn.Visible = true;
-            CreateParty_btn.Visible = true;
+            ScreenSelected = 2;
+            UpdateScreen();
+        }
 
-            //Desactiva els objectes de la selecció del personatge
-            character_pb.Visible = false;
-            PartyName_lbl.Visible = false;
-            RightChar_btn.Visible = false;
-            LeftChar_btn.Visible = false;
-            SelectChar_btn.Visible = false;
-            StartGame_btn.Visible = false;
-            CancelGame_btn.Visible = false;
-            QuitGame_btn.Visible = false;
-            ChatGame_rtb.Visible = false;
-            Chatting_btn.Visible = false;
-            Chatting_tb.Visible = false;
-            ChattingPanel.Visible = false;
-            StickersPanel.Visible = false;
-            Stickers_btn.Visible = false;
-            CharName_lbl.Visible = false;
-            CharDescription_lbl.Visible = false;
+        private void Training_btn_Click(object sender, EventArgs e)
+        {
 
-            this.Width = 616;
         }
 
         //Selecció de un element de la llista dels jugadors elegits
@@ -1052,7 +966,7 @@ namespace BaboGameClient
         //Quan cliques una cel·la passes l'element a la llista d'elegits
         private void QueryGrid_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if((notificationWorker.DataGridUpdateRequested == 6)&&(ScreenSelected == 1))
+            if((notificationWorker.DataGridUpdateRequested == 6)&&(ScreenSelected == 2))
             {
                 if (e.RowIndex >= 0)
                 {
@@ -1107,45 +1021,8 @@ namespace BaboGameClient
         //Selecciona el botó de sortir del menú de selecció de jugadors
         private void NewPartyBack_btn_Click(object sender, EventArgs e)
         {
-            //Fa apareixer els objectes del menú principal
-            QueryGrid.Visible = true;
             ScreenSelected = 0;
-            Send_btn.Visible = true;
-            Characters_rb.Visible = true;
-            ConnectedList_rb.Visible = true;
-            //createGame_rb.Visible = true;
-            Ranking_rb.Visible = true;
-            //showGames_rb.Visible = true;
-            TimePlayed_rb.Visible = true;
-            queries_tb.Visible = true;
-            NewParty_btn.Visible = true;
-
-            //Desactiva els objectes del menú anterior
-            PlayersSelected_dg.Visible = false;
-            NewPartyName_tb.Visible = false;
-            NewPartyName_lbl.Visible = false;
-            NewPartyBack_btn.Visible = false;
-            CreateParty_btn.Visible = false;
-
-            //Desactiva els objectes de la selecció del personatge
-            character_pb.Visible = false;
-            PartyName_lbl.Visible = false;
-            RightChar_btn.Visible = false;
-            LeftChar_btn.Visible = false;
-            SelectChar_btn.Visible = false;
-            StartGame_btn.Visible = false;
-            CancelGame_btn.Visible = false;
-            QuitGame_btn.Visible = false;
-            ChatGame_rtb.Visible = false;
-            Chatting_btn.Visible = false;
-            Chatting_tb.Visible = false;
-            ChattingPanel.Visible = false;
-            StickersPanel.Visible = false;
-            Stickers_btn.Visible = false;
-            CharName_lbl.Visible = false;
-            CharDescription_lbl.Visible = false;
-
-            this.Width = 616;
+            UpdateScreen();
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1207,45 +1084,8 @@ namespace BaboGameClient
             else
             {
                 serverHandler.RequestRejectInvitation(gameName);
-                //Fa apareixer els objectes del menú principal
-                QueryGrid.Visible = true;
                 ScreenSelected = 0;
-                Send_btn.Visible = true;
-                Characters_rb.Visible = true;
-                ConnectedList_rb.Visible = true;
-                //createGame_rb.Visible = true;
-                Ranking_rb.Visible = true;
-                //showGames_rb.Visible = true;
-                TimePlayed_rb.Visible = true;
-                queries_tb.Visible = true;
-                NewParty_btn.Visible = true;
-
-                //Desactiva els objectes del menú anterior
-                PlayersSelected_dg.Visible = false;
-                NewPartyName_tb.Visible = false;
-                NewPartyName_lbl.Visible = false;
-                NewPartyBack_btn.Visible = false;
-                CreateParty_btn.Visible = false;
-
-                //Desactiva els objectes de la selecció del personatge
-                character_pb.Visible = false;
-                PartyName_lbl.Visible = false;
-                RightChar_btn.Visible = false;
-                LeftChar_btn.Visible = false;
-                SelectChar_btn.Visible = false;
-                StartGame_btn.Visible = false;
-                CancelGame_btn.Visible = false;
-                QuitGame_btn.Visible = false;
-                ChatGame_rtb.Visible = false;
-                Chatting_btn.Visible = false;
-                Chatting_tb.Visible = false;
-                ChattingPanel.Visible = false;
-                StickersPanel.Visible = false;
-                Stickers_btn.Visible = false;
-                CharName_lbl.Visible = false;
-                CharDescription_lbl.Visible = false;
-
-                this.Width = 616;
+                UpdateScreen();
             }
         }
 
@@ -1266,6 +1106,24 @@ namespace BaboGameClient
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void MainMenu_btn_Click(object sender, EventArgs e)
+        {
+            if (ScreenSelected == 1)
+            {
+                ScreenSelected = 0;
+                UpdateScreen();
+            }
+        }
+
+        private void QueriesMenu_btn_Click(object sender, EventArgs e)
+        {
+            if (ScreenSelected == 0)
+            {
+                ScreenSelected = 1;
+                UpdateScreen();
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System;
 using System.Timers;
 using BaboGameClient;
+using System.Runtime.InteropServices;
 
 namespace BaboGame_test_2
 {
@@ -15,6 +16,12 @@ namespace BaboGame_test_2
     /// </summary>
     public class Game1 : Game
     {
+        [DllImport("Kernel32")]
+        public static extern void AllocConsole();
+
+        [DllImport("Kernel32")]
+        public static extern void FreeConsole();
+
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         private SpriteFont _font;
@@ -64,6 +71,9 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
             this.serverHandler = serverHandler;
+            //serverHandler.SwitchToRealtimeMode();
+            AllocConsole();
+            Console.WriteLine("testline");
         }
 
         /// <summary>
@@ -187,7 +197,7 @@ namespace BaboGame_test_2
             timer.AutoReset = true;
             timer.Enabled = true;
             debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, timer.Interval,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
-
+            serverHandler.RequestInitState();
         }
 
         /// <summary>
@@ -197,6 +207,7 @@ namespace BaboGame_test_2
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
+            FreeConsole();
         }
 
         bool Slug2Direction = false; //--------------------------------------- Babo prova
@@ -224,6 +235,12 @@ namespace BaboGame_test_2
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
+            if (ReceiverArgs.newDataFromServer == 1)
+            {
+                Console.WriteLine("Response Received: Code " + ReceiverArgs.responseType);
+                Console.WriteLine(ReceiverArgs.responseStr);
+                ReceiverArgs.newDataFromServer = 0;
+            }
 
             if (playable)
             {
