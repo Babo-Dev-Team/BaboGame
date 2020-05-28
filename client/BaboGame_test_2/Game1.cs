@@ -189,6 +189,9 @@ namespace BaboGame_test_2
             };
 
             characterEngine = new CharacterEngine(characterSprites,Content);
+            projectileSprites = new List<Projectile>();
+            projectileEngine = new ProjectileEngine(projectileSprites);
+            projectileManager = new ProjectileManager(projectileTexture, projectileEngine);
 
             heartManager = new HeartManager(overlaySprites);
 
@@ -385,9 +388,6 @@ namespace BaboGame_test_2
 
                 if (thisClient == initGame.users[i])
                 {
-                    projectileSprites = new List<Projectile>();
-                    projectileEngine = new ProjectileEngine(projectileSprites);
-                    projectileManager = new ProjectileManager(projectileTexture, projectileEngine);
                     projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, initGame.thisUser.charId, 0.1f);
                     Controllable = characterSprites.ToArray()[i];
                 }
