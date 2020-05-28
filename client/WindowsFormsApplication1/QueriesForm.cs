@@ -634,11 +634,12 @@ namespace BaboGameClient
         //Error en seleccionar el personatge
         public void StartGamePopup()
         {
+            serverHandler.SwitchToRealtimeMode();
             MessageBox.Show("Comença la partida");
             //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
             //BaboGame.Run();
 
-            using (var game = new Game1())
+            using (var game = new Game1(this.serverHandler))
             game.Run();
         }
 
