@@ -406,6 +406,7 @@ namespace BaboGame_test_2
                 {
                     if (characterState.charID == characterSprites[i].IDcharacter)
                     {
+                        found = true;
                         characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
                         characterSprites[i].Velocity = new Vector2(characterState.velX, characterState.velY);
                     }
