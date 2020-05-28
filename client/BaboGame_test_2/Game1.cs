@@ -63,6 +63,7 @@ namespace BaboGame_test_2
         GameState gameState = new GameState();
         user thisClient;
         Character Controllable;
+        bool Initialized;
 
         //Temporització de les babes
         private static Timer timer;
@@ -75,6 +76,7 @@ namespace BaboGame_test_2
             Content.RootDirectory = "Content";
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
+            Initialized = false;
         }
 
         public Game1(ServerHandler serverHandler, bool testMode)
@@ -84,6 +86,7 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
             this.testMode = testMode;
+            Initialized = false;
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
             AllocConsole();
@@ -250,12 +253,13 @@ namespace BaboGame_test_2
             if(code == 101)
             {
                 UpdateInit();
+                Initialized = true;
             }
             else if(code == 102)
             {
 
             }
-            else if(code == 103)
+            else if((code == 103)&&(Initialized))
             {
                 PeriodicalUpdate();
             }
