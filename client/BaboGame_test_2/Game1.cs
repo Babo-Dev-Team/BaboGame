@@ -64,12 +64,13 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferWidth = 1280;
         }
 
-        public Game1(ServerHandler serverHandler)
+        public Game1(ServerHandler serverHandler, bool testMode)
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
+            this.testMode = testMode;
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
             AllocConsole();
@@ -89,6 +90,10 @@ namespace BaboGame_test_2
             slimeEngine = new SlimeEngine(slimeSprites);
             
         }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Funció Load Content
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         /// <summary>
         /// LoadContent will be called once per game and is the place to load
@@ -215,6 +220,12 @@ namespace BaboGame_test_2
 
         bool Slug3Direction = false; //--------------------------------------- Limax prova
         bool Slug3Direction2 = false;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Funció Upload
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -246,24 +257,7 @@ namespace BaboGame_test_2
             {
 
                 // Actualitzem direcció i moviment del playerChar segons els inputs
-                playerChar.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - playerChar.Position);
-
-                if (inputManager.RightCtrlActive())
-                {
-                    playerChar.MoveRight();
-                }
-                if (inputManager.LeftCtrlActive())
-                {
-                    playerChar.MoveLeft();
-                }
-                if (inputManager.UpCtrlActive())
-                {
-                    playerChar.MoveUp();
-                }
-                if (inputManager.DownCtrlActive())
-                {
-                    playerChar.MoveDown();
-                }
+                UpdateControllableCharacter();
             }
             
             
@@ -378,6 +372,10 @@ namespace BaboGame_test_2
             base.Update(gameTime);
         }
 
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Funcions pel Upload
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         //Funció per definir la mort dels objectes
         private void PostUpdate()
         {
@@ -409,6 +407,7 @@ namespace BaboGame_test_2
             }
         }
         
+        //Actualitzar el temporitzador
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
             SlimeTime++;
@@ -419,7 +418,33 @@ namespace BaboGame_test_2
         {
 
         }
+
+        //Control dels personatges
+        private void UpdateControllableCharacter()
+        {
+            playerChar.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - playerChar.Position);
+
+            if (inputManager.RightCtrlActive())
+            {
+                playerChar.MoveRight();
+            }
+            if (inputManager.LeftCtrlActive())
+            {
+                playerChar.MoveLeft();
+            }
+            if (inputManager.UpCtrlActive())
+            {
+                playerChar.MoveUp();
+            }
+            if (inputManager.DownCtrlActive())
+            {
+                playerChar.MoveDown();
+            }
+        }
         
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //Funció Draw
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         /// <summary>
         /// This is called when the game should draw itself.

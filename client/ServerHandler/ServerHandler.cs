@@ -46,10 +46,24 @@ namespace BaboGameClient
     {
         //string charName;
         int charID;
-        float posX;
-        float posY;
-        float velX;
-        float velY;
+        int posX;
+        int posY;
+        int velX;
+        int velY;
+    }
+
+    public class initState
+    {
+        user thisUser;
+        List<user> users;
+    }
+
+    public class user
+    {
+        int userId;
+        int charId;
+        string userName;
+        string charName;
     }
 
     
@@ -62,6 +76,8 @@ namespace BaboGameClient
         public static List<ConnectedUser> connectedList;    // llistes per parsejar el JSON
         public static List<PreGameState> gameTable;
         public static List<PreGameStateUser> gameState;
+        public static initState initStateGame;
+        public static GameState gameStateUpdate;
         public static string responseStr;                   // resposta per string
         public static int newDataFromServer;                // Flag pel mode Realtime
         public static Socket server;                        // el socket per llegir

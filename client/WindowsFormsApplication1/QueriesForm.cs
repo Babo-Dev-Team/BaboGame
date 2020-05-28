@@ -122,7 +122,7 @@ namespace BaboGameClient
 
             
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            //Creació dels objectes del menú de la tria de la llista de connectats
+            //Creació dels objectes del menú de la tria de la llista de connectats (ScreenSelected = 2)
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
             //Grid dels jugadors seleccionats
@@ -165,7 +165,7 @@ namespace BaboGameClient
             NewPartyBack_btn.Click += new EventHandler(this.NewPartyBack_btn_Click);
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            //Creació del menú de selecció de personatges
+            //Creació del menú de selecció de personatges (ScreenSelected = 3)
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
             //Label del nom de partida seleccionat
@@ -301,7 +301,7 @@ namespace BaboGameClient
             this.Controls.Add(Chatting_tb);
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            //Creació del menú principal
+            //Creació del menú principal (ScreenSelected = 0)
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //NewParty_Btn
             NewParty_btn.Location = new Point(225, 200);
@@ -639,7 +639,7 @@ namespace BaboGameClient
             //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
             //BaboGame.Run();
 
-            using (var game = new Game1(this.serverHandler))
+            using (var game = new Game1(this.serverHandler, false))
             game.Run();
         }
 
