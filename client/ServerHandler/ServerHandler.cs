@@ -37,36 +37,36 @@ namespace BaboGameClient
     
     public class GameState
     {
-        public int gameID;
-        public int playable;
-        public int nPlayers;
+        public int gameID { get; set; }
+        public int playable { get; set; }
+        public int nPlayers { get; set; }
         public List<CharacterState> characterStatesList;
     }
 
     public class CharacterState
     {
         //string charName;
-        public int charID;
-        public int posX;
-        public int posY;
-        public int velX;
-        public int velY;
+        public int charID { get; set; }
+        public int posX { get; set; }
+        public int posY { get; set; }
+        public int velX { get; set; }
+        public int velY { get; set; }
     }
 
     public class initState
     {
-        public string gameName;
-        public int nPlayers;
+        public string gameName { get; set; }
+        public int nPlayers { get; set; }
         public user thisUser;
         public List<user> users;
     }
 
     public class user
     {
-        public int userId;
-        public int charId;
-        public string userName;
-        public string charName;
+        public int userId { get; set; }
+        public int charId { get; set; }
+        public string userName { get; set; }
+        public string charName { get; set; }
     }
 
     
