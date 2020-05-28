@@ -248,6 +248,14 @@ namespace BaboGame_test_2
             {
                 UpdateInit();
             }
+            else if(code == 102)
+            {
+
+            }
+            else if(code == 103)
+            {
+                PeriodicalUpdate();
+            }
 
             if (playable)
             {
@@ -356,7 +364,8 @@ namespace BaboGame_test_2
             }
             else if(ReceiverArgs.responseType == 102)
             {
-
+                if (ReceiverArgs.responseStr == "START")
+                    playable = true;
             }
             else if(ReceiverArgs.responseType == 103)
             {
@@ -384,6 +393,33 @@ namespace BaboGame_test_2
                 }
 
             }
+        }
+
+        //Actualitza els components amb el codi 102
+        private void PeriodicalUpdate()
+        {
+            foreach(CharacterState characterState in gameState.characterStatesList)
+            {
+                bool found = false;
+                int i = 0;
+                while((!found)&&(i<gameState.characterStatesList.Count))
+                {
+                    if (characterState.charID == characterSprites[i].IDcharacter)
+                    {
+                        characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
+                        characterSprites[i].Velocity = new Vector2(characterState.velX, characterState.velY);
+                    }
+                    else
+                        i++;
+                }
+
+                
+            }
+
+            if (gameState.playable == 1)
+                playable = true;
+            else
+                playable = false;
         }
 
         //Control dels personatges
