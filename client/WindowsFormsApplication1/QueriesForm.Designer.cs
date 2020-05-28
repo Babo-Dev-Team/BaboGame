@@ -37,7 +37,8 @@
             this.ConnectedList_rb = new System.Windows.Forms.RadioButton();
             this.MenúExtres = new System.Windows.Forms.MenuStrip();
             this.Notificacions_btn = new System.Windows.Forms.ToolStripMenuItem();
-            this.NewParty_btn = new System.Windows.Forms.Button();
+            this.MainMenu_btn = new System.Windows.Forms.ToolStripMenuItem();
+            this.QueriesMenu_btn = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).BeginInit();
             this.MenúExtres.SuspendLayout();
             this.SuspendLayout();
@@ -55,10 +56,10 @@
             // 
             // Send_btn
             // 
-            this.Send_btn.Location = new System.Drawing.Point(277, 395);
+            this.Send_btn.Location = new System.Drawing.Point(149, 345);
             this.Send_btn.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Send_btn.Name = "Send_btn";
-            this.Send_btn.Size = new System.Drawing.Size(75, 23);
+            this.Send_btn.Size = new System.Drawing.Size(160, 46);
             this.Send_btn.TabIndex = 1;
             this.Send_btn.Text = "Envia";
             this.Send_btn.UseVisualStyleBackColor = true;
@@ -124,7 +125,9 @@
             // 
             this.MenúExtres.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.MenúExtres.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.Notificacions_btn});
+            this.Notificacions_btn,
+            this.MainMenu_btn,
+            this.QueriesMenu_btn});
             this.MenúExtres.Location = new System.Drawing.Point(0, 0);
             this.MenúExtres.Name = "MenúExtres";
             this.MenúExtres.Padding = new System.Windows.Forms.Padding(5, 2, 0, 2);
@@ -139,23 +142,25 @@
             this.Notificacions_btn.Text = "Notificacions";
             this.Notificacions_btn.Click += new System.EventHandler(this.Notificacions_btn_Click);
             // 
-            // NewParty_btn
+            // MainMenu_btn
             // 
-            this.NewParty_btn.Location = new System.Drawing.Point(91, 357);
-            this.NewParty_btn.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.NewParty_btn.Name = "NewParty_btn";
-            this.NewParty_btn.Size = new System.Drawing.Size(149, 69);
-            this.NewParty_btn.TabIndex = 10;
-            this.NewParty_btn.Text = "Nova Partida";
-            this.NewParty_btn.UseVisualStyleBackColor = true;
-            this.NewParty_btn.Click += new System.EventHandler(this.NewParty_btn_Click);
+            this.MainMenu_btn.Name = "MainMenu_btn";
+            this.MainMenu_btn.Size = new System.Drawing.Size(78, 24);
+            this.MainMenu_btn.Text = "Principal";
+            this.MainMenu_btn.Click += new System.EventHandler(this.MainMenu_btn_Click);
+            // 
+            // QueriesMenu_btn
+            // 
+            this.QueriesMenu_btn.Name = "QueriesMenu_btn";
+            this.QueriesMenu_btn.Size = new System.Drawing.Size(84, 24);
+            this.QueriesMenu_btn.Text = "Consultes";
+            this.QueriesMenu_btn.Click += new System.EventHandler(this.QueriesMenu_btn_Click);
             // 
             // QueriesForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.NewParty_btn);
             this.Controls.Add(this.ConnectedList_rb);
             this.Controls.Add(this.Characters_rb);
             this.Controls.Add(this.Ranking_rb);
@@ -189,6 +194,7 @@
         private System.Windows.Forms.RadioButton ConnectedList_rb;
         private System.Windows.Forms.MenuStrip MenúExtres;
         private System.Windows.Forms.ToolStripMenuItem Notificacions_btn;
-        private System.Windows.Forms.Button NewParty_btn;
+        private System.Windows.Forms.ToolStripMenuItem MainMenu_btn;
+        private System.Windows.Forms.ToolStripMenuItem QueriesMenu_btn;
     }
 }
