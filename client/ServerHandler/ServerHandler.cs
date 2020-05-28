@@ -40,7 +40,7 @@ namespace BaboGameClient
         public int gameID { get; set; }
         public int playable { get; set; }
         public int nPlayers { get; set; }
-        public List<CharacterState> characterStatesList;
+        public List<CharacterState> characterStatesList { get; set; }
     }
 
     public class CharacterState
@@ -57,8 +57,8 @@ namespace BaboGameClient
     {
         public string gameName { get; set; }
         public int nPlayers { get; set; }
-        public user thisUser;
-        public List<user> users;
+        public user thisUser { get; set; }
+        public List<user> users { get; set; }
     }
 
     public class user
