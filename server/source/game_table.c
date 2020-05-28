@@ -488,6 +488,12 @@ json_object* GameInitStateJson(PreGameState* preGameState, int userId)
 	//json_object* thisUser = json_object_new_object();
 	json_object* users = json_object_new_array();
 	
+	json_object* gameName = json_object_new_string(preGameState->gameName);
+	json_object* nPlayers = json_object_new_int(preGameState->userCount);
+	
+	json_object_object_add(initState, "gameName", gameName);
+	json_object_object_add(initState, "nPlayers", nPlayers);
+	
 	pthread_mutex_lock(preGameState->game_mutex);	
 	for(int i = 0; i < preGameState->userCount; i++)
 	{
