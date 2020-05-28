@@ -12,4 +12,7 @@
 #define CLIENT_REQ_LEN 8192
 #define SERVER_RSP_LEN 8192
 
+#define SCREEN_MAX_X 600
+#define SCREEN_MAX_Y 400
+
 #endif

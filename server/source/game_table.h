@@ -13,6 +13,7 @@
 // usuari dins la pre-partida
 typedef struct PreGameUser{
 	int id;									// ID usuari
+	int charId;
 	int socket;								// socket associat a l'usuari
 	int userState;							// estat de l'usuari, permet saver si ha sigut invitat i si ha acceptat la invitació
 	char username[USRN_LENGTH];				// nom d'usuati
@@ -64,6 +65,7 @@ json_object* GameStateToJson(PreGameState* preGameState);
 int AllHasCharacter(PreGameState* preGameState);
 int IamAloneinGame(PreGameState* preGameState);
 	
+json_object* GameInitStateJson(PreGameState* preGameState, int userId);
 //------------------------------------------------------------------------------
 
 #endif

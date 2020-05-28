@@ -81,6 +81,7 @@ int __addPreGameUser(PreGameState* gameState, PreGameUser* user)
 	if(gameState->userCount < MAX_GAME_USRCOUNT)
 	{
 		int pos = gameState->userCount;
+		user->charId = pos;
 		gameState->users[pos] = user;
 		gameState->userCount++;		
 		return 0;
@@ -128,6 +129,7 @@ int AddPreGameUser(PreGameState* gameState, PreGameUser* user)
 	if(gameState->userCount < MAX_GAME_USRCOUNT)
 	{
 		int pos = gameState->userCount;
+		user->charId = pos;
 		gameState->users[pos] = user;
 		gameState->userCount++;		
 		pthread_mutex_unlock(gameState->game_mutex);
@@ -477,5 +479,50 @@ json_object* GameStateToJson(PreGameState* preGameState)
 	}	
 	pthread_mutex_unlock(preGameState->game_mutex);	
 	return gameJson;
+}
+
+json_object* GameInitStateJson(PreGameState* preGameState, int userId)
+{
+	int formatOk = 0;
+	json_object* initState = json_object_new_object();
+	//json_object* thisUser = json_object_new_object();
+	json_object* users = json_object_new_array();
+	
+	pthread_mutex_lock(preGameState->game_mutex);	
+	for(int i = 0; i < preGameState->userCount; i++)
+	{
+		if (preGameState->users[i] != NULL)
+		{
+			if (preGameState->users[i]->userState == 1)
+			{
+				json_object* user = json_object_new_object();
+				
+				json_object* userid = json_object_new_int(preGameState->users[i]->id);
+				json_object* charid = json_object_new_int(preGameState->users[i]->charId);
+				json_object* username = json_object_new_string(preGameState->users[i]->username);		
+				json_object* charname = json_object_new_string(preGameState->users[i]->charname);
+				
+				json_object_object_add(user, "userId", userid);
+				json_object_object_add(user, "charId", charid);
+				json_object_object_add(user, "userName", username);
+				json_object_object_add(user, "charName", charname);
+				
+				json_object_array_add(users, user);	
+				
+				if (preGameState->users[i]->id == userId)
+				{
+					formatOk = 1;
+					json_object_object_add(initState, "thisUser", user);
+				}
+			}			
+		}
+	}	
+	pthread_mutex_unlock(preGameState->game_mutex);	
+	json_object_object_add(initState, "users", users);
+	if (formatOk)
+	{
+		return initState;
+	}
+	else return NULL;
 }
 //------------------------------------------------------------------------------
