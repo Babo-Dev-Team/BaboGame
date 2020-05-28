@@ -21,8 +21,6 @@ namespace BaboGameClient
         public const string local2_ip = "192.168.56.101";
 
         ServerHandler serverHandler;
-        MusicPlayer musicPlayer;
-
         // Necessitem el notification worker per passar-li la instància del queries form un cop el creem
         NotificationWorker notificationWorker;
 
@@ -37,9 +35,6 @@ namespace BaboGameClient
         private void Form1_Load(object sender, EventArgs e)
         {
             //serverHandler = new ServerHandler();
-            musicPlayer = new MusicPlayer();
-            musicPlayer.Play("Sounds/Music/StartMenu.wav");
-
         }
 
         // arranquem el queries form i el passem al Notification Worker

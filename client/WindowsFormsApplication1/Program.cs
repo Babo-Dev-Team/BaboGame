@@ -3,25 +3,47 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Threading;
-using System.Media; 
+using System.Media;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace BaboGameClient
 {
     public class MusicPlayer
     {
-        private SoundPlayer player;
+        //private SoundPlayer player;
+        private MediaPlayer mediaPlayer;
+        private MediaTimeline timeLine;
+
         public MusicPlayer()
         {
-            this.player = new SoundPlayer();
+            //this.player = new SoundPlayer();
+            this.mediaPlayer = new MediaPlayer();
+            this.mediaPlayer.Volume = 0.25;
+            timeLine = new MediaTimeline();
         }
 
         public void Play(string filePath)
         {
             try
             {
-                this.player.SoundLocation = filePath;
-                this.player.PlayLooping();
+                //this.player.SoundLocation = filePath;
+                //this.player.PlayLooping();
+                var uri = new Uri(filePath, UriKind.Relative);
+                //MessageBox.Show(uri.ToString());
+                //timeLine.Source = uri;
+                //mediaPlayer.Open(uri);
+                //timeLine.RepeatBehavior = RepeatBehavior.Forever;
+
+                //mediaPlayer.Clock = timeLine.CreateClock();
+                //timeLine.BeginTime = TimeSpan.Zero;
+                //timeLine.Duration = TimeSpan.FromMinutes(3);
+                //timeLine.
+                //mediaPlayer.Clock.Controller.Begin();
+                mediaPlayer.Open(uri);
+                mediaPlayer.Play();
             }
+
             catch (Exception ex)
             {
                 MessageBox.Show("Error playing music");
@@ -30,7 +52,7 @@ namespace BaboGameClient
 
         public void Stop()
         {
-            this.player.Stop();
+            this.mediaPlayer.Stop();
         }
     }
     // Classe que gestiona les notificacions des de la UI.
