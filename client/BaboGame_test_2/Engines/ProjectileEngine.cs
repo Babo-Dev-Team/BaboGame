@@ -11,7 +11,7 @@ namespace BaboGame_test_2
 {
     // la idea d'aquesta classe és abstreure tota la lògica per crear, moure i col·lisionar els projectils.
     // d'aquesta manera, podem implementar una classe similar al server i comparar el resultat de les colisions.
-    class ProjectileEngine
+    public class ProjectileEngine
     {
         private List<Projectile> projectileList;
 

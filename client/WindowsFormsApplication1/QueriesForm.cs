@@ -77,6 +77,7 @@ namespace BaboGameClient
         string gameName;
         ToolStripItem notificationSelection;
         ToolStripItem stickerSelector;
+        char Difficulty = 'I'; //Canvia la dificultat del CPU (E)asy, (M)edium, (D)ifficult, (I)nsane
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
@@ -398,11 +399,11 @@ namespace BaboGameClient
 
             //Butó per seleccionar el personatge de l'oponent
             OpponentSelectChar_btn.Location = new Point(312, 300);
-            OpponentSelectChar_btn.Text = "Selecciona Personatge";
+            OpponentSelectChar_btn.Text = "Selecciona Oponent";
             OpponentSelectChar_btn.Size = new Size(80, 60);
             OpponentSelectChar_btn.Visible = false;
             this.Controls.Add(OpponentSelectChar_btn);
-            //OpponentSelectChar_btn.Click += new EventHandler(this.OpponentSelectChar_btn_Click);
+            OpponentSelectChar_btn.Click += new EventHandler(this.OpponentSelectChar_btn_Click);
 
             //Butó per seleccionar el personatge del jugador
             PlayerSelectChar_btn.Location = new Point(25, 300);
@@ -1077,6 +1078,8 @@ namespace BaboGameClient
         {
             ScreenSelected = -1;
             UpdateScreen();
+            
+            TrainingState.OpponentCharacter_Selected.Clear();
             TrainingState.Opponentnum_players = 0;
         }
 
@@ -1263,8 +1266,10 @@ namespace BaboGameClient
         //Entrena
         public void Train_btn_Click(object sender, EventArgs e)
         {
-            using (var game = new Game1(TrainingState))
+            using (var game = new Game1(TrainingState,Difficulty))
             game.Run();
+            TrainingState.OpponentCharacter_Selected.Clear();
+            TrainingState.Opponentnum_players = 0;
         }
 
         //Escollir el personatge
@@ -1280,9 +1285,11 @@ namespace BaboGameClient
         }
         public void OpponentSelectChar_btn_Click(object sender, EventArgs e)
         {
-            
-            TrainingState.OpponentCharacter_Selected.Add(characterSelected[OpponentcharSelectedPos]);
-            TrainingState.Opponentnum_players++;
+            if (TrainingState.Opponentnum_players < 7)
+            {
+                TrainingState.OpponentCharacter_Selected.Add(characterSelected[OpponentcharSelectedPos]);
+                TrainingState.Opponentnum_players++;
+            }
         }
         public void LeftOpponentChar_btn_Click(object sender, EventArgs e)
         {

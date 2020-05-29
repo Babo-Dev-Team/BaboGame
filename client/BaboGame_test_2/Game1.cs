@@ -108,6 +108,7 @@ namespace BaboGame_test_2
 
         }
         LocalGameState localGameState;
+        char Difficulty; //E -easy, M - medium, D- difficult, I - insane
 
         //Variables del online
         initState initGame = new initState();
@@ -120,7 +121,7 @@ namespace BaboGame_test_2
         //Temporització de les babes
         private static Timer timer;
         int SlimeTime = 0;
-        Random EnemyShoot = new Random(); //-------------------------------------Babo prova
+         
 
         public Game1()
         {
@@ -147,7 +148,7 @@ namespace BaboGame_test_2
             Console.WriteLine("testline");
         }
 
-        public Game1(LocalGameState localGameState)
+        public Game1(LocalGameState localGameState, char difficulty)
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -156,6 +157,7 @@ namespace BaboGame_test_2
             this.testMode = true;
             Initialized = false;
             this.localGameState = localGameState;
+            Difficulty = difficulty;
         }
 
         /// <summary>
@@ -169,7 +171,8 @@ namespace BaboGame_test_2
             base.Initialize();
             slimeSprites = new List<Slime>();
             slimeEngine = new SlimeEngine(slimeSprites);
-            serverHandler.RequestInitState();
+            if(!testMode)
+                serverHandler.RequestInitState();
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -369,15 +372,19 @@ namespace BaboGame_test_2
                 }
 
             }
-            else
+            else if (!Initialized)
             {
                 InitTraining();
+                Initialized = true;
+                playable = true;
             }
 
-            if ((Initialized)||(testMode))
+            if ((Initialized))
             {
                 // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
                 UpdateControllableCharacter(gameTime);
+                if (testMode)
+                    characterEngine.CPUDecision(scenarioSprites, projectileSprites,projectileEngine,projectileTexture, Difficulty);
             }
             
 
@@ -498,8 +505,9 @@ namespace BaboGame_test_2
             characterSprites.Clear();
             for (int i = 0; i < initGame.nPlayers; i++)
             {
-                characterEngine.AddKnownCharacter(initGame.users[i].charName, new Vector2(i*60, 0), 0.20f, 20, initGame.users[i].charId, Color.White);
+                
                 Vector2 HeartPosition = HeartPosInScreen(initGame.nPlayers,i,5);
+                characterEngine.AddKnownCharacter(initGame.users[i].charName, new Vector2(HeartPosition.X + 5*30/2, HeartPosition.Y - 40), 0.20f, 20, initGame.users[i].charId, Color.White);
                 heartManager.CreateHeart(initGame.users[i].charId, 5, 20, slugHealth, HeartPosition);
 
                 if (thisClient.charId == initGame.users[i].charId)
@@ -527,8 +535,11 @@ namespace BaboGame_test_2
 
             float height = 720;
 
-            switch(nPlayers)
+            switch (nPlayers)
             {
+                case 1: //Mode entrenament individual
+                    HeartPos = new Vector2(graphics.PreferredBackBufferWidth / 2 - heartNum * 30 / 2, 630);
+                    break;
                 case 2: //2 jugadors
                     if(i==0) //Lateral esquerra
                         HeartPos = new Vector2(50, 120);
@@ -541,33 +552,33 @@ namespace BaboGame_test_2
                     else if (i==1) //Lateral dret
                         HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120);
                     else //Part inferior
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth/2 - heartNum * 30/2, 600);
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth/2 - heartNum * 30/2, 630);
                     break;
                 case 4: //4 jugadors
                     if (i < 2) //Lateral esquerra
                         HeartPos = new Vector2(50, 120 * (i*4 + 1));
                     else //Lateral dret
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * (i * 4 + 1));
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * ((i-2) * 4 + 1));
                     break;
                 case 5: //5 jugadors
                     if (i < 2) //Lateral esquerra
                         HeartPos = new Vector2(50, 120 * (i * 3 + 1));
                     else if (i < 4) //Lateral dret
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * (i * 3 + 1));
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * ((i-2) * 3 + 1));
                     else //Part inferior
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth / 2 - heartNum * 30 / 2, 600);
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth / 2 - heartNum * 30 / 2, 630);
                     break;
                 case 6: //6 jugadors
                     if (i < 3) //Lateral esquerra
                         HeartPos = new Vector2(50, 120 * (i * 2 + 1));
                     else //Lateral dret
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * (i * 2 + 1));
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * ((i-3) * 2 + 1));
                     break;
                 case 7: //7 jugadors
                     if (i < 3) //Lateral esquerra
                         HeartPos = new Vector2(50, 90 * (i * 2 + 1));
                     else if (i < 7) //Lateral dret
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 90 * (i * 2 + 1));
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 90 * ((i-3) * 2 + 1));
                     else //Part inferior
                         HeartPos = new Vector2(graphics.PreferredBackBufferWidth / 2 - heartNum * 30 / 2, 630);
                     break;
@@ -575,7 +586,7 @@ namespace BaboGame_test_2
                     if (i < 4) //Lateral esquerra
                         HeartPos = new Vector2(50, 90 * (i * 2 + 1));
                     else //Lateral dret
-                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 90 * (i * 2 + 1));
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 90 * ((i-4) * 2 + 1));
                     break;
                 default:
                     HeartPos = new Vector2(10, 40 * i + 20);
@@ -659,8 +670,8 @@ namespace BaboGame_test_2
                 Vector2 HeartPosition;
                 if (localGameState.Player_ID[i] == 1)
                 {
-                    characterEngine.AddKnownCharacter(localGameState.PlayerCharacter_Selected, new Vector2(i * 60, 0), 0.20f, 20, localGameState.Player_ID[i], Color.White);
-                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players+1, i, 5);
+                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
+                    characterEngine.AddKnownCharacter(localGameState.PlayerCharacter_Selected, new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 20, localGameState.Player_ID[i], Color.White);
                     heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
                     playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i]));
                     playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, localGameState.Player_ID[i]));
@@ -669,8 +680,8 @@ namespace BaboGame_test_2
                 }
                 else if (i!=0)
                 {
-                    characterEngine.AddKnownCharacter(localGameState.OpponentCharacter_Selected[i-1], new Vector2(i * 60, 0), 0.20f, 20, localGameState.Player_ID[i], Color.White);
                     HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
+                    characterEngine.AddKnownCharacter(localGameState.OpponentCharacter_Selected[i - 1], new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 20, localGameState.Player_ID[i], Color.White, true);
                     heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
                     playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i]));
                     playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, localGameState.Player_ID[i]));

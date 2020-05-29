@@ -159,6 +159,130 @@ namespace BaboGame_test_2
             }
         }
 
+        public void CPUDecision(List<ScenarioObjects> scenarioList, List<Projectile> projectileList,ProjectileEngine projectileEngine, Dictionary<string,Texture2D> projectileTexture, char Difficulty)
+        {
+            foreach (var character in characterList)
+            {
+                Random EnemyShoot = new Random();
+                if (character.CPU)
+                {
+                    //Apunta al jugador més proper
+                    int j = 0;
+                    bool trobat = false;
+                    Character nearest = character;
+
+                    //Buscant el primer enemic de la llista
+                    while ((j < characterList.Count) && (!trobat))
+                    {
+                        if (characterList[j].IDcharacter != character.IDcharacter)
+                        {
+                            trobat = true;
+                            nearest = characterList[j];
+                        }
+                        else
+                            j++;
+                    }
+
+                    if (trobat)
+                    {
+                        Vector2 distancePlayers = character.Position - nearest.Position;
+                        //Buscant el enemic més proper de la llista
+                        foreach (var opponent in characterList)
+                        {
+                            if (opponent.IDcharacter != character.IDcharacter)
+                            {
+                                Vector2 newDistance = character.Position - opponent.Position;
+                                if (VectorOps.ModuloVector(distancePlayers) > VectorOps.ModuloVector(newDistance))
+                                {
+                                    nearest = opponent;
+                                    distancePlayers = character.Position - nearest.Position;
+                                }
+                            }
+                        }
+
+                        //Llimac apuntant el enemic
+                        character.Direction = VectorOps.UnitVector(nearest.Position - character.Position);
+
+                        //Llimac mantenint les distàncies al enemic
+                        if (VectorOps.ModuloVector(distancePlayers) > 400)
+                            character.Acceleration = character.Direction * character.LinearAcceleration/2;
+                        else if (VectorOps.ModuloVector(distancePlayers) < 200)
+                            character.Acceleration = new Vector2(-character.Direction.X,-character.Direction.Y) * character.LinearAcceleration/2;
+
+                        //Llimac disparant el enemic amb una certa probabilitat d'error
+                        switch(Difficulty)
+                        {
+                            case 'E':
+                                if (EnemyShoot.Next(0, 32) == 0)
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-100, 100), EnemyShoot.Next(-100, 100)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                                break;
+                            case 'M':
+                                if (EnemyShoot.Next(0, 32) == 0)
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-50, 50), EnemyShoot.Next(-50, 50)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                                break;
+                            case 'D':
+                                if (EnemyShoot.Next(0, 16) == 0)
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-5, 5)), projectileTexture["Direct"], character.IDcharacter, 'D');
+                                break;
+                            case 'I':
+                                if (EnemyShoot.Next(0, 8) == 0)
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position, projectileTexture["Direct"], character.IDcharacter, 'D');
+                                break;
+                        }
+                        
+                    }
+
+
+                    //Tècnica del llimac per esquivar bales properes per tal de no ser colpejat
+                    float projectiledistance = 200;
+                    Vector2 badProjectile = new Vector2();
+                    foreach (var projectile in projectileList)
+                    {
+                        
+                        if (projectile.IsNear(character.Position, 200)&&(projectiledistance > VectorOps.ModuloVector(character.Position - projectile.Position))&&(projectile.ShooterID != character.IDcharacter))
+                        {
+                            //Obtenir les dades de la dirrecció de la bala i l'angle perillós
+                            projectiledistance = VectorOps.ModuloVector(character.Position - projectile.Position);
+                            badProjectile = projectile.Position;
+                            float badAngle = VectorOps.Vector2ToDeg(character.Position - projectile.Position);
+                            Vector2 badAngleDirection = VectorOps.UnitVector(character.Position - projectile.Position);
+                            float projectileAngle = VectorOps.Vector2ToDeg(projectile.Direction);
+
+                            //Esquivar
+                            if(((projectileAngle < badAngle)&&(projectileAngle > badAngle - 50))|| ((projectileAngle < badAngle + 360) && (projectileAngle > badAngle + 360 - 50)) || ((projectileAngle < badAngle - 360) && (projectileAngle > badAngle - 360 - 50)))
+                                character.Acceleration = VectorOps.UnitVector(new Vector2(badAngleDirection.Y, badAngleDirection.X)) * character.LinearAcceleration;
+                            else if (((projectileAngle < badAngle + 50) && (projectileAngle > badAngle)) || ((projectileAngle < badAngle + 360 + 50) && (projectileAngle > badAngle + 360)) || ((projectileAngle < badAngle - 360 + 50) && (projectileAngle > badAngle - 360)))
+                                character.Acceleration = VectorOps.UnitVector(new Vector2(-badAngleDirection.Y,-badAngleDirection.X)) * character.LinearAcceleration;
+
+
+                        }
+                    }
+
+                    //Tècnica del llimac per bloquejar bales i evitar ser colpejat amb una certa probabilitat d'error
+                    
+                    switch (Difficulty)
+                    {
+                        case 'E':
+                            if ((EnemyShoot.Next(0, 32) == 0) && (projectiledistance < 200))
+                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-20, 20), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                            break;
+                        case 'M':
+                            if ((EnemyShoot.Next(0, 16) == 0) && (projectiledistance < 200))
+                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                            break;
+                        case 'D':
+                            if ((EnemyShoot.Next(0, 8) == 0) && (projectiledistance < 200))
+                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D');
+                            break;
+                        case 'I':
+                            if ((EnemyShoot.Next(0, 4) == 0) && (projectiledistance < 200))
+                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D');
+                            break;
+                    }
+                }
+            }
+        }
+
         public void AddCharacter(Dictionary<string, Animation> slugAnimations, Vector2 Position, float Scale, float HitBoxScaleW, float HitBoxScaleH, int Health, int IDCharacter, Color color)
         {
             characterList.Add(new Character(slugAnimations,Position,Scale,HitBoxScaleW,HitBoxScaleH,Health,IDCharacter,color));
@@ -180,7 +304,15 @@ namespace BaboGame_test_2
                 characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f,});
         }
 
-
+        public void AddKnownCharacter(string slugName, Vector2 Position, float Scale, int Health, int IDCharacter, Color color, bool CPUgame)
+        {
+            if (slugName == "Babo")
+                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) { Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, CPU = CPUgame, });
+            else if (slugName == "Limax")
+                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, CPU = CPUgame, });
+            else if (slugName == "Kaler")
+                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, CPU = CPUgame, });
+        }
     }
 
     public class Character : Sprite
@@ -194,6 +326,7 @@ namespace BaboGame_test_2
         public Vector2 Force = new Vector2(0,0);
         private float Friction = 1f;
         public float Velocity_Threshold = 12f;
+        public bool CPU = false;
 
         // Constructors
         public Character(Texture2D texture)
