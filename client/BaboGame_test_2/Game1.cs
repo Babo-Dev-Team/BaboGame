@@ -47,6 +47,7 @@ namespace BaboGame_test_2
         Dictionary<string, Animation> sightAnimation;
         SlimeEngine slimeEngine;
         HeartManager heartManager;                          // Mecanismes de la vida
+        private SpriteFont _namesFont;
         InputManager inputManager = new InputManager(Keys.W, Keys.S, Keys.A, Keys.D); // El passem ja inicialitzat als objectes
         KeyboardState _previousState;
 
@@ -58,12 +59,24 @@ namespace BaboGame_test_2
         Texture2D scenarioTexture;
         Texture2D projectileMenuTexture;
 
+        public class NameFontModel
+        {
+            public Vector2 Position;
+            public string name;
+            public float rotation;
+            public float scale;
+            public Vector2 origin;
+            public float layer;
+            public SpriteEffect effect;
+        }
+
         //Variables del online
         initState initGame = new initState();
         GameState gameState = new GameState();
         user thisClient;
         Character Controllable;
         bool Initialized;
+        bool InitRequested;
 
         //Temporització de les babes
         private static Timer timer;
@@ -77,6 +90,7 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
             Initialized = false;
+            InitRequested = false;
         }
 
         public Game1(ServerHandler serverHandler, bool testMode)
@@ -87,6 +101,7 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferWidth = 1280;
             this.testMode = testMode;
             Initialized = false;
+
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
             AllocConsole();
@@ -119,7 +134,10 @@ namespace BaboGame_test_2
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-     
+
+            //Omplim els diccionaris d'imatges perquè els objectes de l'escenari tinguin un bon repertori
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Cors de la vida del llimac     
             slugHealth = new Dictionary<string, Animation>()
             {
                 {"3/4 heart", new Animation(Content.Load<Texture2D>("Slug_status/heart-3_4"), 1) },
@@ -130,18 +148,19 @@ namespace BaboGame_test_2
                 {"Heart", new Animation(Content.Load<Texture2D>("Slug_status/Heart"), 1) },
             };
 
-
-
+            //Animació de la mira
             sightAnimation = new Dictionary<string, Animation>()
             {
                 {"ON", new Animation(Content.Load<Texture2D>("Sight/Sight_on"), 1) },
                 {"OFF", new Animation(Content.Load<Texture2D>("Sight/Sight_off"), 1) },
             };
 
+            //Textures
             slugTexture = Content.Load<Texture2D>("Babo/Babo down0 s0");
             sightTexture = Content.Load<Texture2D>("Sight/Sight_off");
             scenarioTexture = Content.Load<Texture2D>("Scenario/Block");
 
+            //Menú de les bales del llimac
             projectileMenuTexture = Content.Load<Texture2D>("Slug_status/SaltMenu");
             projectileTexture = new Dictionary<string, Texture2D>()
             {
@@ -150,11 +169,16 @@ namespace BaboGame_test_2
                 {"Slimed", Content.Load<Texture2D>("Projectile/NoNewtonianSlimedSalt")},
             };
             
+            //Babes
             slimeTexture = Content.Load<Texture2D>("Projectile/slime2");
 
+            //Inicialitzem llistes, engines i managers pel funcionament del projecte
+
+            //Llista de sprites dels jugadors
             characterSprites = new List<Character>();
 
             // La mira necessita que li passem inputManager per obtenir la posició del ratolí
+            //Llista de sprites del objectes de pantalla
             overlaySprites = new List<Sprite>()
             {
                 new SightWeapon(sightAnimation, inputManager)
@@ -168,6 +192,7 @@ namespace BaboGame_test_2
 
             };
 
+            //Llista de sprites de l'escenari
             scenarioSprites = new List<ScenarioObjects>()
             {
                 new ScenarioObjects(scenarioTexture)
@@ -191,14 +216,18 @@ namespace BaboGame_test_2
                 },
             };
 
-            characterEngine = new CharacterEngine(characterSprites,Content);
+            //Llista de sprites de les bales
             projectileSprites = new List<Projectile>();
+
+            //Engines i managers dels cors, personatges i projectils
+            characterEngine = new CharacterEngine(characterSprites, Content);
             projectileEngine = new ProjectileEngine(projectileSprites);
             projectileManager = new ProjectileManager(projectileTexture, projectileEngine);
-
             heartManager = new HeartManager(overlaySprites);
 
+            //Text en pantalla
             _font = Content.Load<SpriteFont>("Font");
+            _namesFont = Content.Load<SpriteFont>("NamesFont");
 
             //timer
             timer = new Timer(60);

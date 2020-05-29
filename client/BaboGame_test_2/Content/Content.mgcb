@@ -1160,6 +1160,13 @@
 /processorParam:TextureFormat=Color
 /build:Limax/Limax up-45.png
 
+#begin NamesFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:NamesFont.spritefont
+
 #begin Projectile/DirectSalt.png
 /importer:TextureImporter
 /processor:TextureProcessor
