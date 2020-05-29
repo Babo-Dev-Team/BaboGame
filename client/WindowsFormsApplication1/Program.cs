@@ -3,9 +3,58 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Threading;
+using System.Media;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace BaboGameClient
 {
+    public class MusicPlayer
+    {
+        //private SoundPlayer player;
+        private MediaPlayer mediaPlayer;
+        private MediaTimeline timeLine;
+
+        public MusicPlayer()
+        {
+            //this.player = new SoundPlayer();
+            this.mediaPlayer = new MediaPlayer();
+            this.mediaPlayer.Volume = 0.25;
+            timeLine = new MediaTimeline();
+        }
+
+        public void Play(string filePath)
+        {
+            try
+            {
+                //this.player.SoundLocation = filePath;
+                //this.player.PlayLooping();
+                var uri = new Uri(filePath, UriKind.Relative);
+                //MessageBox.Show(uri.ToString());
+                //timeLine.Source = uri;
+                //mediaPlayer.Open(uri);
+                //timeLine.RepeatBehavior = RepeatBehavior.Forever;
+
+                //mediaPlayer.Clock = timeLine.CreateClock();
+                //timeLine.BeginTime = TimeSpan.Zero;
+                //timeLine.Duration = TimeSpan.FromMinutes(3);
+                //timeLine.
+                //mediaPlayer.Clock.Controller.Begin();
+                mediaPlayer.Open(uri);
+                mediaPlayer.Play();
+            }
+
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error playing music");
+            }
+        }
+
+        public void Stop()
+        {
+            this.mediaPlayer.Stop();
+        }
+    }
     // Classe que gestiona les notificacions des de la UI.
     // El mètode Start és el que es passa al Thread de notificacions
     public class NotificationWorker
@@ -266,6 +315,7 @@ namespace BaboGameClient
 
             // thread del notification worker
             Thread ThreadNotificationWorker;
+            //Thread ThreadMusicPlayer;
            
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -273,11 +323,14 @@ namespace BaboGameClient
             // instanciem classes
             NotificationWorker notificationWorker = new NotificationWorker();
             ServerHandler serverHandler = new ServerHandler();
+            //MusicPlayer musicPlayer = new MusicPlayer();
 
             // iniciem el thread de notificacions
             ThreadStart threadStart = delegate { notificationWorker.Start(); };
             ThreadNotificationWorker = new Thread(threadStart);
             ThreadNotificationWorker.Start();
+
+            //threadStart = delegate { }
 
             // instanciem la UI
             LoginMenu loginMenu = new LoginMenu(serverHandler, notificationWorker);

@@ -17,6 +17,7 @@ namespace BaboGameClient
     public partial class QueriesForm : Form
     {
         ServerHandler serverHandler;
+        MusicPlayer musicPlayer;
 
         // necessitem una ref. al Notification Worker per modificar el camp 
         // DataGridUpdateRequested segons el data grid
@@ -634,8 +635,12 @@ namespace BaboGameClient
         //Error en seleccionar el personatge
         public void StartGamePopup()
         {
+
             serverHandler.SwitchToRealtimeMode();
             MessageBox.Show("Comença la partida");
+            musicPlayer.Stop();
+            Thread.Sleep(250);
+            musicPlayer.Play("Sounds/Music/InGame1.wav");
             //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
             //BaboGame.Run();
 
@@ -1100,7 +1105,8 @@ namespace BaboGameClient
 
         private void QueriesForm_Load(object sender, EventArgs e)
         {
-
+           musicPlayer = new MusicPlayer();
+           musicPlayer.Play("Sounds/Music/StartMenu.wav");
         }
 
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)

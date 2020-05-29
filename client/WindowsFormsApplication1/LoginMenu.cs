@@ -21,7 +21,6 @@ namespace BaboGameClient
         public const string local2_ip = "192.168.56.101";
 
         ServerHandler serverHandler;
-
         // Necessitem el notification worker per passar-li la instància del queries form un cop el creem
         NotificationWorker notificationWorker;
 
