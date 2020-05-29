@@ -8,6 +8,8 @@ using System;
 using System.Timers;
 using BaboGameClient;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BaboGame_test_2
 {
@@ -41,16 +43,41 @@ namespace BaboGame_test_2
         ProjectileEngine projectileEngine;
         ProjectileManager projectileManager;
         Dictionary<string, Texture2D> projectileTexture;
+        Dictionary<string, Animation> slugHealth;
+        Dictionary<string, Animation> sightAnimation;
         SlimeEngine slimeEngine;
         HeartManager heartManager;                          // Mecanismes de la vida
+        private SpriteFont _namesFont;
         InputManager inputManager = new InputManager(Keys.W, Keys.S, Keys.A, Keys.D); // El passem ja inicialitzat als objectes
         KeyboardState _previousState;
 
         CharacterEngine characterEngine;
-        Character playerChar;                               // Punter cap al character controlat pel jugador
-        Character playerChar2;                               // Punter cap al character de provas-------------------------Babo prova
-        Character playerChar3;                               // Punter cap al character de provas-------------------------Limax prova
+       
         Texture2D slimeTexture;                             // Textura per instanciar les babes
+        Texture2D slugTexture;
+        Texture2D sightTexture;
+        Texture2D scenarioTexture;
+        Texture2D projectileMenuTexture;
+
+        public class NameFontModel
+        {
+            public Vector2 Position;
+            public string name;
+            public float rotation;
+            public float scale;
+            public Vector2 origin;
+            public float layer;
+            public SpriteEffect effect;
+        }
+
+        //Variables del online
+        initState initGame = new initState();
+        GameState gameState = new GameState();
+        user thisClient;
+        Character Controllable;
+        bool Initialized;
+        bool InitRequested;
+
         //Temporització de les babes
         private static Timer timer;
         int SlimeTime = 0;
@@ -62,6 +89,8 @@ namespace BaboGame_test_2
             Content.RootDirectory = "Content";
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
+            Initialized = false;
+            InitRequested = false;
         }
 
         public Game1(ServerHandler serverHandler, bool testMode)
@@ -71,9 +100,11 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
             this.testMode = testMode;
+            Initialized = false;
+
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
-            AllocConsole();
+            //AllocConsole();
             Console.WriteLine("testline");
         }
 
@@ -88,7 +119,7 @@ namespace BaboGame_test_2
             base.Initialize();
             slimeSprites = new List<Slime>();
             slimeEngine = new SlimeEngine(slimeSprites);
-            
+            serverHandler.RequestInitState();
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,8 +134,11 @@ namespace BaboGame_test_2
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-     
-            Dictionary<string, Animation> slugHealth = new Dictionary<string, Animation>()
+
+            //Omplim els diccionaris d'imatges perquè els objectes de l'escenari tinguin un bon repertori
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Cors de la vida del llimac     
+            slugHealth = new Dictionary<string, Animation>()
             {
                 {"3/4 heart", new Animation(Content.Load<Texture2D>("Slug_status/heart-3_4"), 1) },
                 {"2/4 heart", new Animation(Content.Load<Texture2D>("Slug_status/heart-2_4"), 1) },
@@ -114,19 +148,20 @@ namespace BaboGame_test_2
                 {"Heart", new Animation(Content.Load<Texture2D>("Slug_status/Heart"), 1) },
             };
 
-
-
-            Dictionary<string, Animation> sightAnimation = new Dictionary<string, Animation>()
+            //Animació de la mira
+            sightAnimation = new Dictionary<string, Animation>()
             {
                 {"ON", new Animation(Content.Load<Texture2D>("Sight/Sight_on"), 1) },
                 {"OFF", new Animation(Content.Load<Texture2D>("Sight/Sight_off"), 1) },
             };
 
-            var slugTexture = Content.Load<Texture2D>("Babo/Babo down0 s0");
-            var sightTexture = Content.Load<Texture2D>("Sight/Sight_off");
-            var scenarioTexture = Content.Load<Texture2D>("Scenario/Block");
+            //Textures
+            slugTexture = Content.Load<Texture2D>("Babo/Babo down0 s0");
+            sightTexture = Content.Load<Texture2D>("Sight/Sight_off");
+            scenarioTexture = Content.Load<Texture2D>("Scenario/Block");
 
-            var projectileMenuTexture = Content.Load<Texture2D>("Slug_status/SaltMenu");
+            //Menú de les bales del llimac
+            projectileMenuTexture = Content.Load<Texture2D>("Slug_status/SaltMenu");
             projectileTexture = new Dictionary<string, Texture2D>()
             {
                 {"Normal", Content.Load<Texture2D>("Projectile/Salt")},
@@ -134,11 +169,16 @@ namespace BaboGame_test_2
                 {"Slimed", Content.Load<Texture2D>("Projectile/NoNewtonianSlimedSalt")},
             };
             
+            //Babes
             slimeTexture = Content.Load<Texture2D>("Projectile/slime2");
 
+            //Inicialitzem llistes, engines i managers pel funcionament del projecte
+
+            //Llista de sprites dels jugadors
             characterSprites = new List<Character>();
 
             // La mira necessita que li passem inputManager per obtenir la posició del ratolí
+            //Llista de sprites del objectes de pantalla
             overlaySprites = new List<Sprite>()
             {
                 new SightWeapon(sightAnimation, inputManager)
@@ -152,6 +192,7 @@ namespace BaboGame_test_2
 
             };
 
+            //Llista de sprites de l'escenari
             scenarioSprites = new List<ScenarioObjects>()
             {
                 new ScenarioObjects(scenarioTexture)
@@ -175,34 +216,24 @@ namespace BaboGame_test_2
                 },
             };
 
-            characterEngine = new CharacterEngine(characterSprites,Content);
-            characterEngine.AddKnownCharacter("Kaler",new Vector2(100,100), 0.20f, 20, 1,Color.White);
-            characterEngine.AddKnownCharacter("Babo",new Vector2(300,300), 0.20f, 40, 2,Color.White);
-            characterEngine.AddKnownCharacter("Limax", new Vector2(500, 500), 0.20f, 20, 3, Color.White);
-
-
-            heartManager = new HeartManager(overlaySprites);
-            heartManager.CreateHeart(1, 5, 20, slugHealth,new Vector2(100,300));
-            heartManager.CreateHeart(2, 10, 39, slugHealth,new Vector2(100,400)); //--------------------- Babo prova
-            heartManager.CreateHeart(3, 5, 20, slugHealth, new Vector2(500, 100)); //--------------------- Babo prova
-
+            //Llista de sprites de les bales
             projectileSprites = new List<Projectile>();
+
+            //Engines i managers dels cors, personatges i projectils
+            characterEngine = new CharacterEngine(characterSprites, Content);
             projectileEngine = new ProjectileEngine(projectileSprites);
             projectileManager = new ProjectileManager(projectileTexture, projectileEngine);
-            projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, 1, 0.1f);
+            heartManager = new HeartManager(overlaySprites);
 
-            // punter que apunta al personatge controlat pel jugador
-            playerChar = characterSprites.ToArray()[0];
-            playerChar2 = characterSprites.ToArray()[1]; //------------------------- Babo prova
-            playerChar3 = characterSprites.ToArray()[2]; //------------------------- Babo prova
+            //Text en pantalla
             _font = Content.Load<SpriteFont>("Font");
+            _namesFont = Content.Load<SpriteFont>("NamesFont");
 
             //timer
             timer = new Timer(60);
             timer.AutoReset = true;
             timer.Enabled = true;
             debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, timer.Interval,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
-            serverHandler.RequestInitState();
         }
 
         /// <summary>
@@ -215,17 +246,11 @@ namespace BaboGame_test_2
             FreeConsole();
         }
 
-        bool Slug2Direction = false; //--------------------------------------- Babo prova
-        bool Slug2Direction2 = false;
-
-        bool Slug3Direction = false; //--------------------------------------- Limax prova
-        bool Slug3Direction2 = false;
-
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Funció Upload
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+        //private bool initStateRequested = false;
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -233,94 +258,69 @@ namespace BaboGame_test_2
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+          // if (!initStateRequested)
+            //{
+              //  this.serverHandler.RequestInitState();
+                //initStateRequested = true;
+           // }
            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                Exit();
             if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
                 graphics.ToggleFullScreen();
 
-
-
-
-
             // Detectem inputs al teclat
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
+
+
+
             if (ReceiverArgs.newDataFromServer == 1)
             {
-                Console.WriteLine("Response Received: Code " + ReceiverArgs.responseType);
-                Console.WriteLine(ReceiverArgs.responseStr);
+                //int responseType;
+                //string responseStr;
+                GenericResponse response;
+                for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
+                {
+                    response = ReceiverArgs.responseFifo.Dequeue();
+
+                    Console.WriteLine("Response Received: Code " + response.responseType);
+                    Console.WriteLine(response.responseStr);
+                    //UpdateOnline();
+                    
+
+                    if (response.responseType == 101)
+                    {
+                        initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
+                        UpdateInit();
+                        Initialized = true;
+                    }
+                    else if (response.responseType == 102)
+                    {
+                        /*if (response.responseStr == "START")
+                        {
+                            playable = true;
+                        }
+                        else if (response.responseStr.Split('/')[0] == "END")
+                        {
+                            playable = false;
+                            // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                        }*/
+                    }
+                    else if ((response.responseType == 103) && (Initialized))
+                    {
+                        gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
+                        PeriodicalUpdate();
+                    }
+                }
                 ReceiverArgs.newDataFromServer = 0;
             }
 
             if (playable)
             {
-
-                // Actualitzem direcció i moviment del playerChar segons els inputs
-                UpdateControllableCharacter();
+                // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
+                UpdateControllableCharacter(gameTime);
             }
-            
-            
-            //Actualitzem moviment del llimac de prova ---------------------Babo prova
-            playerChar2.Direction = VectorOps.UnitVector(playerChar.Position - playerChar2.Position);
-
-            if (!Slug2Direction)
-                playerChar2.MoveRight();
-            else
-                playerChar2.MoveLeft();
-            if (Slug2Direction2)
-                playerChar2.MoveUp();
-            else
-                playerChar2.MoveDown();
-
-            if ((playerChar2.Position.X > graphics.PreferredBackBufferWidth))
-                Slug2Direction = true;
-            else if (playerChar2.Position.X < 0)
-                Slug2Direction = false;
-               
-            if (playerChar2.Position.Y > graphics.PreferredBackBufferHeight)
-                Slug2Direction2 = true;
-            else if (playerChar2.Position.Y < 0)
-                Slug2Direction2 = false;
-
-            //Actualitzem moviment del llimac de prova ---------------------Limax prova
-            playerChar3.Direction = VectorOps.UnitVector(playerChar.Position - playerChar3.Position);
-
-            if (!Slug3Direction)
-                playerChar3.MoveRight();
-            else
-                playerChar3.MoveLeft();
-            if (Slug3Direction2)
-                playerChar3.MoveUp();
-            else
-                playerChar3.MoveDown();
-
-            if ((playerChar3.Position.X > graphics.PreferredBackBufferWidth))
-                Slug3Direction = true;
-            else if (playerChar3.Position.X < 0)
-                Slug3Direction = false;
-
-            if (playerChar3.Position.Y > graphics.PreferredBackBufferHeight)
-                Slug3Direction2 = true;
-            else if (playerChar3.Position.Y < 0)
-                Slug3Direction2 = false;
-
-            if (playable)
-            {
-                // llançem projectils segons els inputs del jugador
-                inputManager.DetectMouseClicks();
-                projectileManager.Update(gameTime, inputManager.GetMouseWheelValue(), overlaySprites, characterSprites);
-                if (inputManager.LeftMouseClick())
-                {
-                    Vector2 projOrigin = playerChar.Position;
-                    Vector2 projTarget = inputManager.GetMousePosition();
-                    int shooterID = 1; // caldrà gestionar els ID's des del server
-                    projectileManager.AddProjectile(projOrigin, projTarget, shooterID);
-                }
-            }
-
-            //if (EnemyShoot.Next(0,32) == 0) //--------------------------- Babo prova
-             //projectileEngine.AddProjectile(playerChar2.Position, playerChar.Position, projectileTexture["Slimed"], 2,'S');
 
             //Això actualitzaria els objectes del escenari
             foreach (var ScenarioObj in scenarioSprites)
@@ -414,34 +414,138 @@ namespace BaboGame_test_2
         }
 
         //Actualitzar la llista JSON
-        private void UpdateOnline()
+       /* private void UpdateOnline()
         {
+            if (ReceiverArgs.responseType == 101)
+            {
+                initGame = JsonSerializer.Deserialize<initState>(ReceiverArgs.responseStr);
 
+            }
+            else if(ReceiverArgs.responseType == 102)
+            {
+                if (ReceiverArgs.responseStr == "START")
+                    playable = true;
+            }
+            else if(ReceiverArgs.responseType == 103)
+            {
+                gameState = JsonSerializer.Deserialize<GameState>(ReceiverArgs.responseStr);
+            }
+        }*/
+
+        //Incialitza els components amb el codi 101
+        private void UpdateInit()
+        {
+            thisClient = initGame.thisUser;
+            characterSprites.Clear();
+            for (int i = 0; i < initGame.nPlayers; i++)
+            {
+                characterEngine.AddKnownCharacter(initGame.users[i].charName, new Vector2(i*60, 0), 0.20f, 20, initGame.users[i].charId, Color.White);
+                heartManager.CreateHeart(initGame.users[i].charId, 5, 20, slugHealth, new Vector2(10, 40*i + 20));
+
+                if (thisClient == initGame.users[i])
+                {
+                    projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, initGame.thisUser.charId, 0.1f);
+                    Controllable = characterSprites.ToArray()[i];
+                }
+
+            }
+        }
+
+        //Actualitza els components amb el codi 102
+        private void PeriodicalUpdate()
+        {
+            foreach(CharacterState characterState in gameState.characterStatesList)
+            {
+                bool found = false;
+                int i = 0;
+                while((!found)&&(i<gameState.characterStatesList.Count))
+                {
+                    if (characterState.charID == characterSprites[i].IDcharacter)
+                    {
+                        found = true;
+                        characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
+                        characterSprites[i].Velocity = new Vector2(characterState.velX, characterState.velY);
+                    }
+                    else
+                        i++;
+                }
+
+                
+            }
+
+            if (gameState.playable == 1)
+                playable = true;
+            else
+                playable = false;
         }
 
         //Control dels personatges
-        private void UpdateControllableCharacter()
+        private void UpdateControllableCharacter(GameTime gameTime)
         {
-            playerChar.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - playerChar.Position);
+            Controllable.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - Controllable.Position);
 
-            if (inputManager.RightCtrlActive())
+            if (playable)
             {
-                playerChar.MoveRight();
-            }
-            if (inputManager.LeftCtrlActive())
-            {
-                playerChar.MoveLeft();
-            }
-            if (inputManager.UpCtrlActive())
-            {
-                playerChar.MoveUp();
-            }
-            if (inputManager.DownCtrlActive())
-            {
-                playerChar.MoveDown();
+                if (inputManager.RightCtrlActive())
+                {
+                    Controllable.MoveRight();
+                }
+                if (inputManager.LeftCtrlActive())
+                {
+                    Controllable.MoveLeft();
+                }
+                if (inputManager.UpCtrlActive())
+                {
+                    Controllable.MoveUp();
+                }
+                if (inputManager.DownCtrlActive())
+                {
+                    Controllable.MoveDown();
+                }
+
+                // llançem projectils segons els inputs del jugador
+                inputManager.DetectMouseClicks();
+                projectileManager.Update(gameTime, inputManager.GetMouseWheelValue(), overlaySprites, characterSprites);
+                if (inputManager.LeftMouseClick())
+                {
+                    Vector2 projOrigin = Controllable.Position;
+                    Vector2 projTarget = inputManager.GetMousePosition();
+                    projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter);
+                }
             }
         }
-        
+
+        //Control personatges per la màquina
+        private void CPUcharacter()
+        {
+            /*
+            //Actualitzem moviment del llimac de prova ---------------------Limax prova
+            playerChar3.Direction = VectorOps.UnitVector(playerChar.Position - playerChar3.Position);
+
+            if (!Slug3Direction)
+                playerChar3.MoveRight();
+            else
+                playerChar3.MoveLeft();
+            if (Slug3Direction2)
+                playerChar3.MoveUp();
+            else
+                playerChar3.MoveDown();
+
+            if ((playerChar3.Position.X > graphics.PreferredBackBufferWidth))
+                Slug3Direction = true;
+            else if (playerChar3.Position.X < 0)
+                Slug3Direction = false;
+
+            if (playerChar3.Position.Y > graphics.PreferredBackBufferHeight)
+                Slug3Direction2 = true;
+            else if (playerChar3.Position.Y < 0)
+                Slug3Direction2 = false;
+
+            //if (EnemyShoot.Next(0,32) == 0) //--------------------------- Babo prova
+            //projectileEngine.AddProjectile(playerChar2.Position, playerChar.Position, projectileTexture["Slimed"], 2,'S');
+            */
+        }
+
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //Funció Draw
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

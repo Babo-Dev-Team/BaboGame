@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include "json.h"
 #include <time.h>
+#include <unistd.h>
 
 #include "BBDD_Handler.h"
 #include "globals.h"
@@ -108,6 +109,14 @@ int** GetInitialPositions (int n_players, int game_max_x, int game_max_y)
 // funció per enviar a tothom, activa el thread globalSender
 void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userState)
 {
+	struct timespec s;
+	s.tv_sec = 0;
+	s.tv_nsec = 1000000L;
+	if (args->newData != 0)
+	{
+		nanosleep(&s, NULL);
+	}
+	
 	// adquirim el lock del sender (alliberat pel pthread_mutex_wait en el seu thread)
 	pthread_mutex_lock(args->gameSender_mutex);
 	int waitNotified = 0;
@@ -117,7 +126,7 @@ void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userSt
 	// adquirie el lock, és perquè encara no ha sortit del pthread_condition_wait.
 	// el que fem és anar alliberant el mutex i esperar que el sender adquireixi el mutex
 	// i envii la informació. podem llegir userState perquè és un int32 (atomic)
-	while (args->newData != 0)
+	/*while (args->newData != 0)
 	{
 		pthread_mutex_unlock(args->gameSender_mutex);
 		unlocked = 1;
@@ -130,7 +139,7 @@ void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userSt
 	if (unlocked)
 	{
 		pthread_mutex_lock(args->gameSender_mutex);
-	}
+	}*/
 	args->newData = 1;
 	args->userState = userState;
 	pthread_cond_signal(args->gameSender_signal);
@@ -144,15 +153,16 @@ void* gameProcessor (void* args)
 {
 	GameProcessorArgs* procArgs = (GameProcessorArgs*) args;
 	GameSenderArgs* senderArgs = procArgs->senderArgs;
-	GameUpdatesFromClient** clientUpdates = procArgs->gameUpdatesFromClients; 
+	GameUpdatesFromClient** clientUpdates;
 	
+	int n_clientsInit = 0;
 	pthread_mutex_lock(procArgs->gameProcessor_mutex);
 	while (!procArgs->initEnabled)
 	{	
 		printf("Game Processor entering sleep...\n");
 		pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);
 	}
-	
+	//pthread_mutex_lock(procArgs->gameProcessor_mutex);
 	printf("Game Processor performing init...\n");
 	//pthread_mutex_lock(procArgs->gameProcessor_mutex);
 	int n_players = procArgs->n_players;
@@ -161,19 +171,41 @@ void* gameProcessor (void* args)
 	GameState* gameState = CreateGameState(gameId, n_players);
 	int** gamePositions = GetInitialPositions(n_players, SCREEN_MAX_X, SCREEN_MAX_Y);
 	SetInitialPositions(gameState, gamePositions);
+	//pthread_mutex_unlock(procArgs->gameProcessor_mutex);
 	
 	while(!procArgs->processEnabled)
 	{
+		//pthread_mutex_lock(procArgs->gameProcessor_mutex);
 		printf("Game processor sending init state\n");
 		UpdateGameStateJson(gameState);
 		sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
 		sendToGame(senderArgs, response, 1);		
-		printf("Game Processor entering sleep...\n");
-		pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);
+		
+		// auto enable realtime processing when all clients have been inisialized
+		if(++n_clientsInit >= procArgs->n_players)
+		{
+			printf("All Clients Initialized!\n");
+			procArgs->processEnabled = 1;
+			pthread_mutex_unlock(procArgs->gameProcessor_mutex);
+			sleep(1);
+		}
+		else
+		{
+			procArgs->initEnabled = 0;
+			while(!procArgs->initEnabled)
+			{			
+				printf("Game Processor entering sleep...\n");
+				pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);		
+			}
+		}
 	}
 	printf("Game Processor starting realtime processing...\n");
 
 	sendToGame(senderArgs, "102/START", 1);
+	
+	clientUpdates = procArgs->gameUpdatesFromClients; 
+	int counter = 0;
+	int operation = 1;
 	
 	// this function will auto-disable when game is over
 	while(procArgs->processEnabled)
@@ -191,10 +223,45 @@ void* gameProcessor (void* args)
 				clientUpdates[i]->newDataFromClient = 0;
 			}
 		}
+
+
+		if (operation)
+		{
+			gameState->characterStatesList[0].position_X += 2;
+			gameState->characterStatesList[0].position_Y += 2;
+			gameState->characterStatesList[1].position_X -= 2;
+			gameState->characterStatesList[1].position_Y -= 2;
+			
+			
+		}
+		else 
+		{
+			gameState->characterStatesList[0].position_X -= 2;
+			gameState->characterStatesList[0].position_Y -= 2;
+			gameState->characterStatesList[1].position_X += 2;
+			gameState->characterStatesList[1].position_Y += 2;
+		}
+		
+		counter++;
+		if (counter > 150)
+		{
+			counter = 0;
+			if (operation)
+			{
+				operation = 0;
+			}
+			else operation = 1;
+		}
+		
 		UpdateGameStateJson(gameState);
 		sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
 		sendToGame(senderArgs, response, 1);
-		sleep(1);
+		
+		// sleep for 15 ms
+		struct timespec s;
+		s.tv_sec = 0;
+		s.tv_nsec = 15000000L;
+		nanosleep(&s, NULL);
 		
 		// calcular quan acaba la partida
 		
@@ -208,6 +275,9 @@ void* gameProcessor (void* args)
 void* gameSender (void* args)
 {
 	GameSenderArgs* senderArgs = (GameSenderArgs*) args;
+	//char gameResponse [SERVER_RSP_LEN];
+	
+	GameSenderArgs thisSenderArgs;
 	
 	// inicialitzem un array de sockets actius
 	int activeSocketList[MAX_GAME_USRCOUNT];
@@ -217,12 +287,12 @@ void* gameSender (void* args)
 		activeSocketList[i] = -1;
 		userStates[i] = -2;
 	}
+	// hem de bloquejar els senderArgs per a que 
+	// pthread_condition_wait s'executi correctament
+	pthread_mutex_lock(senderArgs->gameSender_mutex);
 	
 	while(1)
-	{	
-		// hem de bloquejar els senderArgs per a que 
-		// pthread_condition_wait s'executi correctament
-		pthread_mutex_lock(senderArgs->gameSender_mutex);	
+	{
 		
 		// indiquem posant userState a -2 que estem esperant per rebre noves dades.
 		// No farem res fins que sendToGame no ens passi info i un userState valid per enviar
@@ -241,28 +311,33 @@ void* gameSender (void* args)
 		
 		// la idea es que durant la partida, el thread de calcul cridi directament la funcio sendtogame.
 		printf("game sender waking up\n");
+		thisSenderArgs.userState = senderArgs->userState;
+		thisSenderArgs.game = senderArgs->game;
+		strcpy(thisSenderArgs.gameResponse, senderArgs->gameResponse);
+		//pthread_mutex_unlock(senderArgs->gameSender_mutex);
 		
-		pthread_mutex_lock(senderArgs->game->game_mutex);
-		int n_users = senderArgs->game->userCount;
+		
+		pthread_mutex_lock(thisSenderArgs.game->game_mutex);
+		int n_users = thisSenderArgs.game->userCount;
 		for(int i = 0; i < n_users; i++)
 		{
-			activeSocketList[i] = senderArgs->game->users[i]->socket;
-			userStates[i] = senderArgs->game->users[i]->userState;
+			activeSocketList[i] = thisSenderArgs.game->users[i]->socket;
+			userStates[i] = thisSenderArgs.game->users[i]->userState;
 		}
-		pthread_mutex_unlock(senderArgs->game->game_mutex);
-		strcat(senderArgs->gameResponse, "|");
+		pthread_mutex_unlock(thisSenderArgs.game->game_mutex);
+		strcat(thisSenderArgs.gameResponse, "|");
 		
 		// enviem a tots els sockets actius
-		printf("Sending to game users with User State = %d\n", senderArgs->userState);
+		printf("Sending to game users with User State = %d\n", thisSenderArgs.userState);
 		for (int i = 0; i < n_users; i++)
 		{		
-			if (senderArgs->userState == userStates[i])
+			if (thisSenderArgs.userState == userStates[i])
 			{
-				printf ("GAME ID %d NOTIFICATION for %s = %s\n", senderArgs->game->gameId, senderArgs->game->users[i]->username, senderArgs->gameResponse);
-				write (activeSocketList[i], senderArgs->gameResponse, strlen(senderArgs->gameResponse));			
+				printf ("GAME ID %d NOTIFICATION for %s = %s\n", thisSenderArgs.game->gameId, thisSenderArgs.game->users[i]->username, thisSenderArgs.gameResponse);
+				write (activeSocketList[i], thisSenderArgs.gameResponse, strlen(thisSenderArgs.gameResponse));			
 			}
 		}	
-		pthread_mutex_unlock(senderArgs->gameSender_mutex);
+		//pthread_mutex_unlock(senderArgs->gameSender_mutex);
 	}
 	//pthread_mutex_unlock(threadArgs->threadArgs_mutex);
 }
@@ -942,6 +1017,26 @@ void* attendClient (void* args)
 			{
 				if(AllHasCharacter(preGame))
 				{
+					pthread_mutex_lock(gameProcessorArgs[gameId]->gameProcessor_mutex);
+					gameProcessorArgs[gameId]->gameId = preGame->gameId;
+					gameProcessorArgs[gameId]->n_players = preGame->userCount;
+					
+					
+					// incialitzem les estructures per a que els clients reportin els updates
+					gameProcessorArgs[gameId]->gameUpdatesFromClients = malloc(preGame->userCount * sizeof(GameUpdatesFromClient*));
+					for (int i = 0; i < preGame->userCount; i++)
+					{
+						gameProcessorArgs[gameId]->gameUpdatesFromClients[i] = malloc(sizeof(GameUpdatesFromClient));
+						gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->newDataFromClient = 0;
+						gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
+						gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
+						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
+						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
+						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_Y = 0;
+						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_X = 0;
+						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_Y = 0;			
+					}
+					pthread_mutex_unlock(gameProcessorArgs[gameId]->gameProcessor_mutex);
 					char notif2[SERVER_RSP_LEN];
 					char notif3[SERVER_RSP_LEN];
 					printf("Comença la partida %s\n", gameName);
@@ -1012,25 +1107,7 @@ void* attendClient (void* args)
 				{
 					printf("JSON ERROR: OBJECT IS NULL\n");
 				}
-				gameProcessorArgs[gameId]->gameId = preGame->gameId;
-				gameProcessorArgs[gameId]->n_players = preGame->userCount;
-				
-				
-				// incialitzem les estructures per a que els clients reportin els updates
-				for (int i = 0; i < preGame->userCount; i++)
-				{
-					
-					gameProcessorArgs[gameId]->gameUpdatesFromClients = malloc(sizeof(GameUpdatesFromClient*));
-					gameProcessorArgs[gameId]->gameUpdatesFromClients[i] = malloc(sizeof(GameUpdatesFromClient));
-					gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->newDataFromClient = 0;
-					gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
-					gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
-					//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
-					//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
-					//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_Y = 0;
-					//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_X = 0;
-					//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_Y = 0;			
-				}
+			
 				
 				
 				// wake up the processor to allow init and send first game state to all clients
@@ -1105,7 +1182,7 @@ void* attendClient (void* args)
 // MAIN FUNCTION
 //------------------------------------------------------------------------------
 int main(int argc, char *argv[])
-{	
+{		
 	/*int **positions;
 	positions = GetInitialPositions(4, SCREEN_MAX_X, SCREEN_MAX_Y);
 	for (int i = 0; i < 4; i++)

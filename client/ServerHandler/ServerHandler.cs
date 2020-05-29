@@ -34,38 +34,52 @@ namespace BaboGameClient
     }
 
     //Informació del joc
+    
     public class GameState
     {
-        int gameID;
-        int playable;
-        int nPlayers;
-        List<CharacterState> characterStatesList;
+        public int gameID { get; set; }
+        public int playable { get; set; }
+        public int nPlayers { get; set; }
+        public List<CharacterState> characterStatesList { get; set; }
     }
 
     public class CharacterState
     {
         //string charName;
-        int charID;
-        int posX;
-        int posY;
-        int velX;
-        int velY;
+        public int charID { get; set; }
+        public int posX { get; set; }
+        public int posY { get; set; }
+        public int velX { get; set; }
+        public int velY { get; set; }
     }
 
     public class initState
     {
-        user thisUser;
-        List<user> users;
+        public string gameName { get; set; }
+        public int nPlayers { get; set; }
+        public user thisUser { get; set; }
+        public List<user> users { get; set; }
     }
 
     public class user
     {
-        int userId;
-        int charId;
-        string userName;
-        string charName;
+        public int userId { get; set; }
+        public int charId { get; set; }
+        public string userName { get; set; }
+        public string charName { get; set; }
     }
 
+    public class GenericResponse
+    {
+        public GenericResponse(int number, string response)
+        {
+            this.responseType = number;
+            this.responseStr = response;
+        }
+
+        public int responseType;
+        public string responseStr;
+    }
     
 
     // arguments estàtics per passar informació entre el thread del Receiver i el thread principal.
@@ -76,19 +90,20 @@ namespace BaboGameClient
         public static List<ConnectedUser> connectedList;    // llistes per parsejar el JSON
         public static List<PreGameState> gameTable;
         public static List<PreGameStateUser> gameState;
-        public static initState initStateGame;
-        public static GameState gameStateUpdate;
         public static string responseStr;                   // resposta per string
         public static int newDataFromServer;                // Flag pel mode Realtime
         public static Socket server;                        // el socket per llegir
         public static int responseType;                     // indica el número de resposta
         public static AutoResetEvent notificationSignal;    // senyal pel mode Notificacions
+        public static Queue<GenericResponse> responseFifo;
 
     }
 
     public class ServerReceiver
     {  
         private string response;
+        //private Queue<int, string> responseFifo;
+        //private int responseFifoWrittable;
 
         public ServerReceiver()
         {
@@ -133,11 +148,42 @@ namespace BaboGameClient
         // no s'utilitza el senyal notificationSignal.
         public void StartRealtimeMode()
         {
+            char[] separator = new char[] { '/' };
+            ReceiverArgs.responseFifo = new Queue<GenericResponse>();
+            string[] responseSplitByMessage;
             ReceiverArgs.newDataFromServer = 0;
+
             while (true)
             {
+                // acumulem a la cua
+                if (ReceiverArgs.newDataFromServer == 0)
+                {
+                    byte[] responseBytes = new byte[8192];
+                    ReceiverArgs.server.Receive(responseBytes);
+                    responseSplitByMessage = Encoding.ASCII.GetString(responseBytes).Split('\0')[0].Split('|');
+                    for (int i = 0; i < responseSplitByMessage.Count() - 1; i++)
+                    {
+                        
+                        string[] responseSplitByNumber = responseSplitByMessage[i].Split(separator, 2);
+                        int responseType = Convert.ToInt32(responseSplitByNumber[0]);
+                        string responseStr = responseSplitByNumber[1];
+                        GenericResponse queueItem = new GenericResponse(responseType, responseStr);
+                        ReceiverArgs.responseFifo.Enqueue(queueItem);
+                    }
+                    ReceiverArgs.newDataFromServer = 1;
+                }
+
+                else
+                {
+                    // esperem a que el monogame buidi la cua
+                    while(ReceiverArgs.newDataFromServer != 0)
+                    {
+                        Thread.Sleep(2);
+                    }
+                }
+
                 // esperem a rebre una resposta del servidor
-                response = this.ReceiveReponse();
+                /*response = this.ReceiveReponse();
 
                 while (ReceiverArgs.newDataFromServer != 0)
                 {
@@ -151,10 +197,9 @@ namespace BaboGameClient
 
                     // avisem que hi ha un nou update
                     ReceiverArgs.newDataFromServer = 1;
-                } 
+                }*/
             }
         }
-
 
         //------------------------------------------------
         // INTERNAL METHODS
