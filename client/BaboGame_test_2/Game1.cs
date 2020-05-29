@@ -86,6 +86,29 @@ namespace BaboGame_test_2
         }
         List<NameFontModel> playersNames;
 
+        public class LocalGameState
+        {
+            public int[] Player_ID;
+            public string PlayerCharacter_Selected;
+            public List<string> OpponentCharacter_Selected = new List<string>();
+            public int Opponentnum_players;
+
+            public LocalGameState(int[] Player_ID, string PlayerCharacter_Selected, List<string> OpponentCharacter_Selected, int Opponentnum_players)
+            {
+                this.Player_ID = Player_ID;
+                this.PlayerCharacter_Selected = PlayerCharacter_Selected;
+                this.OpponentCharacter_Selected = OpponentCharacter_Selected;
+                this.Opponentnum_players = Opponentnum_players;
+            }
+
+            public LocalGameState()
+            {
+
+            }
+
+        }
+        LocalGameState localGameState;
+
         //Variables del online
         initState initGame = new initState();
         GameState gameState = new GameState();
@@ -109,19 +132,30 @@ namespace BaboGame_test_2
             InitRequested = false;
         }
 
-        public Game1(ServerHandler serverHandler, bool testMode)
+        public Game1(ServerHandler serverHandler)
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             graphics.PreferredBackBufferHeight = 720;
             graphics.PreferredBackBufferWidth = 1280;
-            this.testMode = testMode;
+            this.testMode = false;
             Initialized = false;
 
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
             //AllocConsole();
             Console.WriteLine("testline");
+        }
+
+        public Game1(LocalGameState localGameState)
+        {
+            graphics = new GraphicsDeviceManager(this);
+            Content.RootDirectory = "Content";
+            graphics.PreferredBackBufferHeight = 720;
+            graphics.PreferredBackBufferWidth = 1280;
+            this.testMode = true;
+            Initialized = false;
+            this.localGameState = localGameState;
         }
 
         /// <summary>
@@ -244,8 +278,7 @@ namespace BaboGame_test_2
 
             //Text en pantalla
             _font = Content.Load<SpriteFont>("Font");
-            _namesFont = Content.Load<SpriteFont>("NamesFont");
-            
+            _namesFont = Content.Load<SpriteFont>("NamesFont"); 
 
             //timer
             timer = new Timer(60);
@@ -290,51 +323,58 @@ namespace BaboGame_test_2
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
-
-
-
-            if (ReceiverArgs.newDataFromServer == 1)
+            if (!testMode)
             {
-                //int responseType;
-                //string responseStr;
-                GenericResponse response;
-                for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
+
+
+                if (ReceiverArgs.newDataFromServer == 1)
                 {
-                    response = ReceiverArgs.responseFifo.Dequeue();
-
-                    Console.WriteLine("Response Received: Code " + response.responseType);
-                    Console.WriteLine(response.responseStr);
-                    //UpdateOnline();
-                    
-
-                    if (response.responseType == 101)
+                    //int responseType;
+                    //string responseStr;
+                    GenericResponse response;
+                    for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
                     {
-                        initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
-                        UpdateInit();
-                        Initialized = true;
-                    }
-                    else if (response.responseType == 102)
-                    {
-                        /*if (response.responseStr == "START")
+                        response = ReceiverArgs.responseFifo.Dequeue();
+
+                        Console.WriteLine("Response Received: Code " + response.responseType);
+                        Console.WriteLine(response.responseStr);
+                        //UpdateOnline();
+
+
+                        if (response.responseType == 101)
                         {
-                            playable = true;
+                            initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
+                            UpdateInit();
+                            Initialized = true;
                         }
-                        else if (response.responseStr.Split('/')[0] == "END")
+                        else if (response.responseType == 102)
                         {
-                            playable = false;
-                            // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
-                        }*/
+                            /*if (response.responseStr == "START")
+                            {
+                                playable = true;
+                            }
+                            else if (response.responseStr.Split('/')[0] == "END")
+                            {
+                                playable = false;
+                                // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                            }*/
+                        }
+                        else if ((response.responseType == 103) && (Initialized))
+                        {
+                            gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
+                            PeriodicalUpdate();
+                        }
                     }
-                    else if ((response.responseType == 103) && (Initialized))
-                    {
-                        gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
-                        PeriodicalUpdate();
-                    }
+                    ReceiverArgs.newDataFromServer = 0;
                 }
-                ReceiverArgs.newDataFromServer = 0;
+
+            }
+            else
+            {
+                InitTraining();
             }
 
-            if (Initialized)
+            if ((Initialized)||(testMode))
             {
                 // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
                 UpdateControllableCharacter(gameTime);
@@ -478,6 +518,8 @@ namespace BaboGame_test_2
             }
         }
 
+        //Inicialitza entrenament
+
         //Retorna la posició dels cors
         public Vector2 HeartPosInScreen(int nPlayers, int i, int heartNum)
         {
@@ -607,6 +649,36 @@ namespace BaboGame_test_2
             }
         }
 
+        //Incialitza els components amb el codi 101
+        private void InitTraining()
+       {
+           
+            characterSprites.Clear();
+            for (int i = 0; i < localGameState.Opponentnum_players + 1; i++)
+            {
+                Vector2 HeartPosition;
+                if (localGameState.Player_ID[i] == 1)
+                {
+                    characterEngine.AddKnownCharacter(localGameState.PlayerCharacter_Selected, new Vector2(i * 60, 0), 0.20f, 20, localGameState.Player_ID[i], Color.White);
+                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players+1, i, 5);
+                    heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
+                    playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i]));
+                    playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, localGameState.Player_ID[i]));
+                    projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, localGameState.Player_ID[i], 0.1f);
+                    Controllable = characterSprites.ToArray()[i];
+                }
+                else if (i!=0)
+                {
+                    characterEngine.AddKnownCharacter(localGameState.OpponentCharacter_Selected[i-1], new Vector2(i * 60, 0), 0.20f, 20, localGameState.Player_ID[i], Color.White);
+                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
+                    heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
+                    playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i]));
+                    playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, localGameState.Player_ID[i]));
+
+                }
+
+            }
+        }
         //Control personatges per la màquina
         private void CPUcharacter()
         {

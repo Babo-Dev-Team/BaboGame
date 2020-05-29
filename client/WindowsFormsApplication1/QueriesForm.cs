@@ -14,34 +14,13 @@ using BaboGame_test_2;
 
 namespace BaboGameClient
 {
-    public class LocalGameState
-    {
-        public int[] Player_ID;
-        public string PlayerCharacter_Selected;
-        public List<string> OpponentCharacter_Selected = new List<string>();        
-        public int Opponentnum_players;
-        
-        public LocalGameState(int[] Player_ID, string PlayerCharacter_Selected, List<string> OpponentCharacter_Selected, int Opponentnum_players)
-        {
-            this.Player_ID = Player_ID;
-            this.PlayerCharacter_Selected = PlayerCharacter_Selected;
-            this.OpponentCharacter_Selected = OpponentCharacter_Selected;
-            this.Opponentnum_players = Opponentnum_players;
-        }
-
-        public LocalGameState()
-        {
-
-        }
-        
-    }
     
     public partial class QueriesForm : Form
     {
         ServerHandler serverHandler;
         MusicPlayer musicPlayer;
 
-        LocalGameState TrainingState = new LocalGameState();
+        Game1.LocalGameState TrainingState = new Game1.LocalGameState();
         // necessitem una ref. al Notification Worker per modificar el camp 
         // DataGridUpdateRequested segons el data grid
         NotificationWorker notificationWorker;
@@ -787,7 +766,7 @@ namespace BaboGameClient
             //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
             //BaboGame.Run();
 
-            using (var game = new Game1(this.serverHandler, false))
+            using (var game = new Game1(this.serverHandler))
             game.Run();
         }
 
