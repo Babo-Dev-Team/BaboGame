@@ -14,11 +14,34 @@ using BaboGame_test_2;
 
 namespace BaboGameClient
 {
+    public class LocalGameState
+    {
+        public int[] Player_ID;
+        public string PlayerCharacter_Selected;
+        public List<string> OpponentCharacter_Selected = new List<string>();        
+        public int Opponentnum_players;
+        
+        public LocalGameState(int[] Player_ID, string PlayerCharacter_Selected, List<string> OpponentCharacter_Selected, int Opponentnum_players)
+        {
+            this.Player_ID = Player_ID;
+            this.PlayerCharacter_Selected = PlayerCharacter_Selected;
+            this.OpponentCharacter_Selected = OpponentCharacter_Selected;
+            this.Opponentnum_players = Opponentnum_players;
+        }
+
+        public LocalGameState()
+        {
+
+        }
+        
+    }
+    
     public partial class QueriesForm : Form
     {
         ServerHandler serverHandler;
         MusicPlayer musicPlayer;
 
+        LocalGameState TrainingState = new LocalGameState();
         // necessitem una ref. al Notification Worker per modificar el camp 
         // DataGridUpdateRequested segons el data grid
         NotificationWorker notificationWorker;
@@ -78,6 +101,7 @@ namespace BaboGameClient
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
+
 
             this.NotificationIcon = new PictureBox();
 
@@ -364,7 +388,7 @@ namespace BaboGameClient
             Train_btn.Size = new Size(80, 30);
             Train_btn.Visible = false;
             this.Controls.Add(Train_btn);
-            //Train_btn.Click += new EventHandler(this.Train_btn_Click);
+            Train_btn.Click += new EventHandler(this.Train_btn_Click);
 
             //Butó per veure el personatge esquerre de l'oponent
             LeftOpponentChar_btn.Location = new Point(312, 100);
@@ -422,6 +446,10 @@ namespace BaboGameClient
             OpponentCharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
             OpponentCharDescription_lbl.Visible = false;
             this.Controls.Add(OpponentCharDescription_lbl);
+
+            TrainingState.Player_ID = new int[] {1,2,3,4,5,6,7,8};
+            
+
         }
 
         public void UpdateScreen()
@@ -1070,6 +1098,7 @@ namespace BaboGameClient
         {
             ScreenSelected = -1;
             UpdateScreen();
+            TrainingState.Opponentnum_players = 0;
         }
 
         //Selecció de un element de la llista dels jugadors elegits
@@ -1252,6 +1281,13 @@ namespace BaboGameClient
         //Menú d'entrenament
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+        //Entrena
+        public void Train_btn_Click(object sender, EventArgs e)
+        {
+            using (var game = new Game1(TrainingState))
+            game.Run();
+        }
+
         //Escollir el personatge
         public void Return_btn_Click(object sender, EventArgs e)
         {
@@ -1261,10 +1297,13 @@ namespace BaboGameClient
         }
         public void PlayerSelectChar_btn_Click(object sender, EventArgs e)
         {
-            //if (string.IsNullOrWhiteSpace(gameName))
-               // MessageBox.Show("No s'ha seleccionat cap partida per començar");
-            //else
-               // serverHandler.RequestSelectCharacter(gameName, characterSelected[charSelectedPos]);
+            TrainingState.PlayerCharacter_Selected= characterSelected[charSelectedPos];            
+        }
+        public void OpponentSelectChar_btn_Click(object sender, EventArgs e)
+        {
+            
+            TrainingState.OpponentCharacter_Selected.Add(characterSelected[OpponentcharSelectedPos]);
+            TrainingState.Opponentnum_players++;
         }
         public void LeftOpponentChar_btn_Click(object sender, EventArgs e)
         {
