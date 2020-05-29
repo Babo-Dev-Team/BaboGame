@@ -24,6 +24,17 @@ namespace BaboGameClient
 
         PictureBox NotificationIcon;
 
+        //Elements del menú d'entrenament
+        Button Return_btn;
+        Button Train_btn;
+        Button LeftOpponentChar_btn;
+        Button RightOpponentChar_btn;
+        PictureBox Opponentcharacter_pb;
+        Button OpponentSelectChar_btn;
+        Button PlayerSelectChar_btn;
+        Label OpponentCharName_lbl;
+        Label OpponentCharDescription_lbl;
+
         //Elements del menú dels personatges seleccionats
         DataGridView PlayersSelected_dg;
         TextBox NewPartyName_tb;
@@ -56,6 +67,7 @@ namespace BaboGameClient
         string[] characterSelected;
         string[] characterDescription;
         int charSelectedPos;
+        int OpponentcharSelectedPos;
 
         //Variable que diferenciar a quin menú estàs situat
         int ScreenSelected;
@@ -67,6 +79,18 @@ namespace BaboGameClient
         {
 
             this.NotificationIcon = new PictureBox();
+
+            //Elements del menú d'entrenament
+            Train_btn = new Button();
+            Return_btn = new Button();
+            LeftOpponentChar_btn = new Button();
+            RightOpponentChar_btn = new Button();
+            Opponentcharacter_pb = new PictureBox();
+            PlayerSelectChar_btn = new Button();
+            OpponentSelectChar_btn = new Button();
+            OpponentCharName_lbl = new Label(); 
+            OpponentCharDescription_lbl = new Label(); 
+
 
             //Elements del menú dels personatges seleccionats
             PlayersSelected_dg = new DataGridView();
@@ -321,18 +345,96 @@ namespace BaboGameClient
 
             ScreenSelected = 0;
             UpdateScreen();
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Creació del menú entrenament (ScreenSelected = -1)
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Butó per tornar enrere 
+            Return_btn.Location = new Point(25, 30);
+            Return_btn.Text = "Enrere";
+            Return_btn.Size = new Size(80, 30);
+            Return_btn.Visible = false;
+            this.Controls.Add(Return_btn);
+            Return_btn.Click += new EventHandler(this.Return_btn_Click);
+
+            //Butó per començar l'entrenament
+            Train_btn.Location = new Point(224, 300);
+            Train_btn.Text = "Entrena";
+            Train_btn.Size = new Size(80, 30);
+            Train_btn.Visible = false;
+            this.Controls.Add(Train_btn);
+            //Train_btn.Click += new EventHandler(this.Train_btn_Click);
+
+            //Butó per veure el personatge esquerre de l'oponent
+            LeftOpponentChar_btn.Location = new Point(312, 100);
+            //LeftChar_btn.Text = "Left";
+            LeftOpponentChar_btn.Visible = false;
+            LeftOpponentChar_btn.Size = new Size(64, 64);
+            LeftOpponentChar_btn.Click += new EventHandler(this.LeftOpponentChar_btn_Click);
+            LeftOpponentChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
+            this.Controls.Add(LeftOpponentChar_btn);
+
+            //Butó per veure el personatge dret de l'oponent
+            RightOpponentChar_btn.Location = new Point(527, 100);
+            //LeftChar_btn.Text = "Left";
+            RightOpponentChar_btn.Visible = false;
+            RightOpponentChar_btn.Size = new Size(64, 64);
+            RightOpponentChar_btn.Click += new EventHandler(this.RightOpponentChar_btn_Click);
+            RightOpponentChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/right.png");
+            this.Controls.Add(RightOpponentChar_btn);
+
+            //Picture Box de l'oponent
+            Opponentcharacter_pb.Location = new Point(377, 60);
+            Opponentcharacter_pb.Size = new Size(140, 140);
+            Opponentcharacter_pb.ImageLocation = "../../../Pictures/Characters/Babo stop.gif";
+            Opponentcharacter_pb.Visible = false;
+            Opponentcharacter_pb.SizeMode = PictureBoxSizeMode.Zoom;
+            Opponentcharacter_pb.Refresh();
+            this.Controls.Add(Opponentcharacter_pb);
+
+            //Butó per seleccionar el personatge de l'oponent
+            OpponentSelectChar_btn.Location = new Point(312, 300);
+            OpponentSelectChar_btn.Text = "Selecciona Personatge";
+            OpponentSelectChar_btn.Size = new Size(80, 60);
+            OpponentSelectChar_btn.Visible = false;
+            this.Controls.Add(OpponentSelectChar_btn);
+            //OpponentSelectChar_btn.Click += new EventHandler(this.OpponentSelectChar_btn_Click);
+
+            //Butó per seleccionar el personatge del jugador
+            PlayerSelectChar_btn.Location = new Point(25, 300);
+            PlayerSelectChar_btn.Text = "Selecciona Personatge";
+            PlayerSelectChar_btn.Size = new Size(80, 60);
+            PlayerSelectChar_btn.Visible = false;
+            this.Controls.Add(PlayerSelectChar_btn);
+            PlayerSelectChar_btn.Click += new EventHandler(this.PlayerSelectChar_btn_Click);
+
+            //Nom del personatge de l'oponent
+            OpponentCharName_lbl.Location = new Point(312, 200);
+            OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
+            OpponentCharName_lbl.Visible = false;
+            this.Controls.Add(OpponentCharName_lbl);
+
+            //Descripció del personatge de l'oponent
+            OpponentCharDescription_lbl.Location = new Point(312, 230);
+            OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
+            OpponentCharDescription_lbl.Size = new Size(150, 60);
+            OpponentCharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
+            OpponentCharDescription_lbl.Visible = false;
+            this.Controls.Add(OpponentCharDescription_lbl);
         }
 
         public void UpdateScreen()
         {
             bool MainScreen = false;
+            bool TrainningScreen = false;
             bool QueriesScreen = false;
             bool CreatePartyScreen = false;
             bool SelectCharacterOnlineScreen = false;
 
             //Canvia les variables visibles dels objectes segons el número de pantalla
-
-            if (ScreenSelected == 1) //Menú de les Queries
+            if (ScreenSelected == -1)//Menú d'entrenament
+                TrainningScreen = true;
+            else if (ScreenSelected == 1) //Menú de les Queries
                 QueriesScreen = true;
             else if (ScreenSelected == 2) //Menú de crear la partida
                 CreatePartyScreen = true;
@@ -346,6 +448,18 @@ namespace BaboGameClient
             //MainScreen
             NewParty_btn.Visible = MainScreen;
             Training_btn.Visible = MainScreen;
+
+            //Trainning screen            
+            Train_btn.Visible = TrainningScreen;
+            Return_btn.Visible = TrainningScreen;
+            LeftOpponentChar_btn.Visible = TrainningScreen;
+            RightOpponentChar_btn.Visible= TrainningScreen;
+            Opponentcharacter_pb.Visible = TrainningScreen;
+            OpponentSelectChar_btn.Visible = TrainningScreen;
+            PlayerSelectChar_btn.Visible = TrainningScreen;
+            OpponentCharName_lbl.Visible = TrainningScreen;
+            OpponentCharDescription_lbl.Visible = TrainningScreen;
+
 
             //QueriesScreen
             QueryGrid.Visible = QueriesScreen||CreatePartyScreen;
@@ -366,10 +480,10 @@ namespace BaboGameClient
             CreateParty_btn.Visible = CreatePartyScreen;
 
             //SelectCharacterOnlineScreen
-            character_pb.Visible = SelectCharacterOnlineScreen;
+            character_pb.Visible = SelectCharacterOnlineScreen || TrainningScreen;
             PartyName_lbl.Visible = SelectCharacterOnlineScreen;
-            RightChar_btn.Visible = SelectCharacterOnlineScreen;
-            LeftChar_btn.Visible = SelectCharacterOnlineScreen;
+            RightChar_btn.Visible = SelectCharacterOnlineScreen||TrainningScreen;
+            LeftChar_btn.Visible = SelectCharacterOnlineScreen ||TrainningScreen;
             SelectChar_btn.Visible = SelectCharacterOnlineScreen;
             StartGame_btn.Visible = SelectCharacterOnlineScreen;
             CancelGame_btn.Visible = SelectCharacterOnlineScreen;
@@ -381,11 +495,12 @@ namespace BaboGameClient
             ChattingPanel.Visible = SelectCharacterOnlineScreen;
             StickersPanel.Visible = false;
             Stickers_btn.Visible = SelectCharacterOnlineScreen;
-            CharName_lbl.Visible = SelectCharacterOnlineScreen;
-            CharDescription_lbl.Visible = SelectCharacterOnlineScreen;
+            CharName_lbl.Visible = SelectCharacterOnlineScreen || TrainningScreen;
+            CharDescription_lbl.Visible = SelectCharacterOnlineScreen || TrainningScreen;
+            
 
             if(SelectCharacterOnlineScreen)
-                this.Width = 900;
+                this.Width = 900;            
             else
                 this.Width = 616;
             
@@ -948,7 +1063,8 @@ namespace BaboGameClient
 
         private void Training_btn_Click(object sender, EventArgs e)
         {
-
+            ScreenSelected = -1;
+            UpdateScreen();
         }
 
         //Selecció de un element de la llista dels jugadors elegits
@@ -1124,6 +1240,54 @@ namespace BaboGameClient
                 ScreenSelected = 1;
                 UpdateScreen();
             }
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //Menú d'entrenament
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        //Escollir el personatge
+        public void Return_btn_Click(object sender, EventArgs e)
+        {
+            ScreenSelected = 0;
+            UpdateScreen();
+
+        }
+        public void PlayerSelectChar_btn_Click(object sender, EventArgs e)
+        {
+            //if (string.IsNullOrWhiteSpace(gameName))
+               // MessageBox.Show("No s'ha seleccionat cap partida per començar");
+            //else
+               // serverHandler.RequestSelectCharacter(gameName, characterSelected[charSelectedPos]);
+        }
+        public void LeftOpponentChar_btn_Click(object sender, EventArgs e)
+        {
+            if (OpponentcharSelectedPos > 0)
+                OpponentcharSelectedPos--;
+            else
+                OpponentcharSelectedPos = 3;
+
+            Opponentcharacter_pb.Image.Dispose();
+            Opponentcharacter_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[OpponentcharSelectedPos] + " stop.gif";
+            Opponentcharacter_pb.Load();
+            Opponentcharacter_pb.Refresh();
+            OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
+            OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
+        }
+
+        public void RightOpponentChar_btn_Click(object sender, EventArgs e)
+        {
+            if (OpponentcharSelectedPos < 3)
+                OpponentcharSelectedPos++;
+            else
+                OpponentcharSelectedPos = 0;
+
+            Opponentcharacter_pb.Image.Dispose();
+            Opponentcharacter_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[OpponentcharSelectedPos] + " stop.gif";
+            Opponentcharacter_pb.Load();
+            Opponentcharacter_pb.Refresh();
+            OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
+            OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
         }
     }
 }
