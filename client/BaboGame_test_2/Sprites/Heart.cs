@@ -30,7 +30,7 @@ namespace BaboGame_test_2
             //Position = new Vector2(Mouse.GetState().Position.X, Mouse.GetState().Position.Y);
 
             Scale = 0.10f;
-            Layer = 0.99f;
+            Layer = 0.98f;
             //Crida i fa les animacions
             SetAnimation();
             _animationManager.Update(gameTime, 0.2f);

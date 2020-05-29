@@ -67,8 +67,24 @@ namespace BaboGame_test_2
             public float scale;
             public Vector2 origin;
             public float layer;
-            public SpriteEffect effect;
+            public SpriteEffects effect;
+            public Color color;
+            public int charID;
+
+            public NameFontModel(string name, Vector2 position,Color color, float rotation, float scale, Vector2 origin,SpriteEffects effect, float layer, int charID)
+            {
+                this.name = name;
+                this.Position = position;
+                this.color = color;
+                this.rotation = rotation;
+                this.scale = scale;
+                this.origin = origin;
+                this.effect = effect;
+                this.layer = layer;
+                this.charID = charID;
+            }
         }
+        List<NameFontModel> playersNames;
 
         //Variables del online
         initState initGame = new initState();
@@ -191,6 +207,7 @@ namespace BaboGame_test_2
 
 
             };
+            playersNames = new List<NameFontModel>();
 
             //Llista de sprites de l'escenari
             scenarioSprites = new List<ScenarioObjects>()
@@ -228,6 +245,7 @@ namespace BaboGame_test_2
             //Text en pantalla
             _font = Content.Load<SpriteFont>("Font");
             _namesFont = Content.Load<SpriteFont>("NamesFont");
+            
 
             //timer
             timer = new Timer(60);
@@ -316,11 +334,12 @@ namespace BaboGame_test_2
                 ReceiverArgs.newDataFromServer = 0;
             }
 
-            if (playable)
+            if (Initialized)
             {
                 // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
                 UpdateControllableCharacter(gameTime);
             }
+            
 
             //Això actualitzaria els objectes del escenari
             foreach (var ScenarioObj in scenarioSprites)
@@ -440,15 +459,88 @@ namespace BaboGame_test_2
             for (int i = 0; i < initGame.nPlayers; i++)
             {
                 characterEngine.AddKnownCharacter(initGame.users[i].charName, new Vector2(i*60, 0), 0.20f, 20, initGame.users[i].charId, Color.White);
-                heartManager.CreateHeart(initGame.users[i].charId, 5, 20, slugHealth, new Vector2(10, 40*i + 20));
+                Vector2 HeartPosition = HeartPosInScreen(initGame.nPlayers,i,5);
+                heartManager.CreateHeart(initGame.users[i].charId, 5, 20, slugHealth, HeartPosition);
 
-                if (thisClient == initGame.users[i])
+                if (thisClient.charId == initGame.users[i].charId)
                 {
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId));
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, initGame.users[i].charId));
                     projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, initGame.thisUser.charId, 0.1f);
                     Controllable = characterSprites.ToArray()[i];
                 }
+                else
+                {
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId));
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, initGame.users[i].charId));
+                }
 
             }
+        }
+
+        //Retorna la posició dels cors
+        public Vector2 HeartPosInScreen(int nPlayers, int i, int heartNum)
+        {
+            Vector2 HeartPos;
+
+            float height = 720;
+
+            switch(nPlayers)
+            {
+                case 2: //2 jugadors
+                    if(i==0) //Lateral esquerra
+                        HeartPos = new Vector2(50, 120);
+                    else //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum*30, 120);
+                    break;
+                case 3: //3 jugadors
+                    if (i == 0) //Lateral esquerra
+                        HeartPos = new Vector2(50, 120);
+                    else if (i==1) //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120);
+                    else //Part inferior
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth/2 - heartNum * 30/2, 600);
+                    break;
+                case 4: //4 jugadors
+                    if (i < 2) //Lateral esquerra
+                        HeartPos = new Vector2(50, 120 * (i*4 + 1));
+                    else //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * (i * 4 + 1));
+                    break;
+                case 5: //5 jugadors
+                    if (i < 2) //Lateral esquerra
+                        HeartPos = new Vector2(50, 120 * (i * 3 + 1));
+                    else if (i < 4) //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * (i * 3 + 1));
+                    else //Part inferior
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth / 2 - heartNum * 30 / 2, 600);
+                    break;
+                case 6: //6 jugadors
+                    if (i < 3) //Lateral esquerra
+                        HeartPos = new Vector2(50, 120 * (i * 2 + 1));
+                    else //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 120 * (i * 2 + 1));
+                    break;
+                case 7: //7 jugadors
+                    if (i < 3) //Lateral esquerra
+                        HeartPos = new Vector2(50, 90 * (i * 2 + 1));
+                    else if (i < 7) //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 90 * (i * 2 + 1));
+                    else //Part inferior
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth / 2 - heartNum * 30 / 2, 630);
+                    break;
+                case 8: //8 jugadors
+                    if (i < 4) //Lateral esquerra
+                        HeartPos = new Vector2(50, 90 * (i * 2 + 1));
+                    else //Lateral dret
+                        HeartPos = new Vector2(graphics.PreferredBackBufferWidth - 50 - heartNum * 30, 90 * (i * 2 + 1));
+                    break;
+                default:
+                    HeartPos = new Vector2(10, 40 * i + 20);
+                    break;
+            }
+
+            return HeartPos;
         }
 
         //Actualitza els components amb el codi 102
@@ -589,6 +681,11 @@ namespace BaboGame_test_2
             {
                 if(overlay.Visible)
                     overlay.Draw(spriteBatch);
+            }
+            foreach (var names in playersNames)
+            {
+                spriteBatch.DrawString(_namesFont, names.name, names.Position, names.color, names.rotation, names.origin, names.scale, names.effect, names.layer);
+                
             }
             spriteBatch.End();
 

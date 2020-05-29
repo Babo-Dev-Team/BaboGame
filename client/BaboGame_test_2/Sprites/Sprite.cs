@@ -70,7 +70,7 @@ using Microsoft.Xna.Framework;
         public float HitBoxScaleH;
         public float HitBoxScaleW;
         public bool SolidObject = true;
-        public int IDcharacter = 0;
+        public int IDcharacter;
         public bool IsSaltShoot = false;
 
         //Variables relacionades amb la vida
