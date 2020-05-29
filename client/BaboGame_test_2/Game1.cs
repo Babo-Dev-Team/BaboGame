@@ -104,7 +104,7 @@ namespace BaboGame_test_2
 
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
-            AllocConsole();
+            //AllocConsole();
             Console.WriteLine("testline");
         }
 
@@ -119,7 +119,7 @@ namespace BaboGame_test_2
             base.Initialize();
             slimeSprites = new List<Slime>();
             slimeEngine = new SlimeEngine(slimeSprites);
-            
+            serverHandler.RequestInitState();
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -234,7 +234,6 @@ namespace BaboGame_test_2
             timer.AutoReset = true;
             timer.Enabled = true;
             debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, timer.Interval,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
-            serverHandler.RequestInitState();
         }
 
         /// <summary>
@@ -251,7 +250,7 @@ namespace BaboGame_test_2
         // Funció Upload
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+        //private bool initStateRequested = false;
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -259,6 +258,11 @@ namespace BaboGame_test_2
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+          // if (!initStateRequested)
+            //{
+              //  this.serverHandler.RequestInitState();
+                //initStateRequested = true;
+           // }
            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                Exit();
             if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
@@ -268,29 +272,48 @@ namespace BaboGame_test_2
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
-            int code = 0;
+
+
 
             if (ReceiverArgs.newDataFromServer == 1)
             {
-                Console.WriteLine("Response Received: Code " + ReceiverArgs.responseType);
-                Console.WriteLine(ReceiverArgs.responseStr);
-                code = ReceiverArgs.responseType;
-                UpdateOnline();
+                //int responseType;
+                //string responseStr;
+                GenericResponse response;
+                for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
+                {
+                    response = ReceiverArgs.responseFifo.Dequeue();
+
+                    Console.WriteLine("Response Received: Code " + response.responseType);
+                    Console.WriteLine(response.responseStr);
+                    //UpdateOnline();
+                    
+
+                    if (response.responseType == 101)
+                    {
+                        initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
+                        UpdateInit();
+                        Initialized = true;
+                    }
+                    else if (response.responseType == 102)
+                    {
+                        /*if (response.responseStr == "START")
+                        {
+                            playable = true;
+                        }
+                        else if (response.responseStr.Split('/')[0] == "END")
+                        {
+                            playable = false;
+                            // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                        }*/
+                    }
+                    else if ((response.responseType == 103) && (Initialized))
+                    {
+                        gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
+                        PeriodicalUpdate();
+                    }
+                }
                 ReceiverArgs.newDataFromServer = 0;
-            }
-
-            if(code == 101)
-            {
-                UpdateInit();
-                Initialized = true;
-            }
-            else if(code == 102)
-            {
-
-            }
-            else if((code == 103)&&(Initialized))
-            {
-                PeriodicalUpdate();
             }
 
             if (playable)
@@ -391,7 +414,7 @@ namespace BaboGame_test_2
         }
 
         //Actualitzar la llista JSON
-        private void UpdateOnline()
+       /* private void UpdateOnline()
         {
             if (ReceiverArgs.responseType == 101)
             {
@@ -407,7 +430,7 @@ namespace BaboGame_test_2
             {
                 gameState = JsonSerializer.Deserialize<GameState>(ReceiverArgs.responseStr);
             }
-        }
+        }*/
 
         //Incialitza els components amb el codi 101
         private void UpdateInit()
@@ -439,6 +462,7 @@ namespace BaboGame_test_2
                 {
                     if (characterState.charID == characterSprites[i].IDcharacter)
                     {
+                        found = true;
                         characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
                         characterSprites[i].Velocity = new Vector2(characterState.velX, characterState.velY);
                     }

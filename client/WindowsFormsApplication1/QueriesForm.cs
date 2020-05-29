@@ -635,6 +635,7 @@ namespace BaboGameClient
         //Error en seleccionar el personatge
         public void StartGamePopup()
         {
+
             serverHandler.SwitchToRealtimeMode();
             MessageBox.Show("Comença la partida");
             musicPlayer.Stop();
