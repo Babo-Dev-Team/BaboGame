@@ -47,6 +47,7 @@ typedef struct GameUpdatesFromClient{
 	CharacterState* charState;
 	int userId;
 	int newDataFromClient;
+	int backOffRequested;
 }GameUpdatesFromClient;
 
 // el thread de process necessita el seu sender de partida, aixi com un array de punters a 
@@ -210,6 +211,26 @@ void* gameProcessor (void* args)
 	// this function will auto-disable when game is over
 	while(procArgs->processEnabled)
 	{
+		/*pthread_mutex_lock(senderArgs->game->game_mutex);
+		for (int i = 0; i < n_players; i++)
+		{
+			int backOff = clientUpdates[i]->backOffRequested; 
+			// comprovem que estem accedint al user que toca!
+			// i restringim les updates a aquest user si ha demanat backOff
+			if(senderArgs->game->users[i]->charId == clientUpdates[i]->charState->characterId)
+			{
+				if(backOff)
+				{
+					senderArgs->game->users[i]->userState = 3;
+				}
+				else senderArgs->game->users[i]->userState = 1;
+			}
+			else 
+			{
+				printf("CRITICAL ERROR: Char ID's DO NOT MATCH\n");
+				pthread_exit(103);
+			}
+		}*/
 		for (int i = 0; i < n_players; i++)
 		{
 			if (clientUpdates[i]->newDataFromClient)
@@ -260,7 +281,7 @@ void* gameProcessor (void* args)
 		// sleep for 15 ms
 		struct timespec s;
 		s.tv_sec = 0;
-		s.tv_nsec = 15000000L;
+		s.tv_nsec = 10000000L;
 		nanosleep(&s, NULL);
 		
 		// calcular quan acaba la partida
@@ -299,7 +320,7 @@ void* gameSender (void* args)
 		senderArgs->newData = 0;
 		while(senderArgs->newData == 0)
 		{
-			printf("game sender entering sleep\n");
+		//	printf("game sender entering sleep\n");
 			// alliberem els args per a que la funcio sendToAll els pugui modificar
 			// i esperem que ens indiqui amb el sender_signal que tenim dades per enviar
 			if(pthread_cond_wait(senderArgs->gameSender_signal, senderArgs->gameSender_mutex))
@@ -310,7 +331,7 @@ void* gameSender (void* args)
 		// consultem els sockets actius a la llista de connectats	
 		
 		// la idea es que durant la partida, el thread de calcul cridi directament la funcio sendtogame.
-		printf("game sender waking up\n");
+		//printf("game sender waking up\n");
 		thisSenderArgs.userState = senderArgs->userState;
 		thisSenderArgs.game = senderArgs->game;
 		strcpy(thisSenderArgs.gameResponse, senderArgs->gameResponse);
@@ -328,12 +349,12 @@ void* gameSender (void* args)
 		strcat(thisSenderArgs.gameResponse, "|");
 		
 		// enviem a tots els sockets actius
-		printf("Sending to game users with User State = %d\n", thisSenderArgs.userState);
+		//printf("Sending to game users with User State = %d\n", thisSenderArgs.userState);
 		for (int i = 0; i < n_users; i++)
 		{		
 			if (thisSenderArgs.userState == userStates[i])
 			{
-				printf ("GAME ID %d NOTIFICATION for %s = %s\n", thisSenderArgs.game->gameId, thisSenderArgs.game->users[i]->username, thisSenderArgs.gameResponse);
+			//	printf ("GAME ID %d NOTIFICATION for %s = %s\n", thisSenderArgs.game->gameId, thisSenderArgs.game->users[i]->username, thisSenderArgs.gameResponse);
 				write (activeSocketList[i], thisSenderArgs.gameResponse, strlen(thisSenderArgs.gameResponse));			
 			}
 		}	
@@ -431,6 +452,8 @@ void* attendClient (void* args)
 	PreGameUser* preGameUser;
 	PreGameState* preGame;
 	
+	int userId;
+	int charId = -1;
 	char username[USRN_LENGTH];
 	char password[PASS_LENGTH];
 	char gameName[GAME_LEN];
@@ -450,110 +473,174 @@ void* attendClient (void* args)
 	int userSend;
 	
 	int gameId;
+
 	
 	int disconnect = 0;
 	while(!disconnect)
 	{
+		request[0] = '\0';
+		request_string[0] = '\0';
+		
 		// Ahora recibimos el mensaje, que dejamos en request
-		// no cal bloquejar la llista, doncs user encara no en forma part
 		request_length = read(sock_conn, request, sizeof(request));
-		printf ("Recibido\n");
-		
-		
-		// marcamos el final de string
-		request[request_length]='\0';
-		strcpy(request_string, request);
-		printf("Full request: %s\n", request_string);
-		char *p = strtok(request, "/");
-		int request_code =  atoi(p); // sacamos el request_code del request
-		printf("Request Code: %d\n", request_code);
-		
-		// resetegem l'estat de les strings i flags de resposta
-		strcpy(response, "");
-		strcpy(gameNotification, "");
-		strcpy(globalResponse, "");
-		
-		// per defecte, habilitem la resposta a l'usuari i deshabilitem respostes globals
-		userSend = 1;
-		globalSend = 0;
-		gameSend = 0;
-		gameSendUserState = -1;
-		
-		switch (request_code)
-		{	
-			// request 1 -> Total time played by user query
-			// 				client request contains: 	username
-			// 				server response contains:	time in HH:MM:SS format	
-		case 1:
+		if (request_length == -1)
 		{
-			char username[USRN_LENGTH];
-			strcpy(username, strtok(NULL, "/"));
-			printf("User: %s\n", username);
-			// realitzar la query
-			char* time_played = BBDD_time_played(username);
-			strcpy(response, "1/");
-			strcat(response, time_played);
-			free(time_played);
-			break;
+			printf ("Socket Read Error\n");
+			disconnect = 1;
 		}
-		
-		// request 2 -> global player ranking
-		// 				client request contains: 	nothing
-		// 				server response contains:	n_pairs/each user*games won pair separated by '/'			
-		case 2:
+		else if (request_length == 0)
 		{
-			// realitzar la query
-			char* ranking_str = BBDD_ranking();
-			strcpy(response, "2/");
-			strcat(response, ranking_str);
-			free(ranking_str);
-			//strcpy(response, "test response 2");
-			break;
+			printf ("Request is empty!!\n");
+			disconnect = 1;
 		}
-		
-		// request 3 -> Characters used in a game by each user query
-		// 				client request contains: 	the name of the game
-		// 				server response contains:	n_pairs/each user*character pair separated by '/'
-		case 3:
+		else
 		{
-			char game_id[GAME_ID_LENGTH];
-			strcpy(game_id, strtok(NULL, "/"));
+			printf ("Socket read: received request\n");
+			// marcamos el final de string
+			request[request_length]='\0';
+			strcpy(request_string, request);
+			printf("Full request: %s\n", request_string);
+			char *p = strtok(request, "/");
+			int request_code =  atoi(p); // sacamos el request_code del request
+			printf("Request Code: %d\n", request_code);
 			
-			// realitzar la query
-			char* characters_str = BBDD_find_characters(game_id);
-			strcpy(response, "3/");
-			strcat(response, characters_str);
-			free(characters_str);
-			break;
-		}
-		
-		
-		// request 4 -> login			
-		// 				client request contains: 	the login user and passwd
-		// 				server response contains:	OK, FAIL	
-		case 4:
-		{
-			strcpy(username, strtok(NULL, "/"));
-			strcpy(password, strtok(NULL, "/"));
-			printf("User: %s\n", username);
-			printf("Password: %s\n", password);
-			// realitzar la query
-			int id = BBDD_check_login(username, password);
-			if(id >= 0)
+			// resetegem l'estat de les strings i flags de resposta
+			strcpy(response, "");
+			strcpy(gameNotification, "");
+			strcpy(globalResponse, "");
+			
+			// per defecte, habilitem la resposta a l'usuari i deshabilitem respostes globals
+			userSend = 1;
+			globalSend = 0;
+			gameSend = 0;
+			gameSendUserState = -1;
+			
+			switch (request_code)
+			{	
+				// request 1 -> Total time played by user query
+				// 				client request contains: 	username
+				// 				server response contains:	time in HH:MM:SS format	
+			case 1:
 			{
-				// si login OK, omplim els atributs del user
-				// i el posem a la llista de connectats.
-				// No cal bloquejar la llista, doncs user encara no en forma part
-				connectedUser->id = id;
-				strcpy(connectedUser->username, username);
+				char username[USRN_LENGTH];
+				strcpy(username, strtok(NULL, "/"));
+				printf("User: %s\n", username);
+				// realitzar la query
+				char* time_played = BBDD_time_played(username);
+				strcpy(response, "1/");
+				strcat(response, time_played);
+				free(time_played);
+				break;
+			}
+			
+			// request 2 -> global player ranking
+			// 				client request contains: 	nothing
+			// 				server response contains:	n_pairs/each user*games won pair separated by '/'			
+			case 2:
+			{
+				// realitzar la query
+				char* ranking_str = BBDD_ranking();
+				strcpy(response, "2/");
+				strcat(response, ranking_str);
+				free(ranking_str);
+				//strcpy(response, "test response 2");
+				break;
+			}
+			
+			// request 3 -> Characters used in a game by each user query
+			// 				client request contains: 	the name of the game
+			// 				server response contains:	n_pairs/each user*character pair separated by '/'
+			case 3:
+			{
+				char game_id[GAME_ID_LENGTH];
+				strcpy(game_id, strtok(NULL, "/"));
 				
-				// Aqui hem de bloquejar per afegir user a la llista
-				// pero ja ho fa la AddConnected
-				int err = AddConnected(connectedList, connectedUser);
-				if (!err)
+				// realitzar la query
+				char* characters_str = BBDD_find_characters(game_id);
+				strcpy(response, "3/");
+				strcat(response, characters_str);
+				free(characters_str);
+				break;
+			}
+			
+			
+			// request 4 -> login			
+			// 				client request contains: 	the login user and passwd
+			// 				server response contains:	OK, FAIL	
+			case 4:
+			{
+				strcpy(username, strtok(NULL, "/"));
+				strcpy(password, strtok(NULL, "/"));
+				printf("User: %s\n", username);
+				printf("Password: %s\n", password);
+				// realitzar la query
+				int id = BBDD_check_login(username, password);
+				if(id >= 0)
+				{
+					// si login OK, omplim els atributs del user
+					// i el posem a la llista de connectats.
+					// No cal bloquejar la llista, doncs user encara no en forma part
+					connectedUser->id = id;
+					userId = id;
+					strcpy(connectedUser->username, username);
+					
+					// Aqui hem de bloquejar per afegir user a la llista
+					// pero ja ho fa la AddConnected
+					int err = AddConnected(connectedList, connectedUser);
+					if (!err)
+					{
+						strcpy(response, "4/");
+						strcat(response, "OK");	
+						
+						json_object* listJson = connectedListToJson(connectedList);
+						
+						// si modifiquem la llista, cal enviar la nova llista de forma global
+						strcpy(globalResponse, "6/");
+						strcat(globalResponse, json_object_to_json_string(listJson));
+						globalSend = 1;
+						
+						// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+						free(listJson);
+					}
+					else 
+					{
+						strcpy(response, "4/");
+						strcat(response, "FAIL");	
+					}
+				}
+				else 
 				{
 					strcpy(response, "4/");
-					strcat(response, "OK");	
+					strcat(response, "FAIL");
+					disconnect = 1; // close connection to let client try again
+				}				
+				break;
+			}
+			
+			// request 5 -> Sign Up			
+			// 				client request contains: 	the new user and passwd
+			// 				server response contains:	OK, FAIL	
+			case 5:
+			{
+				strcpy(username, strtok(NULL, "/"));
+				strcpy(password, strtok(NULL, "/"));
+				printf("User: %s\n", username);
+				printf("Password: %s\n", password);
+				// realitzar la query
+				int id = BBDD_add_user(username, password);
+				if(id >= 0)
+				{
+					// si sign up OK, afegim els parametres i posem l'usuari a la
+					// llista de connectats.
+					connectedUser->id = id;
+					userId = id;
+					strcpy(connectedUser->username, username);
+					
+					// Afegim l'usuari del thread a la llista de connectats. 
+					// A partir d'aquí, connectedUser comparteix mutex amb la connectedList
+					int err = AddConnected(connectedList, connectedUser);
+					strcpy(response, "5/");
+					strcat(response, "OK");
 					
 					json_object* listJson = connectedListToJson(connectedList);
 					
@@ -567,596 +654,609 @@ void* attendClient (void* args)
 				}
 				else 
 				{
-					strcpy(response, "4/");
-					strcat(response, "FAIL");	
+					strcpy(response, "5/");				
+					strcpy(response, "USED");
 				}
+				break;
 			}
-			else 
+			
+			case 6:
 			{
-				strcpy(response, "4/");
-				strcat(response, "FAIL");
-				disconnect = 1; // close connection to let client try again
-			}				
-			break;
-		}
-		
-		// request 5 -> Sign Up			
-		// 				client request contains: 	the new user and passwd
-		// 				server response contains:	OK, FAIL	
-		case 5:
-		{
-			strcpy(username, strtok(NULL, "/"));
-			strcpy(password, strtok(NULL, "/"));
-			printf("User: %s\n", username);
-			printf("Password: %s\n", password);
-			// realitzar la query
-			int id = BBDD_add_user(username, password);
-			if(id >= 0)
-			{
-				// si sign up OK, afegim els parametres i posem l'usuari a la
-				// llista de connectats.
-				connectedUser->id = id;
-				strcpy(connectedUser->username, username);
-				
-				// Afegim l'usuari del thread a la llista de connectats. 
-				// A partir d'aquí, connectedUser comparteix mutex amb la connectedList
-				int err = AddConnected(connectedList, connectedUser);
-				strcpy(response, "5/");
-				strcat(response, "OK");
-				
 				json_object* listJson = connectedListToJson(connectedList);
+				//strcpy(response, json_object_to_json_string_ext(listJson, JSON_C_TO_STRING_PRETTY));
+				strcpy(response, "6/");
+				strcat(response, json_object_to_json_string(listJson));
 				
-				// si modifiquem la llista, cal enviar la nova llista de forma global
-				strcpy(globalResponse, "6/");
-				strcat(globalResponse, json_object_to_json_string(listJson));
-				globalSend = 1;
-				
+				// DESTRUIR LLISTA JSON!!!
 				// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
 				free(listJson);
+				
+				break;
 			}
-			else 
-			{
-				strcpy(response, "5/");				
-				strcpy(response, "USED");
-			}
-			break;
-		}
-		
-		case 6:
-		{
-			json_object* listJson = connectedListToJson(connectedList);
-			//strcpy(response, json_object_to_json_string_ext(listJson, JSON_C_TO_STRING_PRETTY));
-			strcpy(response, "6/");
-			strcat(response, json_object_to_json_string(listJson));
 			
-			// DESTRUIR LLISTA JSON!!!
-			// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
-			free(listJson);
-			
-			break;
-		}
-		
-		// crear partida
-		// l'usuari especifica nom partida
-		// es retorna si OK: id partida, token, MAX_GAME_USRCOUNT
-		// es retorna un JSON amb l'estat de la partida (serialitzar PreGameState)
-		// 7/partida1 -> JSON PreGameState o EXISTS
-		case 7:
-		{
-			p = strtok(NULL,"/");
-			strcpy(gameName, p);
-			printf("Create Game: %s\n", gameName);
-			if (GameNameAvailable(gameTable, gameName))
+			// crear partida
+			// l'usuari especifica nom partida
+			// es retorna si OK: id partida, token, MAX_GAME_USRCOUNT
+			// es retorna un JSON amb l'estat de la partida (serialitzar PreGameState)
+			// 7/partida1 -> JSON PreGameState o EXISTS
+			case 7:
 			{
-				printf("Game is available\n");
-				// creem la partida i l'assignem a preGame
-				preGame = CreateGame(connectedUser, gameName);
-				printf("Create game OK\n");
-				// si l'assignació a la taula és correcte, ja tenim un id de partida
-				// vàlid i podem assignar també l'usuari. A partir d'aquí, la partida i els
-				// seus usaris comparteixen mutex amb la taula de partides.
-				// si la partida no es pot crear, la funció ja esborra la partida
-				gameId = AddGameToGameTable(gameTable, preGame);
-				if (gameId == -2)
+				p = strtok(NULL,"/");
+				strcpy(gameName, p);
+				printf("Create Game: %s\n", gameName);
+				if (GameNameAvailable(gameTable, gameName))
+				{
+					printf("Game is available\n");
+					// creem la partida i l'assignem a preGame
+					preGame = CreateGame(connectedUser, gameName);
+					printf("Create game OK\n");
+					// si l'assignació a la taula és correcte, ja tenim un id de partida
+					// vàlid i podem assignar també l'usuari. A partir d'aquí, la partida i els
+					// seus usaris comparteixen mutex amb la taula de partides.
+					// si la partida no es pot crear, la funció ja esborra la partida
+					gameId = AddGameToGameTable(gameTable, preGame);
+					if (gameId == -2)
+					{
+						printf("Crear partida FAIL: EXISTS\n");
+						strcpy(response, "7/");
+						strcat(response, "EXISTS");
+					}
+					else if (gameId == -1)
+					{
+						printf("Crear partida FAIL: TABLE FULL\n");
+						strcpy(response, "7/");
+						strcat(response, "FULL");
+					}
+					else
+					{
+						// assignem a preGameUser el creador de la partida,
+						// que és l'usuari que gestiona el thread de tipus PreGameUser
+						printf("Id partida: %d\n", gameId); 
+						printf("Creant partida\n");
+						printf("%s\n", request_string);
+						pthread_mutex_lock(preGame->game_mutex);
+						preGameUser = preGame->creator;
+						pthread_mutex_unlock(preGame->game_mutex);
+						
+						
+						// posem els usuaris escollits a la llista jugadors de la partida
+						p = strtok(NULL,"/");
+						int playersCount = atoi(p);
+						printf("Numer of players:%d\n", playersCount);
+						
+						int i=0;
+						for(i=0; i<playersCount;i++)
+						{
+							p = strtok(NULL,"/");
+							
+							//Busquem el punter del jugador a invitar en el connectedList
+							int playerConnectedListPos = GetConnectedPos(connectedList, p);
+							PreGameUser* player;
+							
+							if(playerConnectedListPos != -1)
+							{
+								pthread_mutex_lock(threadArgs->threadArgs_mutex);
+								player = CreatePreGameUser(connectedList->connected[playerConnectedListPos]);
+								pthread_mutex_unlock(threadArgs->threadArgs_mutex);
+							}
+							else
+							{
+								player = NULL;
+								printf("Afegir jugador FAIL: NOCONNECTLIST\n");
+							}
+							//Afegim el jugador al preGame
+							if(player != NULL)
+							{
+								if(GetPreGameUserPosByName(preGame,player->username) == -1)
+								{
+									AddPreGameUser(preGame,player);
+								}
+								else
+								{
+									printf("Afegir jugador FAIL: ALREADYEXIST\n");
+								}
+							}
+						}
+						
+						// Comprovem que hi hagi suficients jugadors i els enviem l'avis
+						pthread_mutex_lock(preGame->game_mutex);
+						printf("UserCount: %d\n",preGame->userCount);
+						pthread_mutex_unlock(preGame->game_mutex);
+						if(preGame->userCount > 1)
+						{
+							
+							// TODO: retornar partida per JSON
+							printf("Crear partida OK\n");
+							strcpy(response, "7/");
+							strcat(response, "OK");
+							
+							// Enviem l'avis als altres membres
+							//char notify_group[SERVER_RSP_LEN];
+							pthread_mutex_lock(preGame->game_mutex);
+							
+							// escrivim la notificacio de partida
+							sprintf(gameNotification, "9/NOTIFY/%s/%s/",preGame->gameName,preGame->creator->username);
+							//printf("GAME GROUP NOTIFICATION: %s\n",gameName);
+							pthread_mutex_unlock(preGame->game_mutex);
+							
+							// passem als arguments del sender la partida que ha de servir
+							// com que ho passarem als args amb index igual a la id de la partida,
+							// li estem assignant la funcio de fer de sender de la partida N al
+							// Sender Thread amb index N dins l'array de threads.
+							pthread_mutex_lock(gameSenderArgs[gameId]->gameSender_mutex);
+							gameSenderArgs[gameId]->game = preGame;
+							pthread_mutex_unlock(gameSenderArgs[gameId]->gameSender_mutex);
+							
+							
+							//sendToGame(gameSenderArgs[gameId], gameNotification, 0);
+							
+							// indiquem que volem que s'envii la notifiacio als usuaris amb estat 0 al final del switch
+							gameSend = 1;
+							gameSendUserState = 0;
+							
+							/*for(int i=0;i<preGame->userCount;i++)
+							{
+							if(preGame->users[i]->userState == 0)
+							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+							}*/
+						}
+						else
+						{
+							
+							//Eliminem la partida
+							//DeleteGameFromTable(gameTable,preGame);
+							
+							printf("Crear partida FAIL: ALONE\n");
+							strcpy(response, "7/");
+							strcat(response, "ALONE");
+						}
+						
+					}
+				}
+				else 
 				{
 					printf("Crear partida FAIL: EXISTS\n");
 					strcpy(response, "7/");
 					strcat(response, "EXISTS");
 				}
-				else if (gameId == -1)
+				
+				break;
+			}
+			
+			// llista de partides: l'usuari vol la taula de partides
+			// es retornara un JSON
+			case 8:
+			{
+				json_object* gameTableJson = GameTableToJson(gameTable);
+				strcpy(response, "8/");
+				strcat(response, json_object_to_json_string_ext(gameTableJson, JSON_C_TO_STRING_PRETTY));
+				//strcpy(response, json_object_to_json_string(listJson));
+				
+				// DESTRUIR LLISTA JSON!!!
+				// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
+				free(gameTableJson);
+				
+				break;
+			}
+			
+			// join partida: l'usuari demana unir-se a partida pel nom.
+			// si s'accepta, se li retorna PreGameState per JSON.
+			// si la partida no existeix o esta en curs, no se'l deixa entrar.
+			case 9:
+			{
+				printf("%s\n",request_string);
+				
+				p = strtok(NULL,"/");
+				char option [20];
+				strcpy(option,p);
+				p = strtok(NULL,"/");
+				int preGameUserPos;
+				
+				
+				
+				//Accepta la peticio d'entrar en el joc
+				if(strcmp(option,"ACCEPT") == 0)
 				{
-					printf("Crear partida FAIL: TABLE FULL\n");
-					strcpy(response, "7/");
-					strcat(response, "FULL");
-				}
-				else
-				{
-					// assignem a preGameUser el creador de la partida,
-					// que és l'usuari que gestiona el thread de tipus PreGameUser
-					printf("Id partida: %d\n", gameId); 
-					printf("Creant partida\n");
-					printf("%s\n", request_string);
-					pthread_mutex_lock(preGame->game_mutex);
-					preGameUser = preGame->creator;
-					pthread_mutex_unlock(preGame->game_mutex);
-					
-					
-					// posem els usuaris escollits a la llista jugadors de la partida
-					p = strtok(NULL,"/");
-					int playersCount = atoi(p);
-					printf("Numer of players:%d\n", playersCount);
-					
-					int i=0;
-					for(i=0; i<playersCount;i++)
+					preGame = GetPreGameStateByName(gameTable, p);
+					if(preGame != NULL)
 					{
-						p = strtok(NULL,"/");
+						preGameUserPos = GetPreGameUserPosByName(preGame, username);
 						
-						//Busquem el punter del jugador a invitar en el connectedList
-						int playerConnectedListPos = GetConnectedPos(connectedList, p);
-						PreGameUser* player;
-
-						if(playerConnectedListPos != -1)
-						{
-							pthread_mutex_lock(threadArgs->threadArgs_mutex);
-							player = CreatePreGameUser(connectedList->connected[playerConnectedListPos]);
-							pthread_mutex_unlock(threadArgs->threadArgs_mutex);
-						}
-						else
-					    {
-							player = NULL;
-							printf("Afegir jugador FAIL: NOCONNECTLIST\n");
-						}
-						//Afegim el jugador al preGame
-						if(player != NULL)
-						{
-							if(GetPreGameUserPosByName(preGame,player->username) == -1)
-							{
-								AddPreGameUser(preGame,player);
-							}
-							else
-						    {
-								printf("Afegir jugador FAIL: ALREADYEXIST\n");
-							}
-						}
-					}
-					
-					// Comprovem que hi hagi suficients jugadors i els enviem l'avis
-					pthread_mutex_lock(preGame->game_mutex);
-					printf("UserCount: %d\n",preGame->userCount);
-					pthread_mutex_unlock(preGame->game_mutex);
-					if(preGame->userCount > 1)
-					{
-					
-						// TODO: retornar partida per JSON
-						printf("Crear partida OK\n");
-						strcpy(response, "7/");
-						strcat(response, "OK");
-						
-						// Enviem l'avis als altres membres
-						//char notify_group[SERVER_RSP_LEN];
 						pthread_mutex_lock(preGame->game_mutex);
-						
-						// escrivim la notificacio de partida
-						sprintf(gameNotification, "9/NOTIFY/%s/%s/",preGame->gameName,preGame->creator->username);
-						//printf("GAME GROUP NOTIFICATION: %s\n",gameName);
+						gameId = preGame->gameId;
+						printf("Game Id: %d\n", gameId);
+						if(preGameUserPos != -1)
+						{
+							preGameUser = preGame->users[preGameUserPos];
+							preGameUser->userState = 1; //Marca la partida com a acceptada
+						}
 						pthread_mutex_unlock(preGame->game_mutex);
 						
-						// passem als arguments del sender la partida que ha de servir
-						// com que ho passarem als args amb index igual a la id de la partida,
-						// li estem assignant la funcio de fer de sender de la partida N al
-						// Sender Thread amb index N dins l'array de threads.
-						pthread_mutex_lock(gameSenderArgs[gameId]->gameSender_mutex);
-						gameSenderArgs[gameId]->game = preGame;
-						pthread_mutex_unlock(gameSenderArgs[gameId]->gameSender_mutex);
-						
-
-						//sendToGame(gameSenderArgs[gameId], gameNotification, 0);
-						
-						// indiquem que volem que s'envii la notifiacio als usuaris amb estat 0 al final del switch
-						gameSend = 1;
-						gameSendUserState = 0;
-						
-						/*for(int i=0;i<preGame->userCount;i++)
+						if(preGameUserPos != -1)
 						{
-							if(preGame->users[i]->userState == 0)
-								write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-						}*/
+							//Missatge per comunicar al usari que acceptava
+							printf("%s accepta la partida %s\n", username, p);
+							strcpy(response, "9/");
+							strcat(response, "ACCEPTED");
+							
+							//char notify_group [SERVER_RSP_LEN];
+							json_object* gameStateJson = GameStateToJson(preGame);
+							strcpy(gameNotification, "10/");
+							strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
+							gameSend = 1;
+							gameSendUserState = 1;						
+							free(gameStateJson);												
+						}
+						else
+						{
+							printf("Acceptar partida FAIL: USER ISN'T IN GAME\n");
+							strcpy(response, "9/");
+							strcat(response, "FAIL");
+						}
+						
 					}
 					else
-				    {
-						
-						//Eliminem la partida
-						//DeleteGameFromTable(gameTable,preGame);
-						
-						printf("Crear partida FAIL: ALONE\n");
-						strcpy(response, "7/");
-						strcat(response, "ALONE");
+					{
+						printf("Acceptar partida FAIL: GAME DOESN'T EXISTS\n");
+						strcpy(response, "9/");
+						strcat(response, "FAIL");
 					}
 					
 				}
-			}
-			else 
-			{
-				printf("Crear partida FAIL: EXISTS\n");
-				strcpy(response, "7/");
-				strcat(response, "EXISTS");
-			}
-
-			break;
-		}
-		
-		// llista de partides: l'usuari vol la taula de partides
-		// es retornara un JSON
-		case 8:
-		{
-			json_object* gameTableJson = GameTableToJson(gameTable);
-			strcpy(response, "8/");
-			strcat(response, json_object_to_json_string_ext(gameTableJson, JSON_C_TO_STRING_PRETTY));
-			//strcpy(response, json_object_to_json_string(listJson));
-			
-			// DESTRUIR LLISTA JSON!!!
-			// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
-			free(gameTableJson);
-			
-			break;
-		}
-		
-		// join partida: l'usuari demana unir-se a partida pel nom.
-		// si s'accepta, se li retorna PreGameState per JSON.
-		// si la partida no existeix o esta en curs, no se'l deixa entrar.
-		case 9:
-		{
-			printf("%s\n",request_string);
-			
-			p = strtok(NULL,"/");
-			char option [20];
-			strcpy(option,p);
-			p = strtok(NULL,"/");
-			int preGameUserPos;
-			
-			
-			
-			//Accepta la peticio d'entrar en el joc
-			if(strcmp(option,"ACCEPT") == 0)
-			{
-				preGame = GetPreGameStateByName(gameTable, p);
-				if(preGame != NULL)
+				//Rebutja la peticio d'entrar en el joc
+				else if (strcmp(option, "REJECT") == 0)
 				{
-					preGameUserPos = GetPreGameUserPosByName(preGame, username);
-					
-					pthread_mutex_lock(preGame->game_mutex);
-					gameId = preGame->gameId;
-					printf("Game Id: %d\n", gameId);
-					if(preGameUserPos != -1)
+					PreGameState* preGameRejected;
+					preGameRejected = GetPreGameStateByName(gameTable, p);
+					if(preGameRejected != NULL)
 					{
-						preGameUser = preGame->users[preGameUserPos];
-						preGameUser->userState = 1; //Marca la partida com a acceptada
+						preGameUserPos = GetPreGameUserPosByName(preGameRejected, username);
+						pthread_mutex_lock(preGameRejected->game_mutex);
+						gameId = preGameRejected->gameId;
+						if(preGameUserPos != -1)
+						{
+							preGameRejected->users[preGameUserPos]->userState = -1; //Marca la partida com a rebutjada
+						}
+						pthread_mutex_unlock(preGameRejected->game_mutex);
+						
+						if(preGameUserPos != -1)
+						{
+							printf("%s rebutja la partida %s\n", username, p);
+							strcpy(response, "9/");
+							strcat(response, "REJECTED");
+							
+							if(IamAloneinGame(preGameRejected))
+							{
+								char creator [USRN_LENGTH];
+								strcpy(creator, preGameRejected->creator->username);
+								pthread_mutex_lock(preGameRejected->game_mutex);
+								printf("%s is alone in %s\n", creator, preGameRejected->gameName);
+								char creatorResponse [SERVER_RSP_LEN];
+								strcpy(creatorResponse, "12/");
+								strcat(creatorResponse, "ALONE|");
+								printf("Creator %s = %s\n", creator, creatorResponse);
+								write(preGameRejected->creator->socket, creatorResponse, strlen(creatorResponse));
+								pthread_mutex_unlock(preGameRejected->game_mutex);							
+								DeleteGameFromTable(gameTable,preGameRejected);
+								preGame = NULL;
+								gameId = -1;
+							}
+							else 
+							{
+								json_object* gameStateJson = GameStateToJson(preGameRejected);
+								strcpy(gameNotification, "10/");
+								strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));							
+								gameSend = 1;
+								gameSendUserState = 1;
+								free(gameStateJson);
+							}
+						}
+						else
+						{
+							printf("Rebutjar partida FAIL: USER ISN'T IN GAME\n");
+							strcpy(response, "9/");
+							strcat(response, "FAIL");
+						}
+						
 					}
-					pthread_mutex_unlock(preGame->game_mutex);
-					
-					if(preGameUserPos != -1)
+					else
+					{
+						printf("Rebutjar partida FAIL: GAME DOESN'T EXISTS\n");
+						strcpy(response, "9/");
+						strcat(response, "FAIL");
+					}
+				}
+				
+				break;
+			}
+			
+			// el creador d'una partida indica que comenci la partida:
+			// es posa el estat de la partida en actiu a PreGameState.
+			// s'inicialitzen estructures per contenir l'estat de la partida real.
+			// aquí, o mantenim els threads oberts i passem a una funcionalitat de partida des del propi thread de cada usuari,
+			// on caldria potser fer servir variables des de main per emmagatzemar l'estat de la partida per a que siguin accessibles
+			// per tots els threads, on es podria posar el id de la partida en una llista de partides actives i tots els threads
+			// que busquin la seva partida per id i hi accedeixin per referència
+			// Per fer això caldria que el client Forms pugues passar els paràmetres de connexió al client MonoGame.
+			
+			// o bé parem tots els threads dels usuaris d'aquesta partida i esperem una nova connexió. en aquesta, l'usuari es loguejarà amb
+			// username i token de partida que haurem passat a monogame. Llavors, crearem nous threads, un per user i un thread de gestió de partida
+			// els threads de user s'encarreguen de rebre updates dels clients i enviar updates als clients. el thread de gestió
+			// calcula les colisions i altres dinàmiques de partida. Això tb es podria fer amb la 1a opció, caldria crear un nou thread de gestió
+			
+			// la diferència més que res és en si incorporem els protocols de comunicació servidor client in-game en aquesta funció,
+			// o bé creem nous threads amb la seva funció específica per gestionar la partida en execució.
+			case 10:
+			{
+				break;
+			}
+			
+			//codi perque els usuaris es connectin per xat
+			case 11:
+			{
+				printf("%s\n",request_string);
+				
+				p = strtok(NULL,"/");
+				char message [200];
+				strcpy(message,p);
+				
+				//Missatge per comunicar al usuari que acceptava
+				printf("Missatge rebut: %s\n", message);			
+				strcpy(gameNotification, "11/");
+				pthread_mutex_lock(connectedUser->user_mutex);
+				strcat(gameNotification,connectedUser->username);
+				pthread_mutex_unlock(connectedUser->user_mutex);
+				strcat(gameNotification,"/");
+				strcat(gameNotification, message);
+				gameSend = 1;
+				gameSendUserState = 1;
+				userSend = 0;
+				break;
+			}
+			
+			//Inici de la partida
+			case 12:
+			{
+				printf("%s\n",request_string);
+				
+				p = strtok(NULL,"/");
+				char option [20];
+				strcpy(option,p);
+				if (strcmp(option, "CHARACTER") == 0)
+				{
+					p = strtok(NULL,"/");
+					int ret = PreGameAssignChar(preGame,username,p);
+					if(ret == 1)
 					{
 						//Missatge per comunicar al usari que acceptava
-						printf("%s accepta la partida %s\n", username, p);
-						strcpy(response, "9/");
-						strcat(response, "ACCEPTED");
-						
-						//char notify_group [SERVER_RSP_LEN];
+						printf("%s selecciona a %s\n", username, p);
+						strcpy(response, "12/");
+						strcat(response, "CHAROK");
 						json_object* gameStateJson = GameStateToJson(preGame);
 						strcpy(gameNotification, "10/");
 						strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
 						gameSend = 1;
-						gameSendUserState = 1;						
-						free(gameStateJson);												
+						gameSendUserState = 1;
+						free(gameStateJson);
+						
+						//json_object* initState = GameInitStateJson(preGame, preGameUser->id);
+						//printf("\n\n%s\n\n", json_object_to_json_string_ext(initState, JSON_C_TO_STRING_PRETTY));
+						
 					}
 					else
 					{
-						printf("Acceptar partida FAIL: USER ISN'T IN GAME\n");
-						strcpy(response, "9/");
-						strcat(response, "FAIL");
+						//Missatge per comunicar al usari que acceptava
+						printf("%s no pot seleccionar a %s\n", username, p);
+						strcpy(response, "12/");
+						strcat(response, "CHARFAIL");
 					}
-				
 				}
-				else
-			    {
-					printf("Acceptar partida FAIL: GAME DOESN'T EXISTS\n");
-					strcpy(response, "9/");
-					strcat(response, "FAIL");
-				}
-				
-			}
-			//Rebutja la peticio d'entrar en el joc
-			else if (strcmp(option, "REJECT") == 0)
-			{
-				PreGameState* preGameRejected;
-				preGameRejected = GetPreGameStateByName(gameTable, p);
-				if(preGameRejected != NULL)
+				else if (strcmp(option, "START") == 0)
 				{
-					preGameUserPos = GetPreGameUserPosByName(preGameRejected, username);
-					pthread_mutex_lock(preGameRejected->game_mutex);
-					gameId = preGameRejected->gameId;
-					if(preGameUserPos != -1)
+					if(AllHasCharacter(preGame))
 					{
-						preGameRejected->users[preGameUserPos]->userState = -1; //Marca la partida com a rebutjada
+						pthread_mutex_lock(gameProcessorArgs[gameId]->gameProcessor_mutex);
+						gameProcessorArgs[gameId]->gameId = preGame->gameId;
+						gameProcessorArgs[gameId]->n_players = preGame->userCount;
+						
+						// incialitzem les estructures per a que els clients reportin els updates
+						gameProcessorArgs[gameId]->gameUpdatesFromClients = malloc(preGame->userCount * sizeof(GameUpdatesFromClient*));
+						for (int i = 0; i < preGame->userCount; i++)
+						{
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i] = malloc(sizeof(GameUpdatesFromClient));
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->newDataFromClient = 0;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->backOffRequested = 0;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_Y = 0;
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_X = 0;
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_Y = 0;			
+						}
+						pthread_mutex_unlock(gameProcessorArgs[gameId]->gameProcessor_mutex);
+						char notif2[SERVER_RSP_LEN];
+						char notif3[SERVER_RSP_LEN];
+						printf("Comença la partida %s\n", gameName);
+						userSend = 0;
+						gameSend = 0;
+						strcpy(notif2, "12/START");
+						sendToGame(gameSenderArgs[gameId], notif2, 1);
+						/*for(int i=0;i<preGame->userCount;i++)
+						{
+						if(preGame->users[i]->userState == 1)
+						write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+						}
+						*/
+						
+						//sleep(1);
+						pthread_mutex_lock(preGame->game_mutex);
+						sprintf(notif3, "9/LOSE/%s/%s/",preGame->gameName,preGame->creator->username);
+						pthread_mutex_unlock(preGame->game_mutex);
+						sendToGame(gameSenderArgs[gameId], notif3, 0); 
+						/*strcat(notify_group, "|");
+						
+						for(int i=0;i<preGame->userCount;i++)
+						{
+						if(preGame->users[i]->userState == 0)
+						write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+						}
+						
+						pthread_mutex_unlock(preGame->game_mutex);
+						*/
 					}
-					pthread_mutex_unlock(preGameRejected->game_mutex);
 					
-					if(preGameUserPos != -1)
-					{
-						printf("%s rebutja la partida %s\n", username, p);
-						strcpy(response, "9/");
-						strcat(response, "REJECTED");
-			
-						if(IamAloneinGame(preGameRejected))
-						{
-							char creator [USRN_LENGTH];
-							strcpy(creator, preGameRejected->creator->username);
-							pthread_mutex_lock(preGameRejected->game_mutex);
-							printf("%s is alone in %s\n", creator, preGameRejected->gameName);
-							char creatorResponse [SERVER_RSP_LEN];
-							strcpy(creatorResponse, "12/");
-							strcat(creatorResponse, "ALONE|");
-							printf("Creator %s = %s\n", creator, creatorResponse);
-							write(preGameRejected->creator->socket, creatorResponse, strlen(creatorResponse));
-							pthread_mutex_unlock(preGameRejected->game_mutex);							
-							DeleteGameFromTable(gameTable,preGameRejected);
-							preGame = NULL;
-							gameId = -1;
-						}
-						else 
-						{
-							json_object* gameStateJson = GameStateToJson(preGameRejected);
-							strcpy(gameNotification, "10/");
-							strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));							
-							gameSend = 1;
-							gameSendUserState = 1;
-							free(gameStateJson);
-						}
-					}
 					else
 					{
-						printf("Rebutjar partida FAIL: USER ISN'T IN GAME\n");
-						strcpy(response, "9/");
-						strcat(response, "FAIL");
+						printf("No ha triat tothom el seu personatge en %s\n", gameName);
+						strcpy(response, "12/");
+						strcat(response, "NOTALLSELECTED");
 					}
-				
 				}
-				else
+				else if (strcmp(option, "CANCEL") == 0)
 				{
-					printf("Rebutjar partida FAIL: GAME DOESN'T EXISTS\n");
-					strcpy(response, "9/");
-					strcat(response, "FAIL");
-				}
-			}
-			
-			break;
-		}
-		
-		// el creador d'una partida indica que comenci la partida:
-		// es posa el estat de la partida en actiu a PreGameState.
-		// s'inicialitzen estructures per contenir l'estat de la partida real.
-		// aquí, o mantenim els threads oberts i passem a una funcionalitat de partida des del propi thread de cada usuari,
-		// on caldria potser fer servir variables des de main per emmagatzemar l'estat de la partida per a que siguin accessibles
-		// per tots els threads, on es podria posar el id de la partida en una llista de partides actives i tots els threads
-		// que busquin la seva partida per id i hi accedeixin per referència
-		// Per fer això caldria que el client Forms pugues passar els paràmetres de connexió al client MonoGame.
-		
-		// o bé parem tots els threads dels usuaris d'aquesta partida i esperem una nova connexió. en aquesta, l'usuari es loguejarà amb
-		// username i token de partida que haurem passat a monogame. Llavors, crearem nous threads, un per user i un thread de gestió de partida
-		// els threads de user s'encarreguen de rebre updates dels clients i enviar updates als clients. el thread de gestió
-		// calcula les colisions i altres dinàmiques de partida. Això tb es podria fer amb la 1a opció, caldria crear un nou thread de gestió
-		
-		// la diferència més que res és en si incorporem els protocols de comunicació servidor client in-game en aquesta funció,
-		// o bé creem nous threads amb la seva funció específica per gestionar la partida en execució.
-		case 10:
-		{
-			break;
-		}
-		
-		//codi perque els usuaris es connectin per xat
-		case 11:
-		{
-			printf("%s\n",request_string);
-			
-			p = strtok(NULL,"/");
-			char message [200];
-			strcpy(message,p);
-			
-			//Missatge per comunicar al usuari que acceptava
-			printf("Missatge rebut: %s\n", message);			
-			strcpy(gameNotification, "11/");
-			pthread_mutex_lock(connectedUser->user_mutex);
-			strcat(gameNotification,connectedUser->username);
-			pthread_mutex_unlock(connectedUser->user_mutex);
-			strcat(gameNotification,"/");
-			strcat(gameNotification, message);
-			gameSend = 1;
-			gameSendUserState = 1;
-			userSend = 0;
-			break;
-		}
-		
-		//Inici de la partida
-		case 12:
-		{
-			printf("%s\n",request_string);
-			
-			p = strtok(NULL,"/");
-			char option [20];
-			strcpy(option,p);
-			if (strcmp(option, "CHARACTER") == 0)
-			{
-				p = strtok(NULL,"/");
-				int ret = PreGameAssignChar(preGame,username,p);
-				if(ret == 1)
-				{
-					//Missatge per comunicar al usari que acceptava
-					printf("%s selecciona a %s\n", username, p);
-					strcpy(response, "12/");
-					strcat(response, "CHAROK");
-					json_object* gameStateJson = GameStateToJson(preGame);
-					strcpy(gameNotification, "10/");
-					strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
-					gameSend = 1;
-					gameSendUserState = 1;
-					free(gameStateJson);
-					
-					//json_object* initState = GameInitStateJson(preGame, preGameUser->id);
-					//printf("\n\n%s\n\n", json_object_to_json_string_ext(initState, JSON_C_TO_STRING_PRETTY));
-					
-				}
-				else
-			    {
-					//Missatge per comunicar al usari que acceptava
-					printf("%s no pot seleccionar a %s\n", username, p);
-					strcpy(response, "12/");
-					strcat(response, "CHARFAIL");
-				}
-			}
-			else if (strcmp(option, "START") == 0)
-			{
-				if(AllHasCharacter(preGame))
-				{
-					pthread_mutex_lock(gameProcessorArgs[gameId]->gameProcessor_mutex);
-					gameProcessorArgs[gameId]->gameId = preGame->gameId;
-					gameProcessorArgs[gameId]->n_players = preGame->userCount;
-					
-					
-					// incialitzem les estructures per a que els clients reportin els updates
-					gameProcessorArgs[gameId]->gameUpdatesFromClients = malloc(preGame->userCount * sizeof(GameUpdatesFromClient*));
-					for (int i = 0; i < preGame->userCount; i++)
-					{
-						gameProcessorArgs[gameId]->gameUpdatesFromClients[i] = malloc(sizeof(GameUpdatesFromClient));
-						gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->newDataFromClient = 0;
-						gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
-						gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
-						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
-						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
-						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_Y = 0;
-						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_X = 0;
-						//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_Y = 0;			
-					}
-					pthread_mutex_unlock(gameProcessorArgs[gameId]->gameProcessor_mutex);
-					char notif2[SERVER_RSP_LEN];
-					char notif3[SERVER_RSP_LEN];
-					printf("Comença la partida %s\n", gameName);
 					userSend = 0;
 					gameSend = 0;
-					strcpy(notif2, "12/START");
-					sendToGame(gameSenderArgs[gameId], notif2, 1);
-					/*for(int i=0;i<preGame->userCount;i++)
-					{
-						if(preGame->users[i]->userState == 1)
-							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-					}
-					*/
-					
-					//sleep(1);
 					pthread_mutex_lock(preGame->game_mutex);
-					sprintf(notif3, "9/LOSE/%s/%s/",preGame->gameName,preGame->creator->username);
-					pthread_mutex_unlock(preGame->game_mutex);
-					sendToGame(gameSenderArgs[gameId], notif3, 0); 
-					/*strcat(notify_group, "|");
-					
-					for(int i=0;i<preGame->userCount;i++)
+					sprintf(gameNotification, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
+					sendToGame(gameSenderArgs[gameId], gameNotification, 0); 
+					sendToGame(gameSenderArgs[gameId], gameNotification, 1); 
+					DeleteGameFromTable(gameTable,preGame);
+				}
+				break;
+			}
+			
+			case 101:
+			{
+				//printf("Request 101: %s\n", request);
+				userSend = 0;
+				charId = GetCharIdFromUserId(preGame, userId);
+				printf("char ID assigned to user %s: %d\n", username, charId);
+				p = strtok(NULL, "/");
+				if(strcmp(p, "HELLO") == 0)
+				{
+					char initStateResponse [SERVER_RSP_LEN];
+					json_object* initJson = GameInitStateJson(preGame, connectedUser->id);
+					if (initJson != NULL)
 					{
-						if(preGame->users[i]->userState == 0)
-							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
+						sprintf(initStateResponse, "101/%s|", json_object_to_json_string_ext(initJson, JSON_C_TO_STRING_PRETTY));
+						write(sock_conn, initStateResponse, strlen(initStateResponse));
+						printf("Sending initial state to user %s:\n%s", connectedUser->username, initStateResponse);
+					}
+					else 
+					{
+						printf("JSON ERROR: OBJECT IS NULL\n");
 					}
 					
-					pthread_mutex_unlock(preGame->game_mutex);
-					*/
+					
+					// wake up the processor to allow init and send first game state to all clients
+					sleep(1);
+					gameProcessorArgs[gameId]->initEnabled = 1;
+					pthread_cond_signal(gameProcessorArgs[gameId]->gameProcessor_signal);				
+					
 				}
-				
-				else
-			    {
-					printf("No ha triat tothom el seu personatge en %s\n", gameName);
-					strcpy(response, "12/");
-					strcat(response, "NOTALLSELECTED");
-				}
+				break;				
 			}
-			else if (strcmp(option, "CANCEL") == 0)
+			case 103:
 			{
 				userSend = 0;
 				gameSend = 0;
-				pthread_mutex_lock(preGame->game_mutex);
-				sprintf(gameNotification, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
-				sendToGame(gameSenderArgs[gameId], gameNotification, 0); 
-				sendToGame(gameSenderArgs[gameId], gameNotification, 1); 
-				DeleteGameFromTable(gameTable,preGame);
+				globalSend = 0;
+				p = strtok(NULL, "/");
+				if(!strcmp(p, "BACK-OFF"))
+				{
+					printf("user %s is requesting server back-off\n", username);
+					if (charId != -1)
+					{
+						printf("user has a valid char ID, access to pre game user by array index is possible\n");
+						//gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->backOffRequested = 1;
+						pthread_mutex_lock(preGame->game_mutex);
+						
+						if(preGame->users[charId]->charId == charId)
+						{
+							preGame->users[charId]->userState = 3;
+						}
+						else
+						{
+							printf("CRITICAL ERROR: Char ID's DO NOT MATCH\n");
+							int* error = malloc(sizeof(int));
+							*error = 103;
+							pthread_exit(error);
+						}
+						pthread_mutex_unlock(preGame->game_mutex);
+						printf("Back Off granted\n");
+						
+					}
+					else 
+					{
+						printf("No Char ID has been established yet, cannot access pre game users by array index\n");
+					}
+					
+				}
+				else if(!strcmp(p, "RESUME"))
+				{
+					printf("user %s is requesting server resume\n", username);
+					if (charId != -1)
+					{
+						printf("user has a valid char ID, access to pre game user by array index is possible\n");
+						pthread_mutex_lock(preGame->game_mutex);
+						if(preGame->users[charId]->charId == charId)
+						{
+							preGame->users[charId]->userState = 1;
+						}
+						else
+						{
+							printf("CRITICAL ERROR: Char ID's DO NOT MATCH\n");
+							int* error = malloc(sizeof(int));
+							*error = 103;
+							pthread_exit(error);
+						}
+						pthread_mutex_unlock(preGame->game_mutex);
+						printf("Resume granted\n");	
+					}
+					else 
+					{
+						printf("No Char ID has been established yet, cannot access pre game users by array index\n");
+					}
+				}
+				break;
 			}
-			break;
-		}
-		
-		case 101:
-		{
-			//printf("Request 101: %s\n", request);
-			userSend = 0;
-			p = strtok(NULL, "/");
-			if(strcmp(p, "HELLO") == 0)
+			
+			// request 0 -> Disconnect	
+			// TODO: S'ha d'eliminar el user de la llista de connectats!!!
+			case 0:
+				// Se acabo el servicio para este cliente
+				disconnect = 1;
+				break;
+				
+			default:
+				printf("Error. request_code no reconocido.\n");
+				break;
+			}
+			
+			// Enviamos response siempre que no se haya recibido request de disconnect
+			if((request_code)&&(userSend))
+			{	
+				strcat(response, "|");
+				printf("%s = %s\n", threadArgs->connectedUser->username, response);
+				write (sock_conn, response, strlen(response));	
+			}
+			
+			if (gameSend)
 			{
-				char initStateResponse [SERVER_RSP_LEN];
-				json_object* initJson = GameInitStateJson(preGame, connectedUser->id);
-				if (initJson != NULL)
-				{
-					sprintf(initStateResponse, "101/%s|", json_object_to_json_string_ext(initJson, JSON_C_TO_STRING_PRETTY));
-					write(sock_conn, initStateResponse, strlen(initStateResponse));
-					printf("Sending initial state to user %s:\n%s", connectedUser->username, initStateResponse);
-				}
-				else 
-				{
-					printf("JSON ERROR: OBJECT IS NULL\n");
-				}
-			
-				
-				
-				// wake up the processor to allow init and send first game state to all clients
-				sleep(1);
-				gameProcessorArgs[gameId]->initEnabled = 1;
-				pthread_cond_signal(gameProcessorArgs[gameId]->gameProcessor_signal);				
-				
+				sendToGame(gameSenderArgs[gameId], gameNotification, gameSendUserState);
 			}
-			break;				
-		}
 			
-		
-		// request 0 -> Disconnect	
-		// TODO: S'ha d'eliminar el user de la llista de connectats!!!
-		case 0:
-			// Se acabo el servicio para este cliente
-			disconnect = 1;
-			
-			break;
-			
-		default:
-			printf("Error. request_code no reconocido.\n");
-			break;
-		}
-		
-		// Enviamos response siempre que no se haya recibido request de disconnect
-		if((request_code)&&(userSend))
-		{	
-			strcat(response, "|");
-			printf("%s = %s\n", threadArgs->connectedUser->username, response);
-			write (sock_conn, response, strlen(response));	
-		}
-		
-		if (gameSend)
-		{
-			sendToGame(gameSenderArgs[gameId], gameNotification, gameSendUserState);
-		}
-		
-		// enviem notificacions globals
-		if (globalSend)
-		{
-			sendToAll(threadArgs->senderArgs, globalResponse); 
+			// enviem notificacions globals
+			if (globalSend)
+			{
+				sendToAll(threadArgs->senderArgs, globalResponse); 
+			}
 		}
 	}
 	
 	close(sock_conn);
 	DelConnectedByName(connectedList, connectedUser->username);
-	
-	
 	
 	// modifiquem el punter a threadArgs per indicar thread disponible
 	pthread_mutex_lock(threadArgs->threadArgs_mutex);
@@ -1228,10 +1328,10 @@ int main(int argc, char *argv[])
 	// escucharemos en el puerto 50084, 50085 i/o 50086
 	serv_addr.sin_port = htons(SHIVA_PORT);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-		printf ("Error al bind");
+		printf ("Socket Bind Error\n");
 	//La cola de requestes pendientes no podr? ser superior a 4
 	if (listen(sock_listen, 2) < 0)
-		printf("Error en el Listen");
+		printf("Socket Listen Error\n");
 	
 	//CONNEXIÓ
 	pthread_t threadConnected[CNCTD_LST_LENGTH];

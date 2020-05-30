@@ -531,4 +531,29 @@ json_object* GameInitStateJson(PreGameState* preGameState, int userId)
 	}
 	else return NULL;
 }
+
+
+int GetCharIdFromUserId(PreGameState* state, int userId)
+{
+	int found = 0;
+	int i = 0;
+	int ret;
+	pthread_mutex_lock(state->game_mutex);
+	while (!found && i < state->userCount)
+	{
+		if (userId == state->users[i]->id)
+		{
+			found = 1;
+		}
+		else ++i;
+	}
+	if (found)
+	{
+		ret = state->users[i]->charId;
+	}
+	else ret = -1;
+	pthread_mutex_unlock(state->game_mutex);
+	return ret;
+}
+
 //------------------------------------------------------------------------------

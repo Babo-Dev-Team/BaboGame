@@ -66,6 +66,7 @@ int AllHasCharacter(PreGameState* preGameState);
 int IamAloneinGame(PreGameState* preGameState);
 	
 json_object* GameInitStateJson(PreGameState* preGameState, int userId);
+int GetCharIdFromUserId(PreGameState* state, int userId);
 //------------------------------------------------------------------------------
 
 #endif
