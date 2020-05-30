@@ -1284,8 +1284,8 @@ namespace BaboGameClient
         //Entrena
         public void Train_btn_Click(object sender, EventArgs e)
         {
-            using (var game = new Game1(TrainingState))
-            game.Run();
+            //using (var game = new Game1(TrainingState))
+            //game.Run();
         }
 
         //Escollir el personatge

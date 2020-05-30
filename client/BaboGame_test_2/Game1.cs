@@ -293,44 +293,97 @@ namespace BaboGame_test_2
 
 
 
-            if (ReceiverArgs.newDataFromServer == 1)
+            if (ReceiverArgs.newDataFromServer != 0)
             {
-                //int responseType;
-                //string responseStr;
-                GenericResponse response;
-                for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
+                if (ReceiverArgs.newDataFromServer == 1)
                 {
-                    response = ReceiverArgs.responseFifo.Dequeue();
-
-                    Console.WriteLine("Response Received: Code " + response.responseType);
-                    Console.WriteLine(response.responseStr);
-                    //UpdateOnline();
-                    
-
-                    if (response.responseType == 101)
+                    GenericResponse response;
+                    for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
                     {
-                        initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
-                        UpdateInit();
-                        Initialized = true;
-                    }
-                    else if (response.responseType == 102)
-                    {
-                        /*if (response.responseStr == "START")
+                        response = ReceiverArgs.responseFifo.Dequeue();
+
+                        Console.WriteLine("Response Received: Code " + response.responseType);
+                        Console.WriteLine(response.responseStr);
+                        //UpdateOnline();
+
+
+                        if (response.responseType == 101)
                         {
-                            playable = true;
+                            initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
+                            UpdateInit();
+                            Initialized = true;
                         }
-                        else if (response.responseStr.Split('/')[0] == "END")
+                        else if (response.responseType == 102)
                         {
-                            playable = false;
-                            // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                            /*if (response.responseStr == "START")
+                            {
+                                playable = true;
+                            }
+                            else if (response.responseStr.Split('/')[0] == "END")
+                            {
+                                playable = false;
+                                // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                            }*/
+                        }
+                        /*
+                        else if ((response.responseType == 103) && (Initialized))
+                        {
+                            gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
+                            PeriodicalUpdate();
                         }*/
                     }
-                    else if ((response.responseType == 103) && (Initialized))
+                }
+                else if (ReceiverArgs.newDataFromServer == 103 && Initialized)
+                {
+                    GenericResponse response = ReceiverArgs.realtimeResponse;
+                    //Console.WriteLine("Response Received: Code " + response.responseType);
+                    //Console.WriteLine(response.responseStr);
+                    gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
+                    PeriodicalUpdate();
+                }
+
+                else if (ReceiverArgs.newDataFromServer == 1103)
+                {
+                    GenericResponse response;
+                    for (int i = 0; i < ReceiverArgs.responseFifo.Count(); i++)
                     {
+                        response = ReceiverArgs.responseFifo.Dequeue();
+
+                        Console.WriteLine("Response Received: Code " + response.responseType);
+                        Console.WriteLine(response.responseStr);
+                        //UpdateOnline();
+
+                        if (response.responseType == 101)
+                        {
+                            initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
+                            UpdateInit();
+                            Initialized = true;
+                        }
+                        else if (response.responseType == 102)
+                        {
+                            /*if (response.responseStr == "START")
+                            {
+                                playable = true;
+                            }
+                            else if (response.responseStr.Split('/')[0] == "END")
+                            {
+                                playable = false;
+                                // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                            }*/
+                        }
+                    }
+                    if (Initialized)
+                    {
+                        response = ReceiverArgs.realtimeResponse;
+                        //Console.WriteLine("Response Received: Code " + response.responseType);
+                        //Console.WriteLine(response.responseStr);
                         gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
                         PeriodicalUpdate();
                     }
                 }
+                //int responseType;
+                //string responseStr;
+                
                 ReceiverArgs.newDataFromServer = 0;
             }
 
