@@ -77,6 +77,11 @@ namespace BaboGameClient
             this.responseStr = response;
         }
 
+        public GenericResponse()
+        {
+
+        }
+
         public int responseType;
         public string responseStr;
     }
@@ -96,6 +101,7 @@ namespace BaboGameClient
         public static int responseType;                     // indica el número de resposta
         public static AutoResetEvent notificationSignal;    // senyal pel mode Notificacions
         public static Queue<GenericResponse> responseFifo;
+        public static GenericResponse realtimeResponse;
 
     }
 
@@ -148,36 +154,125 @@ namespace BaboGameClient
         // no s'utilitza el senyal notificationSignal.
         public void StartRealtimeMode()
         {
+            const int responseArraySize = 1024;
             char[] separator = new char[] { '/' };
             ReceiverArgs.responseFifo = new Queue<GenericResponse>();
+            ReceiverArgs.realtimeResponse = new GenericResponse();
             string[] responseSplitByMessage;
             ReceiverArgs.newDataFromServer = 0;
+            bool backOffRequested = false;
 
+            GenericResponse[] responseArray = new GenericResponse[responseArraySize];
+            for (int i = 0; i < responseArray.Count(); i++)
+            {
+                responseArray[i] = new GenericResponse();
+            }
+            bool incompleteLastMessage = false;
+            int messageSkipper;
             while (true)
             {
+                messageSkipper = 0;
                 // acumulem a la cua
                 if (ReceiverArgs.newDataFromServer == 0)
                 {
-                    byte[] responseBytes = new byte[8192];
+                    byte[] responseBytes = new byte[32768];
                     ReceiverArgs.server.Receive(responseBytes);
-                    responseSplitByMessage = Encoding.ASCII.GetString(responseBytes).Split('\0')[0].Split('|');
-                    for (int i = 0; i < responseSplitByMessage.Count() - 1; i++)
+                    if(backOffRequested)
                     {
-                        
-                        string[] responseSplitByNumber = responseSplitByMessage[i].Split(separator, 2);
-                        int responseType = Convert.ToInt32(responseSplitByNumber[0]);
-                        string responseStr = responseSplitByNumber[1];
-                        GenericResponse queueItem = new GenericResponse(responseType, responseStr);
-                        ReceiverArgs.responseFifo.Enqueue(queueItem);
+                        backOffRequested = false;
+                        byte[] msg = System.Text.Encoding.ASCII.GetBytes("103/RESUME");
+                        ReceiverArgs.server.Send(msg);
                     }
-                    ReceiverArgs.newDataFromServer = 1;
+
+                    responseSplitByMessage = Encoding.ASCII.GetString(responseBytes).Split('\0')[0].Split('|');
+                    if (responseSplitByMessage.Count() > responseArraySize)
+                    {
+                        Exception ex = new Exception("Error: massa missatges a la cua del socket!");
+                        throw ex;
+                    }
+                    if (incompleteLastMessage)
+                    {
+                        messageSkipper = 1;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(responseSplitByMessage[responseSplitByMessage.Count() - 1]))
+                    {
+                        incompleteLastMessage = true;
+                        //Exception ex = new Exception("Error: missatge incomplert al Server Receiver!");
+                        //throw ex;
+                        Console.WriteLine("Warning: missatge incomplert al Server Receiver!");
+
+                    }
+                    else incompleteLastMessage = false;
+
+                    for (int i = messageSkipper; i < responseSplitByMessage.Count() - 1; i++)
+                    {
+                        try
+                        {
+                            string[] responseSplitByNumber = responseSplitByMessage[i].Split(separator, 2);
+                            responseArray[i].responseType = Convert.ToInt32(responseSplitByNumber[0]);
+                            responseArray[i].responseStr = responseSplitByNumber[1];
+                        }
+                        catch (FormatException ex)
+                        {
+                            throw ex;
+                        }
+                    }
+
+                    bool realtimeMessageFound = false;
+                    bool otherMessageFound = false;
+
+                    // mirar que no hagi de restar 2 en comptes d'1 per l'index -> DONE
+                    for (int i = responseSplitByMessage.Count() - 2; i >= messageSkipper; i--)
+                    {
+
+                        if (responseArray[i].responseType == 103 && !realtimeMessageFound)
+                        {
+                            realtimeMessageFound = true;
+                            ReceiverArgs.realtimeResponse.responseStr = responseArray[i].responseStr;
+                            ReceiverArgs.realtimeResponse.responseType = responseArray[i].responseType;
+                        }
+                        else if (responseArray[i].responseType != 0 && responseArray[i].responseType != 103)
+                        {
+                            otherMessageFound = true;
+                            GenericResponse queueElement = new GenericResponse(responseArray[i].responseType, responseArray[i].responseStr);
+                            ReceiverArgs.responseFifo.Enqueue(queueElement);
+                        }
+                    }
+
+                    if (realtimeMessageFound && !otherMessageFound)
+                    {
+                        ReceiverArgs.newDataFromServer = 103;
+                    }
+                    else if (!realtimeMessageFound && otherMessageFound)
+                    {
+                        ReceiverArgs.newDataFromServer = 1;
+                    }
+                    else if (realtimeMessageFound && otherMessageFound)
+                    {
+                        ReceiverArgs.newDataFromServer = 1103;
+                    }
+                       
                 }
 
                 else
                 {
                     // esperem a que el monogame buidi la cua
-                    while(ReceiverArgs.newDataFromServer != 0)
+                    while (ReceiverArgs.newDataFromServer != 0)
                     {
+                        int data = ReceiverArgs.server.Available;
+                        if (data > 8192 && !backOffRequested)
+                        {
+                            byte[] msg = System.Text.Encoding.ASCII.GetBytes("103/BACK-OFF");
+                            ReceiverArgs.server.Send(msg);
+                            backOffRequested = true;
+                        }
+                        else if (data > 16384)
+                        {
+                            byte[] msg = System.Text.Encoding.ASCII.GetBytes("103/BACK-OFF");
+                            ReceiverArgs.server.Send(msg);
+                            backOffRequested = true;
+                        }
                         Thread.Sleep(2);
                     }
                 }
