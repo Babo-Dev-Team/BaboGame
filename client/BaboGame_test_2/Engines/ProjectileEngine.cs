@@ -28,21 +28,21 @@ namespace BaboGame_test_2
         }
 
         // afegim un projectil a la llista, inicialitzant-lo amb posicio origen i final i una velocitat de moment estàndard
-        public void AddProjectile(Vector2 origin, Vector2 target, Texture2D projectileTexture, int shooterID, char projectileType)
+        public void AddProjectile(Vector2 origin, Vector2 target, Texture2D projectileTexture, int shooterID, char projectileType, int projectileID)
         {
-            projectileList.Add(new Projectile(origin, target, masterProjVelocity, shooterID, projectileTexture, masterProjScale, masterProjDamage, projectileType));
+            projectileList.Add(new Projectile(origin, target, masterProjVelocity, shooterID, projectileTexture, masterProjScale, masterProjDamage, projectileType, projectileID));
         }
 
         // afegim un projectil amb velocitat configurable
-        public void AddProjectile(Vector2 origin, Vector2 target, float velocity, Texture2D projectileTexture, int shooterID, char projectileType)
+        public void AddProjectile(Vector2 origin, Vector2 target, float velocity, Texture2D projectileTexture, int shooterID, char projectileType, int projectileID)
         {
-            projectileList.Add(new Projectile(origin, target, velocity, shooterID, projectileTexture, masterProjScale, masterProjDamage, projectileType));
+            projectileList.Add(new Projectile(origin, target, velocity, shooterID, projectileTexture, masterProjScale, masterProjDamage, projectileType, projectileID));
         }
 
         // aquí estarà la gràcia. En comptes d'actualitzar-los un per un a cada objecte, agafarem
         // tota la llista i calcularem tots els moviments i colisions.
         // caldrà fer saber als characters que han colisionat que tenen dany + la direcció de l'impacte.
-        public void UpdateProjectiles(GameTime gameTime, List<Character> characterList, List<ScenarioObjects> objectsList)
+        public void UpdateProjectiles(GameTime gameTime, List<Character> characterList, List<ScenarioObjects> objectsList, bool testmode, Character Controllable)
         {
             //Valorar el temps de vida de la sal a disparar i la eliminació d'aquest
             /* _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -54,16 +54,19 @@ namespace BaboGame_test_2
             
             foreach (var projectile in this.projectileList)
             {
-                if (projectile.ProjectileType == 'D') //Sal directe
-                    DirectSaltUpdate(characterList, objectsList, projectile);
-                else if (projectile.ProjectileType == 'S') //Slimed Salt
-                    SlimedSaltUpdate(characterList,objectsList, projectile);
-                else
-                    NormalSaltUpdate(characterList, objectsList, projectile);
-
-                if(!projectile.IsRemoved)
+                if ((testmode) || (Controllable.IDcharacter == projectile.ShooterID))
                 {
-                    projectile.Move();
+                    if (projectile.ProjectileType == 'D') //Sal directe
+                        DirectSaltUpdate(characterList, objectsList, projectile);
+                    else if (projectile.ProjectileType == 'S') //Slimed Salt
+                        SlimedSaltUpdate(characterList, objectsList, projectile);
+                    else
+                        NormalSaltUpdate(characterList, objectsList, projectile);
+
+                    if (!projectile.IsRemoved)
+                    {
+                        projectile.Move();
+                    }
                 }
             }
         }
@@ -159,37 +162,39 @@ namespace BaboGame_test_2
             //Definim la colisió entre la sal
             foreach (var projectileItem in projectileList)
             {
-                if((projectile.DetectCollision(projectileItem))&&(projectileItem != projectile))
-                {
-                    if(projectileItem.ProjectileType == 'S')
+                
+                    if ((projectile.DetectCollision(projectileItem)) && (projectileItem != projectile))
                     {
-                        if (projectile.DetectBottomCollision(projectileItem))
+                        if (projectileItem.ProjectileType == 'S')
                         {
-                            projectile.Direction.Y = Math.Abs(projectile.Direction.Y);
-                            projectile.HitCount++;
-                        }
+                            if (projectile.DetectBottomCollision(projectileItem))
+                            {
+                                projectile.Direction.Y = Math.Abs(projectile.Direction.Y);
+                                projectile.HitCount++;
+                            }
 
-                        if (projectile.DetectTopCollision(projectileItem))
-                        {
-                            projectile.Direction.Y = -Math.Abs(projectile.Direction.Y);
-                            projectile.HitCount++;
-                        }
+                            if (projectile.DetectTopCollision(projectileItem))
+                            {
+                                projectile.Direction.Y = -Math.Abs(projectile.Direction.Y);
+                                projectile.HitCount++;
+                            }
 
-                        if (projectile.DetectRightCollision(projectileItem))
-                        {
-                            projectile.Direction.X = Math.Abs(projectile.Direction.X);
-                            projectile.HitCount++;
+                            if (projectile.DetectRightCollision(projectileItem))
+                            {
+                                projectile.Direction.X = Math.Abs(projectile.Direction.X);
+                                projectile.HitCount++;
+                            }
+                            if (projectile.DetectLeftCollision(projectileItem))
+                            {
+                                projectile.Direction.X = -Math.Abs(projectile.Direction.X);
+                                projectile.HitCount++;
+                            }
                         }
-                        if (projectile.DetectLeftCollision(projectileItem))
-                        {
-                            projectile.Direction.X = -Math.Abs(projectile.Direction.X);
-                            projectile.HitCount++;
-                        }
+                        else
+                            projectile.KillProjectile();
+
                     }
-                    else
-                        projectile.KillProjectile();
-
-                }
+                
 
             }
 
@@ -248,11 +253,12 @@ namespace BaboGame_test_2
         public float Damage { get; }
         public char ProjectileType = 'N'; //N de Normal, D de directe i S de noNewtonian Slimed Salt
         public int HitCount = 0;
+        public int projectileID;
         
         
         
         // constrctor per inicialitzar el projectil
-        public Projectile(Vector2 origin, Vector2 target, float velocity,int shooterID, Texture2D texture, float scale, float damage, char projectileType)
+        public Projectile(Vector2 origin, Vector2 target, float velocity,int shooterID, Texture2D texture, float scale, float damage, char projectileType, int projectileID)
             : base(texture)
         {
             this.ShooterID = shooterID;
@@ -267,6 +273,7 @@ namespace BaboGame_test_2
             this.Scale = scale;
             this.Damage = damage;
             this.Layer = 0.01f;
+            this.projectileID = projectileID;
             //IsSaltShoot = true;
         }
 

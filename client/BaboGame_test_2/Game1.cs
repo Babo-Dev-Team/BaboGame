@@ -108,7 +108,7 @@ namespace BaboGame_test_2
 
         }
         LocalGameState localGameState;
-        char Difficulty; //E -easy, M - medium, D- difficult, I - insane
+        char Difficulty; //E -easy, M - medium, D- difficult, I - insane, N - None
 
         //Variables del online
         initState initGame = new initState();
@@ -120,7 +120,11 @@ namespace BaboGame_test_2
 
         //Temporització de les babes
         private static Timer timer;
+        private static Timer slimeTimer;
         int SlimeTime = 0;
+        //Temportizació dels pdates cap el servidor
+        int UpdateOnlineTime = 0;
+        int NextProjectileID;
          
 
         public Game1()
@@ -131,6 +135,7 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferWidth = 1280;
             Initialized = false;
             InitRequested = false;
+            NextProjectileID = 0;
         }
 
         public Game1(ServerHandler serverHandler)
@@ -146,6 +151,7 @@ namespace BaboGame_test_2
             //serverHandler.SwitchToRealtimeMode();
             //AllocConsole();
             Console.WriteLine("testline");
+            NextProjectileID = 0;
         }
 
         public Game1(LocalGameState localGameState, char difficulty)
@@ -158,6 +164,7 @@ namespace BaboGame_test_2
             Initialized = false;
             this.localGameState = localGameState;
             Difficulty = difficulty;
+            NextProjectileID = 0;
         }
 
         /// <summary>
@@ -284,9 +291,13 @@ namespace BaboGame_test_2
             _namesFont = Content.Load<SpriteFont>("NamesFont"); 
 
             //timer
-            timer = new Timer(60);
+            timer = new Timer(1);
             timer.AutoReset = true;
             timer.Enabled = true;
+            //timer de les babes
+            slimeTimer = new Timer(60);
+            slimeTimer.AutoReset = true;
+            slimeTimer.Enabled = true;
             debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, timer.Interval,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
         }
 
@@ -398,7 +409,7 @@ namespace BaboGame_test_2
                         }
                         else if (response.responseType == 102)
                         {
-                            /*if (response.responseStr == "START")
+                            if (response.responseStr == "START")
                             {
                                 playable = true;
                             }
@@ -406,7 +417,7 @@ namespace BaboGame_test_2
                             {
                                 playable = false;
                                 // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
-                            }*/
+                            }
                         }
                     }
                     if (Initialized)
@@ -436,7 +447,7 @@ namespace BaboGame_test_2
             {
                 // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
                 UpdateControllableCharacter(gameTime);
-                if (testMode)
+                if ((testMode)&&(Difficulty != 'N'))
                     characterEngine.CPUDecision(scenarioSprites, projectileSprites,projectileEngine,projectileTexture, Difficulty);
             }
             
@@ -447,12 +458,15 @@ namespace BaboGame_test_2
                 ScenarioObj.Update(gameTime);
             }
 
-            characterEngine.Update(gameTime,slimeSprites,scenarioSprites);
-            // Això hauria de moure els projectils, calcular les colisions i notificar als characters si hi ha hagut dany.
-            projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites);
-
+            if (Initialized)
+            {
+                characterEngine.Update(gameTime, slimeSprites, scenarioSprites, testMode, Controllable);
+                // Això hauria de moure els projectils, calcular les colisions i notificar als characters si hi ha hagut dany.
+                projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites, testMode, Controllable);
+            }
             // Generem les babes amb una certa espera per no sobrecarregar i les instanciem al update del personatge
             timer.Elapsed += OnTimedEvent;
+            slimeTimer.Elapsed += OnSlimeTimedEvent;
 
             foreach (var character in characterSprites.ToArray())
             {
@@ -488,6 +502,34 @@ namespace BaboGame_test_2
             }
             
             PostUpdate();
+
+            //Envia missatges actualitzades
+            if ((UpdateOnlineTime > 10)&&(!testMode)&&(Initialized)) //Diferència en milisegons de cada missatge a enviar
+            {
+                //Actualitza el jugador 
+                CharacterState characterState = new CharacterState();
+                characterState.charID = Controllable.IDcharacter;
+                characterState.posX = (int) Controllable.Position.X;
+                characterState.posY = (int) Controllable.Position.Y;
+                characterState.velX = (int) Controllable.Velocity.X;
+                characterState.velY = (int) Controllable.Velocity.Y;
+                //Actualitzem la llista de projectils
+                List<projectileState> projectileStates = new List<projectileState>();
+                foreach (Projectile projectile in projectileSprites)
+                {
+                    if(projectile.ShooterID == Controllable.IDcharacter)
+                    {
+                        projectileStates.Add(new projectileState(projectile.projectileID, projectile.ShooterID, projectile.ProjectileType, (int) projectile.Position.X, (int) projectile.Position.Y, (int) projectile.Direction.X, (int) projectile.Direction.Y, projectile.LinearVelocity));
+                    }
+                }
+                //Genera el paquet a passar per Json
+                playerUpdate playerClientUpdate = new playerUpdate();
+                playerClientUpdate.characterState = characterState;
+                playerClientUpdate.projectileStates = projectileStates;
+                //Passa el request
+                serverHandler.RequestRealTimeUpdate(playerClientUpdate);
+            }
+
             base.Update(gameTime);
         }
 
@@ -529,27 +571,33 @@ namespace BaboGame_test_2
         //Actualitzar el temporitzador
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
+            UpdateOnlineTime++;
+        }
+
+        //Actualitzar el temporitzador
+        private void OnSlimeTimedEvent(Object source, ElapsedEventArgs e)
+        {
             SlimeTime++;
         }
 
         //Actualitzar la llista JSON
-       /* private void UpdateOnline()
-        {
-            if (ReceiverArgs.responseType == 101)
-            {
-                initGame = JsonSerializer.Deserialize<initState>(ReceiverArgs.responseStr);
+        /* private void UpdateOnline()
+         {
+             if (ReceiverArgs.responseType == 101)
+             {
+                 initGame = JsonSerializer.Deserialize<initState>(ReceiverArgs.responseStr);
 
-            }
-            else if(ReceiverArgs.responseType == 102)
-            {
-                if (ReceiverArgs.responseStr == "START")
-                    playable = true;
-            }
-            else if(ReceiverArgs.responseType == 103)
-            {
-                gameState = JsonSerializer.Deserialize<GameState>(ReceiverArgs.responseStr);
-            }
-        }*/
+             }
+             else if(ReceiverArgs.responseType == 102)
+             {
+                 if (ReceiverArgs.responseStr == "START")
+                     playable = true;
+             }
+             else if(ReceiverArgs.responseType == 103)
+             {
+                 gameState = JsonSerializer.Deserialize<GameState>(ReceiverArgs.responseStr);
+             }
+         }*/
 
         //Incialitza els components amb el codi 101
         private void UpdateInit()
@@ -658,7 +706,7 @@ namespace BaboGame_test_2
                 int i = 0;
                 while((!found)&&(i<gameState.characterStatesList.Count))
                 {
-                    if (characterState.charID == characterSprites[i].IDcharacter)
+                    if ((characterState.charID == characterSprites[i].IDcharacter)&&(characterState.charID != Controllable.IDcharacter)) //Desacobla el client de les actualitzacions
                     {
                         found = true;
                         characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
@@ -673,8 +721,6 @@ namespace BaboGame_test_2
 
             if (gameState.playable == 1)
                 playable = true;
-            else
-                playable = false;
         }
 
         //Control dels personatges
@@ -708,10 +754,15 @@ namespace BaboGame_test_2
                 {
                     Vector2 projOrigin = Controllable.Position;
                     Vector2 projTarget = inputManager.GetMousePosition();
-                    projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter);
+                    projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
+                    NextProjectileID++;
                 }
+
             }
         }
+
+        //MODE ENTRENAMENT
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         //Incialitza els components amb el codi 101
         private void InitTraining()
@@ -743,36 +794,7 @@ namespace BaboGame_test_2
 
             }
         }
-        //Control personatges per la màquina
-        private void CPUcharacter()
-        {
-            /*
-            //Actualitzem moviment del llimac de prova ---------------------Limax prova
-            playerChar3.Direction = VectorOps.UnitVector(playerChar.Position - playerChar3.Position);
-
-            if (!Slug3Direction)
-                playerChar3.MoveRight();
-            else
-                playerChar3.MoveLeft();
-            if (Slug3Direction2)
-                playerChar3.MoveUp();
-            else
-                playerChar3.MoveDown();
-
-            if ((playerChar3.Position.X > graphics.PreferredBackBufferWidth))
-                Slug3Direction = true;
-            else if (playerChar3.Position.X < 0)
-                Slug3Direction = false;
-
-            if (playerChar3.Position.Y > graphics.PreferredBackBufferHeight)
-                Slug3Direction2 = true;
-            else if (playerChar3.Position.Y < 0)
-                Slug3Direction2 = false;
-
-            //if (EnemyShoot.Next(0,32) == 0) //--------------------------- Babo prova
-            //projectileEngine.AddProjectile(playerChar2.Position, playerChar.Position, projectileTexture["Slimed"], 2,'S');
-            */
-        }
+       
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //Funció Draw

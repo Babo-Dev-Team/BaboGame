@@ -77,7 +77,7 @@ namespace BaboGameClient
         string gameName;
         ToolStripItem notificationSelection;
         ToolStripItem stickerSelector;
-        char Difficulty = 'I'; //Canvia la dificultat del CPU (E)asy, (M)edium, (D)ifficult, (I)nsane
+        char Difficulty = 'E'; //Canvia la dificultat del CPU (E)asy, (M)edium, (D)ifficult, (I)nsane, (N)one
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {

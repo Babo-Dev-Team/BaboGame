@@ -15,7 +15,7 @@ namespace BaboGameClient
     public partial class LoginMenu : Form
     {
         // Paràmetres de connexió
-        public const int shiva_port = 50086;
+        public const int shiva_port = 50084;
         public const string shiva_ip = "147.83.117.22";
         public const string local_ip = "192.168.56.103";
         public const string local2_ip = "192.168.56.101";
