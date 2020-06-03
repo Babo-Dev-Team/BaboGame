@@ -17,7 +17,7 @@
 #include "game_table.h"
 #include "game_state.h"
 
-#define SHIVA_PORT 50086
+#define SHIVA_PORT 50084
 
 //#define NMBR_THREADS 100
 
@@ -1221,6 +1221,9 @@ void* attendClient (void* args)
 				}
 				break;
 			}
+			case 104: //Actualització estat del client
+				
+				break;
 			
 			// request 0 -> Disconnect	
 			// TODO: S'ha d'eliminar el user de la llista de connectats!!!
@@ -1231,6 +1234,7 @@ void* attendClient (void* args)
 				
 			default:
 				printf("Error. request_code no reconocido.\n");
+				userSend = 0;
 				break;
 			}
 			

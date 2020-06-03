@@ -20,6 +20,22 @@ typedef struct GameState{
 	
 }GameState;
 
+typedef struct ProjectileState{
+	int projectileID;
+	int shooterID;
+	char projectileType;
+	int posX;
+	int posY;
+	int directionX;
+	int directionY;
+	float LinearVelocity;
+}ProjectileState;
+
+typedef struct playerUpdate{
+	CharacterState* characterState;
+	ProjectileState* projectileStates;
+}playerUpdate;
+
 GameState* CreateGameState(int gameId, int n_players);
 void DeleteGameState(GameState* game);
 void UpdateGameStateJson(GameState* game);
