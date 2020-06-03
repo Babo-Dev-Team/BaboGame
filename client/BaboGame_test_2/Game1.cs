@@ -518,13 +518,16 @@ namespace BaboGame_test_2
                 characterState.posY = (int) Controllable.Position.Y;
                 characterState.velX = (int) Controllable.Velocity.X;
                 characterState.velY = (int) Controllable.Velocity.Y;
+                characterState.dirX = Controllable.Direction.X;
+                characterState.dirY = Controllable.Direction.Y;
+                characterState.health = Controllable.Health;
                 //Actualitzem la llista de projectils
                 List<projectileState> projectileStates = new List<projectileState>();
                 foreach (Projectile projectile in projectileSprites)
                 {
                     if(projectile.ShooterID == Controllable.IDcharacter)
                     {
-                        projectileStates.Add(new projectileState(projectile.projectileID, projectile.ShooterID, projectile.ProjectileType, (int) projectile.Position.X, (int) projectile.Position.Y, (int) projectile.Direction.X, (int) projectile.Direction.Y, projectile.LinearVelocity));
+                        projectileStates.Add(new projectileState(projectile.projectileID, projectile.ShooterID, projectile.ProjectileType, (int) projectile.Position.X, (int) projectile.Position.Y, projectile.Direction.X, projectile.Direction.Y, projectile.LinearVelocity, projectile.HitCount));
                     }
                 }
                 //Genera el paquet a passar per Json
@@ -735,6 +738,8 @@ namespace BaboGame_test_2
                         found = true;
                         characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
                         characterSprites[i].Velocity = new Vector2(characterState.velX, characterState.velY);
+                        characterSprites[i].Direction = new Vector2(characterState.dirX, characterState.dirY);
+                        characterSprites[i].Health = characterState.health;
                     }
                     else
                         i++;

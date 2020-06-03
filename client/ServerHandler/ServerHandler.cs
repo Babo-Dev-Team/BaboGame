@@ -51,6 +51,9 @@ namespace BaboGameClient
         public int posY { get; set; }
         public int velX { get; set; }
         public int velY { get; set; }
+        public float dirX { get; set; }
+        public float dirY { get; set; }
+        public int health { get; set; }
     }
 
     public class initState
@@ -76,11 +79,12 @@ namespace BaboGameClient
         public char projectileType { get; set; }
         public int posX { get; set; }
         public int posY { get; set; }
-        public int directionX { get; set; }
-        public int directionY { get; set; }
+        public float directionX { get; set; }
+        public float directionY { get; set; }
         public float LinearVelocity { get; set; }
+        public int hitCount { get; set; }
 
-        public projectileState(int projectileID, int shooterID, char projectileType, int posX, int posY, int directionX, int directionY, float LinearVelocity)
+        public projectileState(int projectileID, int shooterID, char projectileType, int posX, int posY, float directionX, float directionY, float LinearVelocity, int hitCount)
         {
             this.projectileID = projectileID;
             this.shooterID = shooterID;
@@ -90,6 +94,7 @@ namespace BaboGameClient
             this.directionX = directionX;
             this.directionY = directionY;
             this.LinearVelocity = LinearVelocity;
+            this.hitCount = hitCount;
         }
     }
 
