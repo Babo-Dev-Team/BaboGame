@@ -180,6 +180,8 @@ namespace BaboGame_test_2
             slimeEngine = new SlimeEngine(slimeSprites);
             if(!testMode)
                 serverHandler.RequestInitState();
+
+
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -291,7 +293,7 @@ namespace BaboGame_test_2
             _namesFont = Content.Load<SpriteFont>("NamesFont"); 
 
             //timer
-            timer = new Timer(1);
+            timer = new Timer(0.1);
             timer.AutoReset = true;
             timer.Enabled = true;
             //timer de les babes
@@ -435,21 +437,21 @@ namespace BaboGame_test_2
                 ReceiverArgs.newDataFromServer = 0;
             }
 
-            }
-            else if (!Initialized)
-            {
-                InitTraining();
-                Initialized = true;
-                playable = true;
-            }
+        }
+        else if (!Initialized)
+        {
+            InitTraining();
+            Initialized = true;
+            playable = true;
+        }
 
-            if ((Initialized))
-            {
-                // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
-                UpdateControllableCharacter(gameTime);
-                if ((testMode)&&(Difficulty != 'N'))
-                    characterEngine.CPUDecision(scenarioSprites, projectileSprites,projectileEngine,projectileTexture, Difficulty);
-            }
+        if (Initialized)
+        {
+            // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
+            UpdateControllableCharacter(gameTime);
+            if ((testMode)&&(Difficulty != 'N'))
+            characterEngine.CPUDecision(scenarioSprites, projectileSprites,projectileEngine,projectileTexture, Difficulty);
+        }
             
 
             //Això actualitzaria els objectes del escenari
@@ -465,6 +467,8 @@ namespace BaboGame_test_2
                 projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites, testMode, Controllable);
             }
             // Generem les babes amb una certa espera per no sobrecarregar i les instanciem al update del personatge
+
+            // AIXO NOMES S'HAURIA DE FER 1 COP AL INICIALITZAR!!!!!
             timer.Elapsed += OnTimedEvent;
             slimeTimer.Elapsed += OnSlimeTimedEvent;
 
@@ -504,8 +508,9 @@ namespace BaboGame_test_2
             PostUpdate();
 
             //Envia missatges actualitzades
-            if ((UpdateOnlineTime > 10)&&(!testMode)&&(Initialized)) //Diferència en milisegons de cada missatge a enviar
+            if ((UpdateOnlineTime >= 100)&&(!testMode)&&(Initialized)) //Diferència en milisegons de cada missatge a enviar
             {
+                UpdateOnlineTime = 0;
                 //Actualitza el jugador 
                 CharacterState characterState = new CharacterState();
                 characterState.charID = Controllable.IDcharacter;
@@ -616,14 +621,30 @@ namespace BaboGame_test_2
                     playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId));
                     playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, initGame.users[i].charId));
                     projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, initGame.thisUser.charId, 0.1f);
-                    Controllable = characterSprites.ToArray()[i];
+                    //Controllable = characterSprites.ElementAt(i); 
                 }
                 else
                 {
                     playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId));
                     playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, initGame.users[i].charId));
                 }
+                
+              
 
+            }
+            bool found = false;
+            for (int i = 0; i < characterSprites.Count; i++)
+            {
+                if (thisClient.charId == characterSprites.ElementAt(i).IDcharacter)
+                {
+                    found = true;
+                    Controllable = characterSprites.ElementAt(i);
+                }
+            }
+            if (!found)
+            {
+                Exception ex = new Exception("Error:, controllable character not found");
+                throw ex;
             }
         }
 
@@ -700,13 +721,16 @@ namespace BaboGame_test_2
         //Actualitza els components amb el codi 102
         private void PeriodicalUpdate()
         {
-            foreach(CharacterState characterState in gameState.characterStatesList)
+            if (gameState.playable == 1)
+                playable = true;
+
+            foreach (CharacterState characterState in gameState.characterStatesList)
             {
                 bool found = false;
                 int i = 0;
                 while((!found)&&(i<gameState.characterStatesList.Count))
                 {
-                    if ((characterState.charID == characterSprites[i].IDcharacter)&&(characterState.charID != Controllable.IDcharacter)) //Desacobla el client de les actualitzacions
+                    if ((characterState.charID == characterSprites[i].IDcharacter) && ((characterState.charID != Controllable.IDcharacter) || !playable)) //Desacobla el client de les actualitzacions
                     {
                         found = true;
                         characterSprites[i].Position = new Vector2(characterState.posX, characterState.posY);
@@ -719,8 +743,7 @@ namespace BaboGame_test_2
                 
             }
 
-            if (gameState.playable == 1)
-                playable = true;
+
         }
 
         //Control dels personatges
