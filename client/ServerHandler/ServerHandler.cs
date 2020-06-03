@@ -69,6 +69,36 @@ namespace BaboGameClient
         public string charName { get; set; }
     }
 
+    public class projectileState
+    {
+        public int projectileID { get; set; }
+        public int shooterID { get; set; }
+        public char projectileType { get; set; }
+        public int posX { get; set; }
+        public int posY { get; set; }
+        public int directionX { get; set; }
+        public int directionY { get; set; }
+        public float LinearVelocity { get; set; }
+
+        public projectileState(int projectileID, int shooterID, char projectileType, int posX, int posY, int directionX, int directionY, float LinearVelocity)
+        {
+            this.projectileID = projectileID;
+            this.shooterID = shooterID;
+            this.projectileType = projectileType;
+            this.posX = posX;
+            this.posY = posY;
+            this.directionX = directionX;
+            this.directionY = directionY;
+            this.LinearVelocity = LinearVelocity;
+        }
+    }
+
+    public class playerUpdate
+    {
+        public CharacterState characterState { get; set; }
+        public List<projectileState> projectileStates { get; set; }
+    }
+
     public class GenericResponse
     {
         public GenericResponse(int number, string response)
@@ -513,10 +543,16 @@ namespace BaboGameClient
             this.SendRequest("12/CHARACTER/" + character + "/");
         }
 
-
+        //Request pel mode joc online
         public void RequestInitState()
         {
             this.SendRequest("101/HELLO/");
+        }
+
+        public void RequestRealTimeUpdate(playerUpdate playerState)
+        {
+            string playerInform = JsonSerializer.Serialize(playerState);
+            this.SendRequest("104/" + playerInform);
         }
 
         public void SwitchToRealtimeMode()

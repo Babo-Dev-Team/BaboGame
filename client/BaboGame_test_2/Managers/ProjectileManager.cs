@@ -98,14 +98,14 @@ namespace BaboGame_test_2
             }
         }
 
-        public void AddProjectile (Vector2 projectileOrigin, Vector2 projectileTarget, int shooterID)
+        public void AddProjectile (Vector2 projectileOrigin, Vector2 projectileTarget, int shooterID, int projectileID)
         {
             if (ProjectileType == 'D')
-                projectileEngine.AddProjectile(projectileOrigin, projectileTarget, textures["Direct"], shooterID, 'D');
+                projectileEngine.AddProjectile(projectileOrigin, projectileTarget, textures["Direct"], shooterID, 'D', projectileID);
             else if (ProjectileType == 'S')
-                projectileEngine.AddProjectile(projectileOrigin, projectileTarget, textures["Slimed"], shooterID, 'S');
+                projectileEngine.AddProjectile(projectileOrigin, projectileTarget, textures["Slimed"], shooterID, 'S', projectileID);
             else
-                projectileEngine.AddProjectile(projectileOrigin, projectileTarget, textures["Normal"], shooterID, 'N');
+                projectileEngine.AddProjectile(projectileOrigin, projectileTarget, textures["Normal"], shooterID, 'N', projectileID);
         }
 
         public void CreateSaltMenu(Texture2D _menuTexture, List<Sprite> overlaySprites, int IDcharacter, float scale)

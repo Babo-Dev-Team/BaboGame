@@ -121,40 +121,54 @@ namespace BaboGame_test_2
             };
         }
 
-        public void Update(GameTime gameTime, List<Slime> slimeList, List<ScenarioObjects> scenarioList)
+        public void Update(GameTime gameTime, List<Slime> slimeList, List<ScenarioObjects> scenarioList, bool testmode, Character Controllable)
         {
             foreach(var character in characterList)
             {
-                // si tenim un impacte, desplaçament per impacte
-                if (character.isHit)
+                if ((character.IDcharacter == Controllable.IDcharacter) || (testmode))
                 {
-                    character.Velocity = Vector2.Zero; //Per compensar la cancelació de la velocitat la posaré abans d'agafar la direcció del cop
-                    character.Velocity.X += character.hitImpulse * character.hitDirection.X/5;
-                    character.Velocity.Y += character.hitImpulse * character.hitDirection.Y/5;
-                }
-                else
-                {
-                    character.SlugSlipUpdate();
-                    character.UpdateFriction();
-                    character.UpdateForce();
-                    character.UpdateVelocity();
-                }
-            
-
-                character.UpdateCollision(scenarioList);
-                character.UpdateCharCollision(characterList);
-                character.Position += character.Velocity;
+                    // si tenim un impacte, desplaçament per impacte
+                    if (character.isHit)
+                    {
+                        character.Velocity = Vector2.Zero; //Per compensar la cancelació de la velocitat la posaré abans d'agafar la direcció del cop
+                        character.Velocity.X += character.hitImpulse * character.hitDirection.X / 5;
+                        character.Velocity.Y += character.hitImpulse * character.hitDirection.Y / 5;
+                    }
+                    else
+                    {
+                        character.SlugSlipUpdate();
+                        character.UpdateFriction();
+                        character.UpdateForce();
+                        character.UpdateVelocity();
+                    }
 
 
-                character.VelocityInform = character.Velocity;
-                //Velocity = Vector2.Zero; -- Ara la velocitat es conservarà
-                character.Acceleration = Vector2.Zero;
+                    character.UpdateCollision(scenarioList);
+                    character.UpdateCharCollision(characterList, testmode);
+                    character.Position += character.Velocity;
 
-                //Fem que els llimacs rellisquin amb les babes dels contrincants
-                foreach(var slime in slimeList)
-                {
-                    if (character.DetectCollisions(slime) && (slime.ShooterID != character.IDcharacter))
-                        character.isSlip = true;
+
+                    character.VelocityInform = character.Velocity;
+                    //Velocity = Vector2.Zero; -- Ara la velocitat es conservarà
+                    character.Acceleration = Vector2.Zero;
+
+                    //Fem que els llimacs rellisquin amb les babes dels contrincants
+                    foreach (var slime in slimeList)
+                    {
+                        if (character.DetectCollisions(slime) && (slime.ShooterID != character.IDcharacter))
+                            character.isSlip = true;
+                    }
+
+                    //Bloquegem els límits de la pantalla perquè els personatges no els sobrepassin
+                    if (character.Position.X < 0)
+                        character.Position = new Vector2(0,character.Position.Y);
+                    else if (character.Position.X > 1280)
+                        character.Position = new Vector2(1280, character.Position.Y);
+
+                    if (character.Position.Y < 0)
+                        character.Position = new Vector2(character.Position.X, 0);
+                    else if (character.Position.Y > 720)
+                        character.Position = new Vector2(character.Position.X, 720);
                 }
             }
         }
@@ -205,28 +219,28 @@ namespace BaboGame_test_2
 
                         //Llimac mantenint les distàncies al enemic
                         if (VectorOps.ModuloVector(distancePlayers) > 400)
-                            character.Acceleration = character.Direction * character.LinearAcceleration/2;
+                            character.Acceleration = character.Direction * character.LinearAcceleration;
                         else if (VectorOps.ModuloVector(distancePlayers) < 200)
-                            character.Acceleration = new Vector2(-character.Direction.X,-character.Direction.Y) * character.LinearAcceleration/2;
+                            character.Acceleration = new Vector2(-character.Direction.X,-character.Direction.Y) * character.LinearAcceleration;
 
                         //Llimac disparant el enemic amb una certa probabilitat d'error
                         switch(Difficulty)
                         {
                             case 'E':
                                 if (EnemyShoot.Next(0, 32) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-100, 100), EnemyShoot.Next(-100, 100)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-100, 100), EnemyShoot.Next(-100, 100)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
                                 break;
                             case 'M':
                                 if (EnemyShoot.Next(0, 32) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-50, 50), EnemyShoot.Next(-50, 50)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-50, 50), EnemyShoot.Next(-50, 50)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
                                 break;
                             case 'D':
                                 if (EnemyShoot.Next(0, 16) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-5, 5)), projectileTexture["Direct"], character.IDcharacter, 'D');
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-5, 5)), projectileTexture["Direct"], character.IDcharacter, 'D',0);
                                 break;
                             case 'I':
                                 if (EnemyShoot.Next(0, 8) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position, projectileTexture["Direct"], character.IDcharacter, 'D');
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position, projectileTexture["Direct"], character.IDcharacter, 'D',0);
                                 break;
                         }
                         
@@ -264,19 +278,19 @@ namespace BaboGame_test_2
                     {
                         case 'E':
                             if ((EnemyShoot.Next(0, 32) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-20, 20), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-20, 20), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
                             break;
                         case 'M':
                             if ((EnemyShoot.Next(0, 16) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N');
+                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
                             break;
                         case 'D':
                             if ((EnemyShoot.Next(0, 8) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D');
+                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D',0);
                             break;
                         case 'I':
                             if ((EnemyShoot.Next(0, 4) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D');
+                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D',0);
                             break;
                     }
                 }
@@ -502,7 +516,7 @@ namespace BaboGame_test_2
         }
 
         //Actualitza la collisió
-        public void UpdateCharCollision(List<Character> charSprites)
+        public void UpdateCharCollision(List<Character> charSprites, bool testmode)
         {
             foreach (var character in charSprites)
             {
@@ -510,13 +524,18 @@ namespace BaboGame_test_2
                 {
                     if(this.IsTouchingBottom(character) || this.IsTouchingTop(character))
                     {
-                        Velocity.Y = character.Force.Y/character.Weight;
-                        
+                        if(testmode)
+                            Velocity.Y = character.Force.Y/character.Weight;
+                        else
+                            Velocity.Y = character.Velocity.Y * character.Weight / Weight;
+
                     }
                     if (this.IsTouchingLeft(character) || this.IsTouchingRight(character))
                     {
-                        Velocity.X = character.Force.X/character.Weight;
-                        
+                        if(testmode)
+                            Velocity.X = character.Force.X/character.Weight;
+                        else
+                            Velocity.X = character.Velocity.X * character.Weight / Weight;
                     }
                 }
             }
