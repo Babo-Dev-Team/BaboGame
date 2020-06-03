@@ -9,6 +9,9 @@ typedef struct CharacterState{
 	int position_Y;
 	int velocity_X;
 	int velocity_Y;
+	double direction_X;
+	double direction_Y;
+	int health;
 }CharacterState;
 
 typedef struct GameState{
@@ -24,11 +27,12 @@ typedef struct ProjectileState{
 	int projectileID;
 	int shooterID;
 	char projectileType;
-	int posX;
-	int posY;
-	int directionX;
-	int directionY;
-	float LinearVelocity;
+	int position_X;
+	int position_Y;
+	double direction_X;
+	double direction_Y;
+	double LinearVelocity;
+	int hitCount;
 }ProjectileState;
 
 typedef struct playerUpdate{

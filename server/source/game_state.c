@@ -15,6 +15,9 @@ GameState* CreateGameState(int gameId, int n_players)
 		game->characterStatesList[i].position_Y = 0;
 		game->characterStatesList[i].velocity_X = 0;
 		game->characterStatesList[i].velocity_Y = 0;
+		game->characterStatesList[i].direction_X = 0;
+		game->characterStatesList[i].direction_Y = 0;
+		game->characterStatesList[i].health = 20;
 	}
 	game->n_players = n_players;
 	
@@ -40,11 +43,17 @@ GameState* CreateGameState(int gameId, int n_players)
 		json_object* posY = json_object_new_int(game->characterStatesList[i].position_Y);
 		json_object* velX = json_object_new_int(game->characterStatesList[i].velocity_X);
 		json_object* velY = json_object_new_int(game->characterStatesList[i].velocity_Y);
+		json_object* dirX = json_object_new_double(game->characterStatesList[i].direction_X);
+		json_object* dirY = json_object_new_double(game->characterStatesList[i].direction_Y);
+		json_object* health = json_object_new_int(game->characterStatesList[i].health);
 		json_object_object_add(characters[i], "charID", charId);
 		json_object_object_add(characters[i], "posX", posX);
 		json_object_object_add(characters[i], "posY", posY);
 		json_object_object_add(characters[i], "velX", velX);
 		json_object_object_add(characters[i], "velY", velY);
+		json_object_object_add(characters[i], "dirX", dirX);
+		json_object_object_add(characters[i], "dirY", dirY);
+		json_object_object_add(characters[i], "health", health);
 	}
 	
 	for (int i = 0; i < n_players; i++)
@@ -89,6 +98,9 @@ void UpdateGameStateJson(GameState* game)
 	json_object* posY;
 	json_object* velX;
 	json_object* velY;
+	json_object* dirX;
+	json_object* dirY;
+	json_object* health;
 	for (int i = 0; i < game->n_players; i++)
 	{
 		charState = json_object_array_get_idx(charArray, i);
@@ -97,13 +109,19 @@ void UpdateGameStateJson(GameState* game)
 		json_object_object_get_ex(charState, "posX", &posX);	
 		json_object_object_get_ex(charState, "posY", &posY);	
 		json_object_object_get_ex(charState, "velX", &velX);	
-		json_object_object_get_ex(charState, "velY", &velY);	
+		json_object_object_get_ex(charState, "velY", &velY);
+		json_object_object_get_ex(charState, "dirX", &dirX);
+		json_object_object_get_ex(charState, "dirY", &dirY);
+		json_object_object_get_ex(charState, "health", &health);
 		
 		json_object_set_int(charId, game->characterStatesList[i].characterId);
 		json_object_set_int(posX, game->characterStatesList[i].position_X);
 		json_object_set_int(posY, game->characterStatesList[i].position_Y);
 		json_object_set_int(velX, game->characterStatesList[i].velocity_X);
 		json_object_set_int(velY, game->characterStatesList[i].velocity_Y);
+		json_object_set_double(dirX, game->characterStatesList[i].direction_X);
+		json_object_set_double(dirY, game->characterStatesList[i].direction_Y);
+		json_object_set_int(health, game->characterStatesList[i].health);
 	}
 }
 
