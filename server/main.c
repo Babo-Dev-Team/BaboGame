@@ -45,6 +45,7 @@ typedef struct GameSenderArgs{
 // el client passa les updates amb una instancia d'aquesta estructura
 typedef struct GameUpdatesFromClient{
 	CharacterState* charState;
+	//ProjectileState** projectileStates;
 	int userId;
 	int newDataFromClient;
 	int backOffRequested;
@@ -172,6 +173,9 @@ void* gameProcessor (void* args)
 	GameState* gameState = CreateGameState(gameId, n_players);
 	int** gamePositions = GetInitialPositions(n_players, SCREEN_MAX_X, SCREEN_MAX_Y);
 	SetInitialPositions(gameState, gamePositions);
+	
+	
+	
 	//pthread_mutex_unlock(procArgs->gameProcessor_mutex);
 	
 	while(!procArgs->processEnabled)
@@ -205,8 +209,16 @@ void* gameProcessor (void* args)
 	sendToGame(senderArgs, "102/START", 1);
 	
 	clientUpdates = procArgs->gameUpdatesFromClients; 
+	for (int i = 0; i < procArgs->n_players; i++)
+	{
+		clientUpdates[i]->charState->characterId = i;
+	}
+	
+
 	int counter = 0;
 	int operation = 1;
+	
+	gameState->playable = 1;
 	
 	// this function will auto-disable when game is over
 	while(procArgs->processEnabled)
@@ -245,7 +257,7 @@ void* gameProcessor (void* args)
 			}
 		}
 
-
+/*
 		if (operation)
 		{
 			gameState->characterStatesList[0].position_X += 2;
@@ -273,7 +285,7 @@ void* gameProcessor (void* args)
 			}
 			else operation = 1;
 		}
-		
+		*/
 		UpdateGameStateJson(gameState);
 		sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
 		sendToGame(senderArgs, response, 1);
@@ -354,7 +366,7 @@ void* gameSender (void* args)
 		{		
 			if (thisSenderArgs.userState == userStates[i])
 			{
-			//	printf ("GAME ID %d NOTIFICATION for %s = %s\n", thisSenderArgs.game->gameId, thisSenderArgs.game->users[i]->username, thisSenderArgs.gameResponse);
+				//printf ("GAME ID %d NOTIFICATION for %s = %s\n", thisSenderArgs.game->gameId, thisSenderArgs.game->users[i]->username, thisSenderArgs.gameResponse);
 				write (activeSocketList[i], thisSenderArgs.gameResponse, strlen(thisSenderArgs.gameResponse));			
 			}
 		}	
@@ -495,14 +507,14 @@ void* attendClient (void* args)
 		}
 		else
 		{
-			printf ("Socket read: received request\n");
+			//printf ("Socket read: received request\n");
 			// marcamos el final de string
 			request[request_length]='\0';
 			strcpy(request_string, request);
-			printf("Full request: %s\n", request_string);
+		//	printf("Full request: %s\n", request_string);
 			char *p = strtok(request, "/");
 			int request_code =  atoi(p); // sacamos el request_code del request
-			printf("Request Code: %d\n", request_code);
+		//	printf("Request Code: %d\n", request_code);
 			
 			// resetegem l'estat de les strings i flags de resposta
 			strcpy(response, "");
@@ -1222,8 +1234,80 @@ void* attendClient (void* args)
 				break;
 			}
 			case 104: //Actualització estat del client
+			{
+				userSend = 0;
+				globalSend = 0;
+				gameSend = 0;
 				
+				/*{
+					"characterState":
+					{
+						"charID":0,
+						"posX":125,
+						"posY":80,
+						"velX":0,
+						"velY":0
+					},					
+					"projectileStates":[]
+				}*/
+				
+				p = strtok(NULL, "|");
+				if(p == NULL)
+				{
+					printf("Warning: 104 request extracted as Null! (strtok returned null)\n");
+				}
+				else
+				{
+					//printf("Debug: p = %s\n", p);
+					
+					json_object* obj = json_tokener_parse(p);
+					
+					json_object* jsonCharState;
+					json_object_object_get_ex(obj, "characterState", &jsonCharState);
+					
+					json_object* jsonCharId;
+					json_object* posX;
+					json_object* posY;
+					json_object* velX;
+					json_object* velY;
+					json_object_object_get_ex(jsonCharState, "charID", &jsonCharId);
+					json_object_object_get_ex(jsonCharState, "posX", &posX);
+					json_object_object_get_ex(jsonCharState, "posY", &posY);
+					json_object_object_get_ex(jsonCharState, "velX", &velX);
+					json_object_object_get_ex(jsonCharState, "velY", &velY);
+					
+					int receivedCharId = json_object_get_int(jsonCharId);
+					int pX = json_object_get_int(posX);
+					int pY = json_object_get_int(posY);
+					int vX = json_object_get_int(velX);
+					int vY = json_object_get_int(velY);
+					
+					//printf("Received: ChardId: %d, PosX: %d, PosY: %d, VelX: %d, VelY: %d\n", receivedCharId, pX, pY, vX, vY);
+					
+					if (receivedCharId != charId)
+					{
+						printf("Error: Received char Id does not match the handled char Id\n");
+					}
+					else 
+					{
+						if (!gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient)
+						{
+							//printf("Debug: can write to GameUpdatesFromClient\n");
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_X = pX;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_Y = pY;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_X = vX;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_Y = vY;
+							
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient = 1;							
+						}
+						else 
+						{
+							printf("Debug: cannot write to GameUpdatesFromClient\n");
+						}					
+					}
+				}
 				break;
+			}
 			
 			// request 0 -> Disconnect	
 			// TODO: S'ha d'eliminar el user de la llista de connectats!!!
@@ -1235,6 +1319,8 @@ void* attendClient (void* args)
 			default:
 				printf("Error. request_code no reconocido.\n");
 				userSend = 0;
+				globalSend = 0;
+				gameSend = 0;
 				break;
 			}
 			

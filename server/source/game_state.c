@@ -115,3 +115,6 @@ void SetInitialPositions (GameState* game, int** positions)
 		game->characterStatesList[i].position_Y = positions[i][1];
 	}
 }
+
+
+
