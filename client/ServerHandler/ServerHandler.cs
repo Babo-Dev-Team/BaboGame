@@ -552,7 +552,7 @@ namespace BaboGameClient
         public void RequestRealTimeUpdate(playerUpdate playerState)
         {
             string playerInform = JsonSerializer.Serialize(playerState);
-            this.SendRequest("104/" + playerInform);
+            this.SendRequest("104/" + playerInform + "|");
         }
 
         public void SwitchToRealtimeMode()
