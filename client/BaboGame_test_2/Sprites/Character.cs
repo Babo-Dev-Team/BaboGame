@@ -23,6 +23,7 @@ namespace BaboGame_test_2
         Dictionary<string, Animation> BaboAnimations;
         Dictionary<string, Animation> LimaxAnimations;
         Dictionary<string, Animation> KalerAnimations;
+        Dictionary<string, Animation> SwalotAnimations;
 
         public CharacterEngine(List<Character> characterList, ContentManager Content)
         {
@@ -117,6 +118,36 @@ namespace BaboGame_test_2
                 {"Slug down hit", new Animation(Content.Load<Texture2D>("Kaler/Kaler down hit"), 1) },
                 {"Slug right hit", new Animation(Content.Load<Texture2D>("Kaler/Kaler right hit"), 1) },
                 {"Slug left hit", new Animation(Content.Load<Texture2D>("Kaler/Kaler left hit"), 1) },
+
+            };
+            SwalotAnimations = new Dictionary<string, Animation>()
+            {
+                {"Slug down0", new Animation(Content.Load<Texture2D>("Swalot/Swalot down0"), 6) },
+                {"Slug up0", new Animation(Content.Load<Texture2D>("Swalot/Swalot up0"), 6) },
+                //{"Slug down0 bck", new Animation(Content.Load<Texture2D>("Kaler/Kaler down0 s0"), 1) },
+                //{"Slug up0 bck", new Animation(Content.Load<Texture2D>("Kaler/Kaler up0 s0"), 1) },
+                {"Slug right0", new Animation(Content.Load<Texture2D>("Swalot/Swalot right0"), 6) },
+                {"Slug left0", new Animation(Content.Load<Texture2D>("Swalot/Swalot left0"), 6) },
+                {"Slug down22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot down22_5"), 6) },
+                {"Slug up22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot up22_5"), 6) },
+                {"Slug right22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot right22_5"), 6) },
+                {"Slug left22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot left22_5"), 6) },
+                {"Slug down45", new Animation(Content.Load<Texture2D>("Swalot/Swalot down45"), 6) },
+                {"Slug up45", new Animation(Content.Load<Texture2D>("Swalot/Swalot up45"), 6) },
+                {"Slug right45", new Animation(Content.Load<Texture2D>("Swalot/Swalot right45"), 6) },
+                {"Slug left45", new Animation(Content.Load<Texture2D>("Swalot/Swalot left45"), 6) },
+                {"Slug down-22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot down-22_5"), 6) },
+                {"Slug up-22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot up-22_5"), 6) },
+                {"Slug right-22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot right-22_5"), 6) },
+                {"Slug left-22_5", new Animation(Content.Load<Texture2D>("Swalot/Swalot left-22_5"), 6) },
+                {"Slug down-45", new Animation(Content.Load<Texture2D>("Swalot/Swalot down-45"), 6) },
+                {"Slug up-45", new Animation(Content.Load<Texture2D>("Swalot/Swalot up-45"), 6) },
+                {"Slug right-45", new Animation(Content.Load<Texture2D>("Swalot/Swalot right-45"), 6) },
+                {"Slug left-45", new Animation(Content.Load<Texture2D>("Swalot/Swalot left-45"), 6) },
+                {"Slug up hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot up hit"), 1) },
+                {"Slug down hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot down hit"), 1) },
+                {"Slug right hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot right hit"), 1) },
+                {"Slug left hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot left hit"), 1) },
 
             };
         }
@@ -316,6 +347,8 @@ namespace BaboGame_test_2
                 characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f,});
             else if (slugName == "Kaler")
                 characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f,});
+            else if (slugName == "Swalot")
+                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, });
         }
 
         public void AddKnownCharacter(string slugName, Vector2 Position, float Scale, int Health, int IDCharacter, Color color, bool CPUgame)
@@ -326,6 +359,8 @@ namespace BaboGame_test_2
                 characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, CPU = CPUgame, });
             else if (slugName == "Kaler")
                 characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, CPU = CPUgame, });
+            else if (slugName == "Swalot")
+                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, CPU = CPUgame, });
         }
     }
 
@@ -527,7 +562,12 @@ namespace BaboGame_test_2
                         if(testmode)
                             Velocity.Y = character.Force.Y/character.Weight;
                         else
-                            Velocity.Y = character.Velocity.Y * character.Weight / Weight;
+                        {
+                            if ((Velocity.Y > 0) && (character.Velocity.Y > 0) || (Velocity.Y < 0) && (character.Velocity.Y < 0))
+                                Velocity.Y = 0;
+                            else
+                                Velocity.Y = character.Velocity.Y * character.Weight / Weight;
+                        }
 
                     }
                     if (this.IsTouchingLeft(character) || this.IsTouchingRight(character))
@@ -535,7 +575,13 @@ namespace BaboGame_test_2
                         if(testmode)
                             Velocity.X = character.Force.X/character.Weight;
                         else
-                            Velocity.X = character.Velocity.X * character.Weight / Weight;
+                        {
+                            if ((Velocity.X > 0) && (character.Velocity.X > 0) || (Velocity.X < 0) && (character.Velocity.X < 0))
+                                Velocity.X = 0;
+                            else
+                                Velocity.X = character.Velocity.X * character.Weight / Weight;
+                        }
+                            
                     }
                 }
             }
@@ -555,16 +601,27 @@ namespace BaboGame_test_2
         {
             foreach (var objectItem in scenarioObjects)
             {
-                if(this.IsTouchingBottom(objectItem) || this.IsTouchingTop(objectItem))
+                //Eix Y
+                if (this.IsTouchingBottom(objectItem) && (this.Force.Y < 0) || this.IsTouchingTop(objectItem) && (this.Force.Y > 0))
                 {
-                    this.Velocity.Y = - this.Force.Y/this.Weight;
-                        
+                    this.Velocity.Y = -this.Force.Y / this.Weight;
+
+                } //Evitem el glith atravessa-parets
+                else if (this.IsTouchingBottom(objectItem) || this.IsTouchingTop(objectItem))
+                {
+                    this.Velocity.Y = 0;
                 }
-                if (this.IsTouchingLeft(objectItem) || this.IsTouchingRight(objectItem))
+
+                //Eix X
+                if (this.IsTouchingLeft(objectItem) && (this.Force.X < 0) || this.IsTouchingRight(objectItem) && (this.Force.X > 0))
                 {
-                    this.Velocity.X = - this.Force.X/this.Weight;
-                        
-                }            
+                    this.Velocity.X = -this.Force.X / this.Weight;
+
+                } //Evitem el glith atravessa-parets
+                else if (this.IsTouchingLeft(objectItem) || this.IsTouchingRight(objectItem))
+                {
+                    this.Velocity.X = 0;
+                }
             }
         }
 
