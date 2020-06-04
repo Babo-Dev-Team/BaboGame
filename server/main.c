@@ -18,6 +18,7 @@
 #include "game_state.h"
 
 #define SHIVA_PORT 50084
+#define PROJ_COUNT_PLAYER 100
 
 //#define NMBR_THREADS 100
 
@@ -45,7 +46,7 @@ typedef struct GameSenderArgs{
 // el client passa les updates amb una instancia d'aquesta estructura
 typedef struct GameUpdatesFromClient{
 	CharacterState* charState;
-	//ProjectileState** projectileStates;
+	ProjectileState** projectileStates;
 	int userId;
 	int newDataFromClient;
 	int backOffRequested;
@@ -253,6 +254,9 @@ void* gameProcessor (void* args)
 				gameState->characterStatesList[charId].position_Y = clientUpdates[i]->charState->position_Y;
 				gameState->characterStatesList[charId].velocity_X = clientUpdates[i]->charState->velocity_X;
 				gameState->characterStatesList[charId].velocity_Y = clientUpdates[i]->charState->velocity_Y;
+				gameState->characterStatesList[charId].direction_X = clientUpdates[i]->charState->direction_X;
+				gameState->characterStatesList[charId].direction_Y = clientUpdates[i]->charState->direction_Y;
+				gameState->characterStatesList[charId].health = clientUpdates[i]->charState->health;
 				clientUpdates[i]->newDataFromClient = 0;
 			}
 		}
@@ -1080,6 +1084,12 @@ void* attendClient (void* args)
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->backOffRequested = 0;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates = malloc(PROJ_COUNT_PLAYER * sizeof(ProjectileState*));
+							for (int j = 0; j < PROJ_COUNT_PLAYER; i++)
+							{
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates[j] = malloc(sizeof(ProjectileState));
+							}
+																											
 							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
 							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
 							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_Y = 0;
@@ -1270,17 +1280,31 @@ void* attendClient (void* args)
 					json_object* posY;
 					json_object* velX;
 					json_object* velY;
+					json_object* dirX;
+					json_object* dirY;
+					json_object* health;
 					json_object_object_get_ex(jsonCharState, "charID", &jsonCharId);
 					json_object_object_get_ex(jsonCharState, "posX", &posX);
 					json_object_object_get_ex(jsonCharState, "posY", &posY);
 					json_object_object_get_ex(jsonCharState, "velX", &velX);
 					json_object_object_get_ex(jsonCharState, "velY", &velY);
+					json_object_object_get_ex(jsonCharState, "dirX", &dirX);
+					json_object_object_get_ex(jsonCharState, "dirY", &dirY);
+					json_object_object_get_ex(jsonCharState, "health", &health);
 					
 					int receivedCharId = json_object_get_int(jsonCharId);
 					int pX = json_object_get_int(posX);
 					int pY = json_object_get_int(posY);
 					int vX = json_object_get_int(velX);
 					int vY = json_object_get_int(velY);
+					double dX = json_object_get_double(dirX);
+					double dY = json_object_get_double(dirY);
+					int h = json_object_get_int(health);
+					
+					//LLista de projectils I don't know da wae xd
+					json_object* jsonProjectileListState;
+					json_object_object_get_ex(obj, "projectileStates", &jsonProjectileListState);
+					
 					
 					//printf("Received: ChardId: %d, PosX: %d, PosY: %d, VelX: %d, VelY: %d\n", receivedCharId, pX, pY, vX, vY);
 					
@@ -1297,6 +1321,9 @@ void* attendClient (void* args)
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_Y = pY;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_X = vX;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_Y = vY;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->direction_X = dX;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->direction_Y = dY;
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->health = h;
 							
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient = 1;							
 						}
