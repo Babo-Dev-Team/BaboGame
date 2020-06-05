@@ -58,6 +58,7 @@ namespace BaboGame_test_2
                 {"Slug down hit", new Animation(Content.Load<Texture2D>("Babo/Babo down hit"), 1) },
                 {"Slug right hit", new Animation(Content.Load<Texture2D>("Babo/Babo right hit"), 1) },
                 {"Slug left hit", new Animation(Content.Load<Texture2D>("Babo/Babo left hit"), 1) },
+                {"Slug defeat", new Animation(Content.Load<Texture2D>("Babo/Babo defeat"), 5) },
 
             };
             LimaxAnimations = new Dictionary<string, Animation>()
@@ -88,6 +89,7 @@ namespace BaboGame_test_2
                 {"Slug down hit", new Animation(Content.Load<Texture2D>("Limax/Limax down hit"), 1) },
                 {"Slug right hit", new Animation(Content.Load<Texture2D>("Limax/Limax right hit"), 1) },
                 {"Slug left hit", new Animation(Content.Load<Texture2D>("Limax/Limax left hit"), 1) },
+                {"Slug defeat", new Animation(Content.Load<Texture2D>("Limax/Limax defeat"), 4) },
 
             };
             KalerAnimations = new Dictionary<string, Animation>()
@@ -118,6 +120,7 @@ namespace BaboGame_test_2
                 {"Slug down hit", new Animation(Content.Load<Texture2D>("Kaler/Kaler down hit"), 1) },
                 {"Slug right hit", new Animation(Content.Load<Texture2D>("Kaler/Kaler right hit"), 1) },
                 {"Slug left hit", new Animation(Content.Load<Texture2D>("Kaler/Kaler left hit"), 1) },
+                {"Slug defeat", new Animation(Content.Load<Texture2D>("Kaler/Kaler defeat"), 5) },
 
             };
             SwalotAnimations = new Dictionary<string, Animation>()
@@ -148,6 +151,7 @@ namespace BaboGame_test_2
                 {"Slug down hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot down hit"), 1) },
                 {"Slug right hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot right hit"), 1) },
                 {"Slug left hit", new Animation(Content.Load<Texture2D>("Swalot/Swalot left hit"), 1) },
+                {"Slug defeat", new Animation(Content.Load<Texture2D>("Swalot/Swalot defeat"), 6) },
 
             };
         }
@@ -191,15 +195,15 @@ namespace BaboGame_test_2
                     }
 
                     //Bloquegem els límits de la pantalla perquè els personatges no els sobrepassin
-                    if (character.Position.X < 0)
-                        character.Position = new Vector2(0,character.Position.Y);
-                    else if (character.Position.X > 1280)
-                        character.Position = new Vector2(1280, character.Position.Y);
+                    if (character.Position.X < 30)
+                        character.Position = new Vector2(30,character.Position.Y);
+                    else if (character.Position.X > 1250)
+                        character.Position = new Vector2(1250, character.Position.Y);
 
-                    if (character.Position.Y < 0)
-                        character.Position = new Vector2(character.Position.X, 0);
-                    else if (character.Position.Y > 720)
-                        character.Position = new Vector2(character.Position.X, 720);
+                    if (character.Position.Y < 30)
+                        character.Position = new Vector2(character.Position.X, 30);
+                    else if (character.Position.Y > 690)
+                        character.Position = new Vector2(character.Position.X, 690);
                 }
             }
         }
@@ -209,7 +213,7 @@ namespace BaboGame_test_2
             foreach (var character in characterList)
             {
                 Random EnemyShoot = new Random();
-                if (character.CPU)
+                if ((character.CPU)&&(!character.Defeated))
                 {
                     //Apunta al jugador més proper
                     int j = 0;
@@ -376,18 +380,21 @@ namespace BaboGame_test_2
         private float Friction = 1f;
         public float Velocity_Threshold = 12f;
         public bool CPU = false;
+        public bool Defeated;
 
         // Constructors
         public Character(Texture2D texture)
             : base(texture)
         {
             isHit = false;
+            Defeated = false;
         }
 
         public Character(Dictionary<string, Animation> animations)
            : base(animations)
         {
             isHit = false;
+            Defeated = false;
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScaleW, float _HitBoxScaleH, int _Health, int _IDcharacter, Color _Color)
@@ -401,6 +408,7 @@ namespace BaboGame_test_2
             IDcharacter = _IDcharacter;
             _color = _Color;
             isHit = false;
+            Defeated = false;
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScale, int _Health, int _IDcharacter, Color _Color)
@@ -413,6 +421,7 @@ namespace BaboGame_test_2
             IDcharacter = _IDcharacter;
             _color = _Color;
             isHit = false;
+            Defeated = false;
         }
 
         // interfície pública per moure el character
@@ -490,9 +499,18 @@ namespace BaboGame_test_2
                 isHit = false;
             }
 
+            if(Health <= 0)
+            {
+                Defeated = true;
+            }
+
             //Reprodueix l'animació
             SetAnimations();
-            float Framespeed = 0.2f *4/ (4 + VectorOps.ModuloVector(VelocityInform));
+            float Framespeed;
+            if (!Defeated)
+                Framespeed = 0.2f * 4 / (4 + VectorOps.ModuloVector(VelocityInform));
+            else
+                Framespeed = 0.5f;
 
             this._animationManager.Update(gameTime, Framespeed);
 
@@ -641,6 +659,10 @@ namespace BaboGame_test_2
                     _animationManager.Play(_animations["Slug left hit"]);
                 else
                     _animationManager.Play(_animations["Slug down hit"]);
+            }
+            else if (Defeated)
+            {
+                _animationManager.Play(_animations["Slug defeat"]);
             }
             else
             {

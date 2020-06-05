@@ -13,6 +13,18 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin Babo/Babo defeat.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Babo/Babo defeat.png
+
 #begin Babo/Babo down hit.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -536,6 +548,18 @@
 /processorParam:TextureFormat=Compressed
 /build:Font.spritefont
 
+#begin Kaler/Kaler defeat.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Kaler/Kaler defeat.png
+
 #begin Kaler/Kaler down hit.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -823,6 +847,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Kaler/Kaler up-45.png
+
+#begin Limax/Limax defeat.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Limax/Limax defeat.png
 
 #begin Limax/Limax down hit.png
 /importer:TextureImporter
@@ -1406,6 +1442,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Slug_status/SaltMenu.png
+
+#begin Swalot/Swalot defeat.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Swalot/Swalot defeat.png
 
 #begin Swalot/Swalot down hit.png
 /importer:TextureImporter

@@ -756,7 +756,7 @@ namespace BaboGame_test_2
         {
             Controllable.Direction = VectorOps.UnitVector(inputManager.GetMousePosition() - Controllable.Position);
 
-            if (playable)
+            if ((playable)&&(!Controllable.Defeated))
             {
                 if (inputManager.RightCtrlActive())
                 {
