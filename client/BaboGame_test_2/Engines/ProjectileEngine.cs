@@ -50,8 +50,11 @@ namespace BaboGame_test_2
              if (_timer > LifeSpan)
                  IsRemoved = true;
             */
+            foreach (var projectile in projectileList)
+            {
+                projectile.Velocity = new Vector2(projectile.LinearVelocity * projectile.Direction.X, projectile.LinearVelocity * projectile.Direction.X);
+            }
 
-            
             foreach (var projectile in this.projectileList)
             {
                 if ((testmode) || (Controllable.IDcharacter == projectile.ShooterID))
@@ -159,36 +162,46 @@ namespace BaboGame_test_2
             if (VectorOps.ModuloVector(projectile.Origin - projectile.Position) > 2000)
                 projectile.KillProjectile();
 
-            //Definim la colisió entre la sal
-            foreach (var projectileItem in projectileList)
+                //Definim la colisió entre la sal
+                foreach (var projectileItem in projectileList)
             {
                 
                     if ((projectile.DetectCollision(projectileItem)) && (projectileItem != projectile))
                     {
                         if (projectileItem.ProjectileType == 'S')
                         {
+                        Vector2 Velocity = new Vector2(projectile.LinearVelocity * projectile.Direction.X, projectile.LinearVelocity * projectile.Direction.X);
                             if (projectile.DetectBottomCollision(projectileItem))
                             {
-                                projectile.Direction.Y = Math.Abs(projectile.Direction.Y);
+                                //projectile.Direction.Y = Math.Abs(projectile.Direction.Y);
+                                Velocity.Y = Math.Abs(projectileItem.Velocity.Y);
                                 projectile.HitCount++;
                             }
 
                             if (projectile.DetectTopCollision(projectileItem))
                             {
-                                projectile.Direction.Y = -Math.Abs(projectile.Direction.Y);
+                                //projectile.Direction.Y = -Math.Abs(projectile.Direction.Y);
+                                Velocity.Y = -Math.Abs(projectileItem.Velocity.Y);
                                 projectile.HitCount++;
                             }
 
                             if (projectile.DetectRightCollision(projectileItem))
                             {
-                                projectile.Direction.X = Math.Abs(projectile.Direction.X);
+                                //projectile.Direction.X = Math.Abs(projectile.Direction.X);
+                                Velocity.X = Math.Abs(projectileItem.Velocity.X);
                                 projectile.HitCount++;
                             }
                             if (projectile.DetectLeftCollision(projectileItem))
                             {
-                                projectile.Direction.X = -Math.Abs(projectile.Direction.X);
+                                //projectile.Direction.X = -Math.Abs(projectile.Direction.X);
+                                Velocity.X = -Math.Abs(projectileItem.Velocity.X);
                                 projectile.HitCount++;
                             }
+
+                        projectile.LinearVelocity = VectorOps.ModuloVector(Velocity);
+                        projectile.Direction = new Vector2(Velocity.X / projectile.LinearVelocity, Velocity.Y / projectile.LinearVelocity);
+
+
                         }
                         else
                             projectile.KillProjectile();

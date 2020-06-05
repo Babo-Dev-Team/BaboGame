@@ -223,7 +223,7 @@ namespace BaboGame_test_2
                     //Buscant el primer enemic de la llista
                     while ((j < characterList.Count) && (!trobat))
                     {
-                        if (characterList[j].IDcharacter != character.IDcharacter)
+                        if ((characterList[j].IDcharacter != character.IDcharacter)&&(!characterList[j].Defeated))
                         {
                             trobat = true;
                             nearest = characterList[j];
@@ -238,7 +238,7 @@ namespace BaboGame_test_2
                         //Buscant el enemic més proper de la llista
                         foreach (var opponent in characterList)
                         {
-                            if (opponent.IDcharacter != character.IDcharacter)
+                            if ((opponent.IDcharacter != character.IDcharacter) && (!characterList[j].Defeated))
                             {
                                 Vector2 newDistance = character.Position - opponent.Position;
                                 if (VectorOps.ModuloVector(distancePlayers) > VectorOps.ModuloVector(newDistance))
