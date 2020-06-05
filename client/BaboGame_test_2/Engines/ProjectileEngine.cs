@@ -53,6 +53,15 @@ namespace BaboGame_test_2
             foreach (var projectile in projectileList)
             {
                 projectile.Velocity = new Vector2(projectile.LinearVelocity * projectile.Direction.X, projectile.LinearVelocity * projectile.Direction.X);
+                if (((projectile.Position.X < 0)|| (projectile.Position.Y < 0) || (projectile.Position.X > 1280) || (projectile.Position.Y > 720))&&(projectile.ProjectileType != 'S'))
+                {
+                    projectile.KillProjectile();
+                    foreach (Character chara in characterList)
+                    {
+                        if (chara.IDcharacter == projectile.ShooterID)
+                            chara.BulletNumber--;
+                    }
+                }
             }
 
             foreach (var projectile in this.projectileList)
@@ -82,6 +91,11 @@ namespace BaboGame_test_2
                 ((projectile.Target.Y >= projectile.Position.Y - 15) && (projectile.Target.Y <= projectile.Position.Y + 15)))
             {
                 projectile.KillProjectile();
+                foreach (Character chara in characterList)
+                {
+                    if (chara.IDcharacter == projectile.ShooterID)
+                        chara.BulletNumber--;
+                }
             }
 
             //Definim la colisió entre la sal
@@ -90,6 +104,11 @@ namespace BaboGame_test_2
                 if((projectile.DetectCollision(projectileItem))&&(projectileItem != projectile))
                 {
                     projectile.KillProjectile();
+                    foreach (Character chara in characterList)
+                    {
+                        if (chara.IDcharacter == projectile.ShooterID)
+                            chara.BulletNumber--;
+                    }
                 }
             }
 
@@ -103,6 +122,11 @@ namespace BaboGame_test_2
                         // notificar el dany al personatge!!!
                         character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
                         projectile.KillProjectile();
+                        foreach (Character chara in characterList)
+                        {
+                            if (chara.IDcharacter == projectile.ShooterID)
+                                chara.BulletNumber--;
+                        }
                     }
                 }
             }
@@ -112,6 +136,11 @@ namespace BaboGame_test_2
                 if (projectile.DetectCollision(Object))
                 {
                     projectile.KillProjectile();
+                    foreach (Character chara in characterList)
+                    {
+                        if (chara.IDcharacter == projectile.ShooterID)
+                            chara.BulletNumber--;
+                    }
                 }
             }
         }
@@ -121,7 +150,14 @@ namespace BaboGame_test_2
         {
             //Elimina la sal en un límit de distancia
             if (VectorOps.ModuloVector(projectile.Origin - projectile.Position) > 2000)
+            {
                 projectile.KillProjectile();
+                foreach (Character chara in characterList)
+                {
+                    if (chara.IDcharacter == projectile.ShooterID)
+                        chara.BulletNumber--;
+                }
+            }
 
             //Definim la colisió entre la sal
             foreach (var projectileItem in projectileList)
@@ -129,6 +165,11 @@ namespace BaboGame_test_2
                 if((projectile.DetectCollision(projectileItem))&&(projectileItem != projectile))
                 {
                     projectile.KillProjectile();
+                    foreach (Character chara in characterList)
+                    {
+                        if (chara.IDcharacter == projectile.ShooterID)
+                            chara.BulletNumber--;
+                    }
                 }
             }
 
@@ -142,6 +183,11 @@ namespace BaboGame_test_2
                         // notificar el dany al personatge!!!
                         character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
                         projectile.KillProjectile();
+                        foreach (Character chara in characterList)
+                        {
+                            if (chara.IDcharacter == projectile.ShooterID)
+                                chara.BulletNumber--;
+                        }
                     }
                 }
             }
@@ -151,6 +197,11 @@ namespace BaboGame_test_2
                 if (projectile.DetectCollision(Object))
                 {
                     projectile.KillProjectile();
+                    foreach (Character chara in characterList)
+                    {
+                        if (chara.IDcharacter == projectile.ShooterID)
+                            chara.BulletNumber--;
+                    }
                 }
             }
         }
@@ -160,7 +211,15 @@ namespace BaboGame_test_2
         {
             //Elimina la sal en un límit de distancia
             if (VectorOps.ModuloVector(projectile.Origin - projectile.Position) > 2000)
+            {
                 projectile.KillProjectile();
+                foreach (Character chara in characterList)
+                {
+                    if (chara.IDcharacter == projectile.ShooterID)
+                        chara.BulletNumber--;
+                }
+            }
+                
 
                 //Definim la colisió entre la sal
                 foreach (var projectileItem in projectileList)
@@ -168,43 +227,50 @@ namespace BaboGame_test_2
                 
                     if ((projectile.DetectCollision(projectileItem)) && (projectileItem != projectile))
                     {
-                        if (projectileItem.ProjectileType == 'S')
-                        {
+                    if (projectileItem.ProjectileType == 'S')
+                    {
                         Vector2 Velocity = new Vector2(projectile.LinearVelocity * projectile.Direction.X, projectile.LinearVelocity * projectile.Direction.X);
-                            if (projectile.DetectBottomCollision(projectileItem))
-                            {
-                                //projectile.Direction.Y = Math.Abs(projectile.Direction.Y);
-                                Velocity.Y = Math.Abs(projectileItem.Velocity.Y);
-                                projectile.HitCount++;
-                            }
+                        if (projectile.DetectBottomCollision(projectileItem))
+                        {
+                            //projectile.Direction.Y = Math.Abs(projectile.Direction.Y);
+                            Velocity.Y = Math.Abs(projectileItem.Velocity.Y);
+                            projectile.HitCount++;
+                        }
 
-                            if (projectile.DetectTopCollision(projectileItem))
-                            {
-                                //projectile.Direction.Y = -Math.Abs(projectile.Direction.Y);
-                                Velocity.Y = -Math.Abs(projectileItem.Velocity.Y);
-                                projectile.HitCount++;
-                            }
+                        if (projectile.DetectTopCollision(projectileItem))
+                        {
+                            //projectile.Direction.Y = -Math.Abs(projectile.Direction.Y);
+                            Velocity.Y = -Math.Abs(projectileItem.Velocity.Y);
+                            projectile.HitCount++;
+                        }
 
-                            if (projectile.DetectRightCollision(projectileItem))
-                            {
-                                //projectile.Direction.X = Math.Abs(projectile.Direction.X);
-                                Velocity.X = Math.Abs(projectileItem.Velocity.X);
-                                projectile.HitCount++;
-                            }
-                            if (projectile.DetectLeftCollision(projectileItem))
-                            {
-                                //projectile.Direction.X = -Math.Abs(projectile.Direction.X);
-                                Velocity.X = -Math.Abs(projectileItem.Velocity.X);
-                                projectile.HitCount++;
-                            }
+                        if (projectile.DetectRightCollision(projectileItem))
+                        {
+                            //projectile.Direction.X = Math.Abs(projectile.Direction.X);
+                            Velocity.X = Math.Abs(projectileItem.Velocity.X);
+                            projectile.HitCount++;
+                        }
+                        if (projectile.DetectLeftCollision(projectileItem))
+                        {
+                            //projectile.Direction.X = -Math.Abs(projectile.Direction.X);
+                            Velocity.X = -Math.Abs(projectileItem.Velocity.X);
+                            projectile.HitCount++;
+                        }
 
                         projectile.LinearVelocity = VectorOps.ModuloVector(Velocity);
                         projectile.Direction = new Vector2(Velocity.X / projectile.LinearVelocity, Velocity.Y / projectile.LinearVelocity);
 
 
+                    }
+                    else
+                    {
+                        projectile.KillProjectile();
+                        foreach (Character chara in characterList)
+                        {
+                            if (chara.IDcharacter == projectile.ShooterID)
+                                chara.BulletNumber--;
                         }
-                        else
-                            projectile.KillProjectile();
+                    }
 
                     }
                 
@@ -221,6 +287,11 @@ namespace BaboGame_test_2
                         // notificar el dany al personatge!!!
                         character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
                         projectile.KillProjectile();
+                        foreach (Character chara in characterList)
+                        {
+                            if (chara.IDcharacter == projectile.ShooterID)
+                                chara.BulletNumber--;
+                        }
                     }
                 }
             }
@@ -252,7 +323,14 @@ namespace BaboGame_test_2
             }
 
             if (projectile.HitCount > 10)
+            {
                 projectile.KillProjectile();
+                foreach(Character chara in characterList)
+                {
+                    if(chara.IDcharacter == projectile.ShooterID)
+                        chara.BulletNumber--; 
+                }
+            }
         }
     }
 

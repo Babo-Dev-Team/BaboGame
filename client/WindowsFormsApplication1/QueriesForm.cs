@@ -523,7 +523,6 @@ namespace BaboGameClient
             RightDifficulty_btn.Visible = TrainningScreen;
             LeftDifficulty_btn.Visible = TrainningScreen;
             DifficultySelected_pb.Visible = TrainningScreen;
-            this.BackgroundImage = DifficultySelected_pb.Image;
 
 
             //QueriesScreen
