@@ -125,6 +125,7 @@ namespace BaboGame_test_2
         //Temportizació dels pdates cap el servidor
         int UpdateOnlineTime = 0;
         int NextProjectileID;
+        static int BulletThreshold = 20;
          
 
         public Game1()
@@ -782,8 +783,12 @@ namespace BaboGame_test_2
                 {
                     Vector2 projOrigin = Controllable.Position;
                     Vector2 projTarget = inputManager.GetMousePosition();
-                    projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
-                    NextProjectileID++;
+                    if (Controllable.BulletNumber < BulletThreshold)
+                    {
+                        projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
+                        Controllable.BulletNumber++;
+                        NextProjectileID++;
+                    }
                 }
 
             }

@@ -24,6 +24,7 @@ namespace BaboGame_test_2
         Dictionary<string, Animation> LimaxAnimations;
         Dictionary<string, Animation> KalerAnimations;
         Dictionary<string, Animation> SwalotAnimations;
+        static int BulletThreshold = 20;
 
         public CharacterEngine(List<Character> characterList, ContentManager Content)
         {
@@ -223,7 +224,7 @@ namespace BaboGame_test_2
                     //Buscant el primer enemic de la llista
                     while ((j < characterList.Count) && (!trobat))
                     {
-                        if (characterList[j].IDcharacter != character.IDcharacter)
+                        if ((characterList[j].IDcharacter != character.IDcharacter)&&(!characterList[j].Defeated))
                         {
                             trobat = true;
                             nearest = characterList[j];
@@ -238,7 +239,7 @@ namespace BaboGame_test_2
                         //Buscant el enemic més proper de la llista
                         foreach (var opponent in characterList)
                         {
-                            if (opponent.IDcharacter != character.IDcharacter)
+                            if ((opponent.IDcharacter != character.IDcharacter) && (!opponent.Defeated))
                             {
                                 Vector2 newDistance = character.Position - opponent.Position;
                                 if (VectorOps.ModuloVector(distancePlayers) > VectorOps.ModuloVector(newDistance))
@@ -259,23 +260,35 @@ namespace BaboGame_test_2
                             character.Acceleration = new Vector2(-character.Direction.X,-character.Direction.Y) * character.LinearAcceleration;
 
                         //Llimac disparant el enemic amb una certa probabilitat d'error
-                        switch(Difficulty)
+                        switch (Difficulty)
                         {
                             case 'E':
-                                if (EnemyShoot.Next(0, 32) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-100, 100), EnemyShoot.Next(-100, 100)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
+                                if ((EnemyShoot.Next(0, 32) == 0) && (character.BulletNumber < BulletThreshold))
+                                {
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-100, 100), EnemyShoot.Next(-100, 100)), projectileTexture["Normal"], character.IDcharacter, 'N', 0);
+                                    character.BulletNumber++;
+                                }
                                 break;
                             case 'M':
-                                if (EnemyShoot.Next(0, 32) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-50, 50), EnemyShoot.Next(-50, 50)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
+                                if ((EnemyShoot.Next(0, 32) == 0) && (character.BulletNumber < BulletThreshold))
+                                {
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-50, 50), EnemyShoot.Next(-50, 50)), projectileTexture["Normal"], character.IDcharacter, 'N', 0);
+                                    character.BulletNumber++;
+                                }
                                 break;
                             case 'D':
-                                if (EnemyShoot.Next(0, 16) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-5, 5)), projectileTexture["Direct"], character.IDcharacter, 'D',0);
+                                if ((EnemyShoot.Next(0, 16) == 0) && (character.BulletNumber < BulletThreshold))
+                                {
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-5, 5)), projectileTexture["Direct"], character.IDcharacter, 'D', 0);
+                                    character.BulletNumber++;
+                                }
                                 break;
                             case 'I':
-                                if (EnemyShoot.Next(0, 8) == 0)
-                                    projectileEngine.AddProjectile(character.Position, nearest.Position, projectileTexture["Direct"], character.IDcharacter, 'D',0);
+                                if ((EnemyShoot.Next(0, 8) == 0) && (character.BulletNumber < BulletThreshold))
+                                { 
+                                    projectileEngine.AddProjectile(character.Position, nearest.Position, projectileTexture["Direct"], character.IDcharacter, 'D', 0);
+                                    character.BulletNumber++;
+                                }
                                 break;
                         }
                         
@@ -312,20 +325,32 @@ namespace BaboGame_test_2
                     switch (Difficulty)
                     {
                         case 'E':
-                            if ((EnemyShoot.Next(0, 32) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-20, 20), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
+                            if ((EnemyShoot.Next(0, 32) == 0) && (projectiledistance < 200) && (character.BulletNumber < BulletThreshold))
+                            {
+                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-20, 20), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N', 0);
+                                character.BulletNumber++;
+                            }
                             break;
                         case 'M':
-                            if ((EnemyShoot.Next(0, 16) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N',0);
+                            if ((EnemyShoot.Next(0, 16) == 0) && (projectiledistance < 200) && (character.BulletNumber < BulletThreshold))
+                            {
+                                projectileEngine.AddProjectile(character.Position, badProjectile + new Vector2(EnemyShoot.Next(-5, 5), EnemyShoot.Next(-20, 20)), projectileTexture["Normal"], character.IDcharacter, 'N', 0);
+                                character.BulletNumber++;
+                            }
                             break;
                         case 'D':
-                            if ((EnemyShoot.Next(0, 8) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D',0);
+                            if ((EnemyShoot.Next(0, 8) == 0) && (projectiledistance < 200) && (character.BulletNumber < BulletThreshold))
+                            {
+                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D', 0);
+                                character.BulletNumber++;
+                            }
                             break;
                         case 'I':
-                            if ((EnemyShoot.Next(0, 4) == 0) && (projectiledistance < 200))
-                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D',0);
+                            if ((EnemyShoot.Next(0, 4) == 0) && (projectiledistance < 200) && (character.BulletNumber < BulletThreshold))
+                            {
+                                projectileEngine.AddProjectile(character.Position, badProjectile, projectileTexture["Direct"], character.IDcharacter, 'D', 0);
+                                character.BulletNumber++;
+                            }
                             break;
                     }
                 }
@@ -381,6 +406,7 @@ namespace BaboGame_test_2
         public float Velocity_Threshold = 12f;
         public bool CPU = false;
         public bool Defeated;
+        public int BulletNumber;
 
         // Constructors
         public Character(Texture2D texture)
@@ -388,6 +414,7 @@ namespace BaboGame_test_2
         {
             isHit = false;
             Defeated = false;
+            BulletNumber = 0;
         }
 
         public Character(Dictionary<string, Animation> animations)
@@ -395,6 +422,7 @@ namespace BaboGame_test_2
         {
             isHit = false;
             Defeated = false;
+            BulletNumber = 0;
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScaleW, float _HitBoxScaleH, int _Health, int _IDcharacter, Color _Color)
@@ -409,6 +437,7 @@ namespace BaboGame_test_2
             _color = _Color;
             isHit = false;
             Defeated = false;
+            BulletNumber = 0;
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScale, int _Health, int _IDcharacter, Color _Color)
@@ -422,6 +451,7 @@ namespace BaboGame_test_2
             _color = _Color;
             isHit = false;
             Defeated = false;
+            BulletNumber = 0;
         }
 
         // interfície pública per moure el character
