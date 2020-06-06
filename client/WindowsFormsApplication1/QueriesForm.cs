@@ -37,6 +37,10 @@ namespace BaboGameClient
         Button PlayerSelectChar_btn;
         Label OpponentCharName_lbl;
         Label OpponentCharDescription_lbl;
+        Panel OpponentListPanel;
+        PictureBox DifficultySelected_pb;
+        Button LeftDifficulty_btn;
+        Button RightDifficulty_btn;
 
         //Elements del menú dels personatges seleccionats
         DataGridView PlayersSelected_dg;
@@ -77,7 +81,9 @@ namespace BaboGameClient
         string gameName;
         ToolStripItem notificationSelection;
         ToolStripItem stickerSelector;
-        char Difficulty = 'E'; //Canvia la dificultat del CPU (E)asy, (M)edium, (D)ifficult, (I)nsane, (N)one
+        char[] Difficulty = {'N','E','M','D','I' }; //Canvia la dificultat del CPU (E)asy, (M)edium, (D)ifficult, (I)nsane, (N)one
+        string[] DifficultyName = { "None.png", "Easy.png", "Medium.png", "Difficult.png", "Insane.png" }; //Canvia la dificultat del CPU (E)asy, (M)edium, (D)ifficult, (I)nsane, (N)one
+        int DifficultyPos;
 
         public QueriesForm(ServerHandler serverHandler, NotificationWorker notificationWorker)
         {
@@ -94,7 +100,11 @@ namespace BaboGameClient
             PlayerSelectChar_btn = new Button();
             OpponentSelectChar_btn = new Button();
             OpponentCharName_lbl = new Label(); 
-            OpponentCharDescription_lbl = new Label(); 
+            OpponentCharDescription_lbl = new Label();
+            OpponentListPanel = new Panel();
+            LeftDifficulty_btn = new Button();
+            RightDifficulty_btn = new Button();
+            DifficultySelected_pb = new PictureBox();
 
 
             //Elements del menú dels personatges seleccionats
@@ -427,6 +437,46 @@ namespace BaboGameClient
             OpponentCharDescription_lbl.Visible = false;
             this.Controls.Add(OpponentCharDescription_lbl);
 
+            //Llista d'oponents
+            OpponentListPanel.Size = new Size(250, 240); //Mides del panell
+            OpponentListPanel.Location = new Point(625, 25); //posició del panell
+            OpponentListPanel.Visible = false;
+            this.Controls.Add(OpponentListPanel);
+            OpponentListPanel.BackColor = Color.WhiteSmoke;
+            OpponentListPanel.AutoScroll = false;
+            OpponentListPanel.VerticalScroll.Visible = true;
+            OpponentListPanel.VerticalScroll.Enabled = true;
+            OpponentListPanel.AutoScroll = true;
+            OpponentListPanel.Refresh();
+
+            //Butó per canviar la difficultat al de l'esquerra
+            LeftDifficulty_btn.Location = new Point(625, 290);
+            //LeftChar_btn.Text = "Left";
+            LeftDifficulty_btn.Visible = false;
+            LeftDifficulty_btn.Size = new Size(64, 64);
+            LeftDifficulty_btn.Click += new EventHandler(this.LeftDifficulty_btn_Click);
+            LeftDifficulty_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
+            this.Controls.Add(LeftDifficulty_btn);
+
+            //Butó per canviar la difficultat a la dreta de l'oponent
+            RightDifficulty_btn.Location = new Point(811, 290);
+            //LeftChar_btn.Text = "Left";
+            RightDifficulty_btn.Visible = false;
+            RightDifficulty_btn.Size = new Size(64, 64);
+            RightDifficulty_btn.Click += new EventHandler(this.RightDifficulty_btn_Click);
+            RightDifficulty_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/right.png");
+            this.Controls.Add(RightDifficulty_btn);
+
+            //Picture Box de la difficultat
+            DifficultySelected_pb.Location = new Point(705, 270);
+            DifficultySelected_pb.Size = new Size(90, 90);
+            DifficultySelected_pb.ImageLocation = "../../../Pictures/Difficulty/None.png";
+            DifficultySelected_pb.Visible = false;
+            DifficultySelected_pb.SizeMode = PictureBoxSizeMode.Zoom;
+            DifficultySelected_pb.Refresh();
+            this.Controls.Add(DifficultySelected_pb);
+            DifficultyPos = 0;
+
             TrainingState.Player_ID = new int[] {1,2,3,4,5,6,7,8};
             
 
@@ -457,6 +507,7 @@ namespace BaboGameClient
             //MainScreen
             NewParty_btn.Visible = MainScreen;
             Training_btn.Visible = MainScreen;
+            this.BackColor = Color.LightGreen;
 
             //Trainning screen            
             Train_btn.Visible = TrainningScreen;
@@ -468,6 +519,10 @@ namespace BaboGameClient
             PlayerSelectChar_btn.Visible = TrainningScreen;
             OpponentCharName_lbl.Visible = TrainningScreen;
             OpponentCharDescription_lbl.Visible = TrainningScreen;
+            OpponentListPanel.Visible = TrainningScreen;
+            RightDifficulty_btn.Visible = TrainningScreen;
+            LeftDifficulty_btn.Visible = TrainningScreen;
+            DifficultySelected_pb.Visible = TrainningScreen;
 
 
             //QueriesScreen
@@ -480,6 +535,7 @@ namespace BaboGameClient
             //showGames_rb.Visible = QueriesScreen;
             TimePlayed_rb.Visible = QueriesScreen;
             queries_tb.Visible = QueriesScreen;
+            this.BackColor = Color.LightGreen;
 
             //CreatePartyScreen
             PlayersSelected_dg.Visible = CreatePartyScreen;
@@ -487,6 +543,7 @@ namespace BaboGameClient
             NewPartyName_lbl.Visible = CreatePartyScreen;
             NewPartyBack_btn.Visible = CreatePartyScreen;
             CreateParty_btn.Visible = CreatePartyScreen;
+            this.BackColor = Color.LightGreen;
 
             //SelectCharacterOnlineScreen
             character_pb.Visible = SelectCharacterOnlineScreen || TrainningScreen;
@@ -506,9 +563,9 @@ namespace BaboGameClient
             Stickers_btn.Visible = SelectCharacterOnlineScreen;
             CharName_lbl.Visible = SelectCharacterOnlineScreen || TrainningScreen;
             CharDescription_lbl.Visible = SelectCharacterOnlineScreen || TrainningScreen;
-            
+            this.BackColor = Color.LightGreen;
 
-            if(SelectCharacterOnlineScreen)
+            if ((SelectCharacterOnlineScreen)||(TrainningScreen))
                 this.Width = 900;            
             else
                 this.Width = 616;
@@ -1080,6 +1137,7 @@ namespace BaboGameClient
             UpdateScreen();
             
             TrainingState.OpponentCharacter_Selected.Clear();
+            OpponentListPanel.Controls.Clear();
             TrainingState.Opponentnum_players = 0;
         }
 
@@ -1266,10 +1324,16 @@ namespace BaboGameClient
         //Entrena
         public void Train_btn_Click(object sender, EventArgs e)
         {
-            using (var game = new Game1(TrainingState,Difficulty))
-            game.Run();
-            TrainingState.OpponentCharacter_Selected.Clear();
-            TrainingState.Opponentnum_players = 0;
+            if (string.IsNullOrWhiteSpace(TrainingState.PlayerCharacter_Selected))
+                MessageBox.Show("No has seleccionat el teu personatge");
+            else
+            {
+                using (var game = new Game1(TrainingState, Difficulty[DifficultyPos]))
+                    game.Run();
+                TrainingState.OpponentCharacter_Selected.Clear();
+                OpponentListPanel.Controls.Clear();
+                TrainingState.Opponentnum_players = 0;
+            }
         }
 
         //Escollir el personatge
@@ -1287,10 +1351,31 @@ namespace BaboGameClient
         {
             if (TrainingState.Opponentnum_players < 7)
             {
-                TrainingState.OpponentCharacter_Selected.Add(characterSelected[OpponentcharSelectedPos]);
+                string OpponentSelected = characterSelected[OpponentcharSelectedPos];
+                TrainingState.OpponentCharacter_Selected.Add(OpponentSelected);
+                PictureBox Opponent = new PictureBox();
+                Opponent.Size = new Size(250, 40);
+                Opponent.ImageLocation = "../../../Pictures/Characters/" + characterSelected[OpponentcharSelectedPos] +" look.png";
+                Opponent.SizeMode = PictureBoxSizeMode.Zoom;
+                Opponent.Location = new Point(0,TrainingState.Opponentnum_players * 40 - OpponentListPanel.VerticalScroll.Value);
+                Opponent.Click += delegate { DeselectOpponent_Click(sender, e, OpponentSelected, Opponent); };
+                OpponentListPanel.Controls.Add(Opponent);
                 TrainingState.Opponentnum_players++;
             }
         }
+        public void DeselectOpponent_Click(object sender, EventArgs e, string opponentName, PictureBox opponent)
+        {
+            TrainingState.OpponentCharacter_Selected.Remove(opponentName);
+            TrainingState.Opponentnum_players--;
+
+            for (int i = OpponentListPanel.Controls.IndexOf(opponent); i < OpponentListPanel.Controls.Count - 1; i++)
+            {
+                OpponentListPanel.Controls[i+1].Location = new Point(0, i * 40 - OpponentListPanel.VerticalScroll.Value);
+            }
+
+            OpponentListPanel.Controls.Remove(opponent);
+        }
+
         public void LeftOpponentChar_btn_Click(object sender, EventArgs e)
         {
             if (OpponentcharSelectedPos > 0)
@@ -1304,6 +1389,8 @@ namespace BaboGameClient
             Opponentcharacter_pb.Refresh();
             OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
             OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
+
+            
         }
 
         public void RightOpponentChar_btn_Click(object sender, EventArgs e)
@@ -1319,6 +1406,36 @@ namespace BaboGameClient
             Opponentcharacter_pb.Refresh();
             OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
             OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
+        }
+
+        //Selecció de difficultat
+        public void LeftDifficulty_btn_Click(object sender, EventArgs e)
+        {
+            if (DifficultyPos > 0)
+                DifficultyPos--;
+            else
+                DifficultyPos = 4;
+
+            DifficultySelected_pb.Image.Dispose();
+            DifficultySelected_pb.ImageLocation = "../../../Pictures/Difficulty/" + DifficultyName[DifficultyPos];
+            DifficultySelected_pb.Load();
+            DifficultySelected_pb.Refresh();
+
+            
+        }
+
+        public void RightDifficulty_btn_Click(object sender, EventArgs e)
+        {
+            if (DifficultyPos < 4)
+                DifficultyPos++;
+            else
+                DifficultyPos = 0;
+
+            DifficultySelected_pb.Image.Dispose();
+            DifficultySelected_pb.ImageLocation = "../../../Pictures/Difficulty/" + DifficultyName[DifficultyPos];
+            DifficultySelected_pb.Load();
+            DifficultySelected_pb.Refresh();
+
         }
     }
 }
