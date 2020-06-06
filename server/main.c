@@ -18,7 +18,7 @@
 #include "game_state.h"
 
 #define SHIVA_PORT 50084
-#define PROJ_COUNT_PLAYER 100
+
 
 //#define NMBR_THREADS 100
 
@@ -46,10 +46,11 @@ typedef struct GameSenderArgs{
 // el client passa les updates amb una instancia d'aquesta estructura
 typedef struct GameUpdatesFromClient{
 	CharacterState* charState;
-	ProjectileState** projectileStates;
+	//ProjectileState** projectileStates;
 	int userId;
 	int newDataFromClient;
 	int backOffRequested;
+	//int projectileCount;
 }GameUpdatesFromClient;
 
 // el thread de process necessita el seu sender de partida, aixi com un array de punters a 
@@ -244,6 +245,10 @@ void* gameProcessor (void* args)
 				pthread_exit(103);
 			}
 		}*/
+		//gameState->projectileCount = 0;
+		
+		
+		
 		for (int i = 0; i < n_players; i++)
 		{
 			if (clientUpdates[i]->newDataFromClient)
@@ -257,6 +262,22 @@ void* gameProcessor (void* args)
 				gameState->characterStatesList[charId].direction_X = clientUpdates[i]->charState->direction_X;
 				gameState->characterStatesList[charId].direction_Y = clientUpdates[i]->charState->direction_Y;
 				gameState->characterStatesList[charId].health = clientUpdates[i]->charState->health;
+				
+				int n_proj = clientUpdates[i]->charState->projectileCount;
+				gameState->characterStatesList[charId].projectileCount = n_proj;
+				for (int j = 0; j < n_proj; j++)
+				{
+					gameState->characterStatesList[charId].projectileStates[j].projectileID = clientUpdates[i]->charState->projectileStates[j].projectileID;
+					gameState->characterStatesList[charId].projectileStates[j].shooterID = clientUpdates[i]->charState->projectileStates[j].shooterID;
+					gameState->characterStatesList[charId].projectileStates[j].projectileType = clientUpdates[i]->charState->projectileStates[j].projectileType;
+					gameState->characterStatesList[charId].projectileStates[j].position_X = clientUpdates[i]->charState->projectileStates[j].position_X;
+					gameState->characterStatesList[charId].projectileStates[j].position_Y = clientUpdates[i]->charState->projectileStates[j].position_Y;
+					gameState->characterStatesList[charId].projectileStates[j].direction_X = clientUpdates[i]->charState->projectileStates[j].direction_X;
+					gameState->characterStatesList[charId].projectileStates[j].direction_Y = clientUpdates[i]->charState->projectileStates[j].direction_Y;
+					gameState->characterStatesList[charId].projectileStates[j].LinearVelocity = clientUpdates[i]->charState->projectileStates[j].LinearVelocity;
+					gameState->characterStatesList[charId].projectileStates[j].hitCount = clientUpdates[i]->charState->projectileStates[j].hitCount;
+				}
+				
 				clientUpdates[i]->newDataFromClient = 0;
 			}
 		}
@@ -318,6 +339,13 @@ void* gameSender (void* args)
 	
 	// inicialitzem un array de sockets actius
 	int activeSocketList[MAX_GAME_USRCOUNT];
+	int backOffTimers[MAX_GAME_USRCOUNT];
+	int backOffRequested[MAX_GAME_USRCOUNT];
+	for (int i = 0; i < MAX_GAME_USRCOUNT; i++)
+	{
+		backOffRequested[i] = 0;
+		backOffTimers[i] = 0;
+	}
 	int userStates[MAX_GAME_USRCOUNT];
 	for (int i = 0; i < MAX_GAME_USRCOUNT; i++)
 	{
@@ -358,10 +386,32 @@ void* gameSender (void* args)
 		int n_users = thisSenderArgs.game->userCount;
 		for(int i = 0; i < n_users; i++)
 		{
+			if(backOffRequested[i] == 1 && backOffTimers[i] == 0)
+			{
+				backOffRequested[i] = 0;
+				thisSenderArgs.game->users[i]->userState = 1;
+				printf("Timed back-off: resume realtime notifications\n");
+			}
+			else if(thisSenderArgs.game->users[i]->userState == 3 && backOffRequested[i] == 0)
+			{
+				backOffRequested[i] = 1;
+				backOffTimers[i] = BACKOFF_TICKS;
+			}
+			else if (backOffRequested[i] == 1 && backOffTimers[i] > 0)
+			{
+				--backOffTimers[i];
+			}
+		}
+		for(int i = 0; i < n_users; i++)
+		{
 			activeSocketList[i] = thisSenderArgs.game->users[i]->socket;
 			userStates[i] = thisSenderArgs.game->users[i]->userState;
 		}
+	
 		pthread_mutex_unlock(thisSenderArgs.game->game_mutex);
+		
+		
+		
 		strcat(thisSenderArgs.gameResponse, "|");
 		
 		// enviem a tots els sockets actius
@@ -499,7 +549,13 @@ void* attendClient (void* args)
 		
 		// Ahora recibimos el mensaje, que dejamos en request
 		request_length = read(sock_conn, request, sizeof(request));
-		if (request_length == -1)
+		if (request_length >= CLIENT_REQ_LEN)
+		{
+			printf("Error: socket data exceeds maximum request size. Discarding socket data...\n");
+			char discardStr[524288];
+			read(sock_conn, discardStr, sizeof(discardStr));
+		}
+		else if (request_length == -1)
 		{
 			printf ("Socket Read Error\n");
 			disconnect = 1;
@@ -515,10 +571,10 @@ void* attendClient (void* args)
 			// marcamos el final de string
 			request[request_length]='\0';
 			strcpy(request_string, request);
-		//	printf("Full request: %s\n", request_string);
+			//printf("Full request: %s\n", request_string);
 			char *p = strtok(request, "/");
 			int request_code =  atoi(p); // sacamos el request_code del request
-		//	printf("Request Code: %d\n", request_code);
+			//printf("Request Code: %d\n", request_code);
 			
 			// resetegem l'estat de les strings i flags de resposta
 			strcpy(response, "");
@@ -1013,7 +1069,7 @@ void* attendClient (void* args)
 				printf("%s\n",request_string);
 				
 				p = strtok(NULL,"/");
-				char message [200];
+				char message [CLIENT_REQ_LEN];
 				strcpy(message,p);
 				
 				//Missatge per comunicar al usuari que acceptava
@@ -1033,10 +1089,10 @@ void* attendClient (void* args)
 			//Inici de la partida
 			case 12:
 			{
-				printf("%s\n",request_string);
+				//printf("%s\n",request_string);
 				
 				p = strtok(NULL,"/");
-				char option [20];
+				char option [CLIENT_REQ_LEN];
 				strcpy(option,p);
 				if (strcmp(option, "CHARACTER") == 0)
 				{
@@ -1082,13 +1138,18 @@ void* attendClient (void* args)
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i] = malloc(sizeof(GameUpdatesFromClient));
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->newDataFromClient = 0;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->backOffRequested = 0;
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileCount = 0;
+							
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates = malloc(PROJ_COUNT_PLAYER * sizeof(ProjectileState*));
-							for (int j = 0; j < PROJ_COUNT_PLAYER; i++)
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->projectileCount = 0;
+							
+							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates = malloc(PROJ_COUNT_PLAYER * sizeof(ProjectileState*));
+							/*
+							for (int j = 0; j < PROJ_COUNT_PLAYER; j++)
 							{
 								gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates[j] = malloc(sizeof(ProjectileState));
-							}
+							}*/
 																											
 							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
 							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
@@ -1305,32 +1366,116 @@ void* attendClient (void* args)
 					json_object* jsonProjectileListState;
 					json_object_object_get_ex(obj, "projectileStates", &jsonProjectileListState);
 					
-					
-					//printf("Received: ChardId: %d, PosX: %d, PosY: %d, VelX: %d, VelY: %d\n", receivedCharId, pX, pY, vX, vY);
-					
-					if (receivedCharId != charId)
+					if(!json_object_is_type(jsonProjectileListState, json_type_array))
 					{
-						printf("Error: Received char Id does not match the handled char Id\n");
+						printf("Warning: received invalid projectile array syntax. ignoring message.\n");
 					}
 					else 
 					{
-						if (!gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient)
+						int arrayLen = json_object_array_length(jsonProjectileListState);
+						//printf("Debug: Projectile states has %d elements\n", arrayLen);
+						
+						json_object* jsonProjState;
+						json_object* projectileId;
+						json_object* shooterId;
+						json_object* projectileType;
+						json_object* projectilePosX;
+						json_object* projectilePosY;
+						json_object* projectileDirX;
+						json_object* projectileDirY;
+						json_object* projectileLinearVelocity;
+						json_object* hitCount;
+						
+						/*	int projId;
+						int shtrId;
+						char projType;
+						int projPx;
+						int projPy;
+						double projDx;
+						double projDy;
+						double projLinVel;
+						int n_hits;
+						*/	
+						ProjectileState projState[arrayLen];
+						
+						for (int i = 0; i < arrayLen; i++) 
 						{
-							//printf("Debug: can write to GameUpdatesFromClient\n");
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_X = pX;
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_Y = pY;
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_X = vX;
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_Y = vY;
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->direction_X = dX;
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->direction_Y = dY;
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->health = h;
+							jsonProjState = json_object_array_get_idx(jsonProjectileListState, i);
 							
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient = 1;							
+							projectileId = json_object_object_get(jsonProjState, "projectileID");
+							shooterId = json_object_object_get(jsonProjState, "shooterID");
+							projectileType = json_object_object_get(jsonProjState, "projectileType");
+							projectilePosX = json_object_object_get(jsonProjState, "posX");
+							projectilePosY = json_object_object_get(jsonProjState, "posY");
+							projectileDirX = json_object_object_get(jsonProjState, "directionX");
+							projectileDirY = json_object_object_get(jsonProjState, "directionY");
+							projectileLinearVelocity = json_object_object_get(jsonProjState, "LinearVelocity");
+							hitCount = json_object_object_get(jsonProjState, "hitCount");
+							
+							projState[i].projectileID = json_object_get_int(projectileId);
+							projState[i].shooterID = json_object_get_int(shooterId);
+							projState[i].projectileType = *(json_object_get_string(projectileType));
+							projState[i].position_X = json_object_get_int(projectilePosX);
+							projState[i].position_Y = json_object_get_int(projectilePosY);
+							projState[i].direction_X = json_object_get_int(projectileDirX);
+							projState[i].direction_Y = json_object_get_int(projectileDirY);
+							projState[i].LinearVelocity = json_object_get_int(projectileLinearVelocity);
+							projState[i].hitCount = json_object_get_int(hitCount);
+							
+							/*printf("Debug: Data from proj %d: ID: %d, shooter ID: %d, Type: %c\nPosX: %d, PosY: %d DirX: %f, DirY: %f, Vel: %f, hitCount: %d\n",
+							i, projState[i].projectileID, projState[i].shooterID, projState[i].projectileType, projState[i].position_X, projState[i].position_Y,
+							projState[i].direction_X, projState[i].direction_Y, projState[i].LinearVelocity, projState[i].hitCount);
+							*/
+							
+						}
+						
+						
+						//printf("Received: ChardId: %d, PosX: %d, PosY: %d, VelX: %d, VelY: %d\n", receivedCharId, pX, pY, vX, vY);
+						
+						if (receivedCharId != charId)
+						{
+							printf("Warning: Received char Id does not match the handled char Id. Ignoring message.\n");
 						}
 						else 
 						{
-							printf("Debug: cannot write to GameUpdatesFromClient\n");
-						}					
+							if (!gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient)
+							{
+								//printf("Debug: can write to GameUpdatesFromClient\n");
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_X = pX;
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->position_Y = pY;
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_X = vX;
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->velocity_Y = vY;
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->direction_X = dX;
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->direction_Y = dY;
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->health = h;
+								
+								if (arrayLen > PROJ_COUNT_PLAYER)
+								{
+									printf("Warning: projectile json array has too many elements! ignoring some projectiles\n");
+									arrayLen = PROJ_COUNT_PLAYER;
+								}
+								
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileCount = arrayLen;
+								for (int i = 0; i < arrayLen; i++) 
+								{
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].projectileID = projState[i].projectileID;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].shooterID = projState[i].shooterID;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].projectileType = projState[i].projectileType;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].position_X = projState[i].position_X;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].position_Y = projState[i].position_Y;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].direction_X = projState[i].direction_X;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].direction_Y = projState[i].direction_Y;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].LinearVelocity = projState[i].LinearVelocity;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].hitCount = projState[i].hitCount;
+								}
+								
+								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient = 1;							
+							}
+							else 
+							{
+								//printf("Debug: cannot write to GameUpdatesFromClient\n");
+							}					
+						}
 					}
 				}
 				break;
@@ -1339,12 +1484,31 @@ void* attendClient (void* args)
 			// request 0 -> Disconnect	
 			// TODO: S'ha d'eliminar el user de la llista de connectats!!!
 			case 0:
-				// Se acabo el servicio para este cliente
-				disconnect = 1;
-				break;
+			{
+				
+				userSend = 0;
+				char request_str[CLIENT_REQ_LEN];
+				p = strtok(NULL, "/");
+				if (p == NULL)
+				{
+					printf("Warning: received invalid disconnect request (strtok returned null)\n");
+				}
+				else
+				{
+					strcpy(request_str, strtok(NULL, "/"));
+					if(!strcmp(request_str, "DISCONNECT"))
+					{
+						// Se acabo el servicio para este cliente
+						disconnect = 1;
+						printf("Received disconnect notification\n");
+					}
+					else printf("Warning: request beginning by 0/ not valid\n");
+					break;	
+				}
+			}
 				
 			default:
-				printf("Error. request_code no reconocido.\n");
+				printf("Warning: request_code no reconocido.\n");
 				userSend = 0;
 				globalSend = 0;
 				gameSend = 0;
@@ -1447,7 +1611,7 @@ int main(int argc, char *argv[])
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Socket Bind Error\n");
 	//La cola de requestes pendientes no podr? ser superior a 4
-	if (listen(sock_listen, 2) < 0)
+	if (listen(sock_listen, 200) < 0)
 		printf("Socket Listen Error\n");
 	
 	//CONNEXIÓ

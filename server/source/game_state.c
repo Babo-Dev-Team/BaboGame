@@ -18,11 +18,43 @@ GameState* CreateGameState(int gameId, int n_players)
 		game->characterStatesList[i].direction_X = 0;
 		game->characterStatesList[i].direction_Y = 0;
 		game->characterStatesList[i].health = 20;
+		game->characterStatesList[i].projectileCount = 0;
+		for (int j = 0; j < PROJ_COUNT_PLAYER; j++)
+		{
+			game->characterStatesList[i].projectileStates[j].direction_X = 0;
+			game->characterStatesList[i].projectileStates[j].direction_Y = 0;
+			game->characterStatesList[i].projectileStates[j].position_X = 0;
+			game->characterStatesList[i].projectileStates[j].position_Y = 0;
+			game->characterStatesList[i].projectileStates[j].LinearVelocity = 0;
+			game->characterStatesList[i].projectileStates[j].hitCount = 0;
+			game->characterStatesList[i].projectileStates[j].projectileID = 0;
+			game->characterStatesList[i].projectileStates[j].shooterID = 0;
+			game->characterStatesList[i].projectileStates[j].projectileType = 'N';
+		}
 	}
 	game->n_players = n_players;
+//	game->projectileCount = 0;
 	
+	//game->projectileStates = malloc(n_players * PROJ_COUNT_PLAYER * sizeof(ProjectileState*));?
+	/*
+	game->projectileStates  = malloc(n_players * PROJ_COUNT_PLAYER * sizeof(ProjectileState*));
+	for (int j = 0; j < n_players * PROJ_COUNT_PLAYER; j++)
+	{
+		//game->projectileStates[j] = malloc(sizeof(ProjectileState));
+		game->projectileStates[j].direction_X = 0;
+		game->projectileStates[j].direction_Y = 0;
+		game->projectileStates[j].position_X = 0;
+		game->projectileStates[j].position_Y = 0;
+		game->projectileStates[j].LinearVelocity = 0;
+		game->projectileStates[j].hitCount = 0;
+		game->projectileStates[j].projectileID = 0;
+		game->projectileStates[j].shooterID = 0;
+		game->projectileStates[j].projectileType = 'N';
+	}
+	*/
 	game->gameStateJson = json_object_new_object();
 	json_object* chars_array = json_object_new_array();
+	json_object* projStates_array = json_object_new_array();
 	
 	json_object* gameID = json_object_new_int(game->gameID);
 	json_object_object_add(game->gameStateJson, "gameID", gameID);
@@ -62,12 +94,14 @@ GameState* CreateGameState(int gameId, int n_players)
 	}
 	
 	json_object_object_add(game->gameStateJson, "characterStatesList", chars_array);	
+	json_object_object_add(game->gameStateJson, "projectileStates", projStates_array);
 	return game;
 }
 
 void DeleteGameState(GameState* game)
 {
 	free(game->characterStatesList);
+	//free(game->projectileStates);
 	free(game);
 }
 
@@ -123,6 +157,45 @@ void UpdateGameStateJson(GameState* game)
 		json_object_set_double(dirY, game->characterStatesList[i].direction_Y);
 		json_object_set_int(health, game->characterStatesList[i].health);
 	}
+	
+	//json_object* oldProjStatesArray;
+	//err = json_object_object_get_ex(game->gameStateJson, "projectileStates", &oldProjStatesArray);
+	json_object_object_del(game->gameStateJson, "projectileStates");	
+	json_object* projStates_array = json_object_new_array();
+	
+	for (int i = 0; i < game->n_players; i++)
+	{
+		json_object* projectiles[PROJ_COUNT_PLAYER];
+		for (int j = 0; j < game->characterStatesList[i].projectileCount; j++)
+		{
+			projectiles[j] = json_object_new_object();
+			
+			json_object* projectileId = json_object_new_int(game->characterStatesList[i].projectileStates[j].projectileID);
+			json_object* shooterId = json_object_new_int(game->characterStatesList[i].projectileStates[j].shooterID);
+			json_object* projectileType = json_object_new_string_len(&game->characterStatesList[i].projectileStates[j].projectileType, 1);
+			json_object* projectilePosX = json_object_new_int(game->characterStatesList[i].projectileStates[j].position_X);
+			json_object* projectilePosY = json_object_new_int(game->characterStatesList[i].projectileStates[j].position_Y);
+			json_object* projectileDirX = json_object_new_double(game->characterStatesList[i].projectileStates[j].direction_X);
+			json_object* projectileDirY = json_object_new_double(game->characterStatesList[i].projectileStates[j].direction_Y);
+			json_object* projectileLinearVelocity = json_object_new_double(game->characterStatesList[i].projectileStates[j].LinearVelocity);
+			json_object* hitCount = json_object_new_int(game->characterStatesList[i].projectileStates[j].hitCount);
+			
+			json_object_object_add(projectiles[j], "projectileID", projectileId);
+			json_object_object_add(projectiles[j], "shooterID", shooterId);
+			json_object_object_add(projectiles[j], "projectileType", projectileType);
+			json_object_object_add(projectiles[j], "posX", projectilePosX);
+			json_object_object_add(projectiles[j], "posY", projectilePosY);
+			json_object_object_add(projectiles[j], "directionX", projectileDirX);
+			json_object_object_add(projectiles[j], "directionY", projectileDirY);
+			json_object_object_add(projectiles[j], "LinearVelocity", projectileLinearVelocity);
+			json_object_object_add(projectiles[j], "hitCount", hitCount);
+		}
+		for (int j = 0; j < game->characterStatesList[i].projectileCount; j++)
+		{
+			json_object_array_add(projStates_array, projectiles[j]);
+		}
+	}
+	json_object_object_add(game->gameStateJson, "projectileStates", projStates_array);
 }
 
 void SetInitialPositions (GameState* game, int** positions)

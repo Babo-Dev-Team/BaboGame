@@ -3,26 +3,6 @@
 #include "globals.h"
 #include "json.h"
 
-typedef struct CharacterState{
-	int characterId;
-	int position_X;
-	int position_Y;
-	int velocity_X;
-	int velocity_Y;
-	double direction_X;
-	double direction_Y;
-	int health;
-}CharacterState;
-
-typedef struct GameState{
-	int gameID;
-	int playable;
-	int n_players;
-	CharacterState* characterStatesList;
-	json_object* gameStateJson;
-	
-}GameState;
-
 typedef struct ProjectileState{
 	int projectileID;
 	int shooterID;
@@ -34,6 +14,31 @@ typedef struct ProjectileState{
 	double LinearVelocity;
 	int hitCount;
 }ProjectileState;
+
+
+typedef struct CharacterState{
+	int characterId;
+	int position_X;
+	int position_Y;
+	int velocity_X;
+	int velocity_Y;
+	double direction_X;
+	double direction_Y;
+	int health;
+	ProjectileState projectileStates[PROJ_COUNT_PLAYER];
+	int projectileCount;
+}CharacterState;
+
+typedef struct GameState{
+	int gameID;
+	int playable;
+	int n_players;
+	//int projectileCount;
+	CharacterState* characterStatesList;
+	//ProjectileState* projectileStates;
+	json_object* gameStateJson;
+	
+}GameState;
 
 typedef struct playerUpdate{
 	CharacterState* characterState;
