@@ -196,6 +196,7 @@ namespace BaboGameClient
             string[] responseSplitByMessage;
             ReceiverArgs.newDataFromServer = 0;
             bool backOffRequested = false;
+            int lastAvailable = 0;
 
             GenericResponse[] responseArray = new GenericResponse[responseArraySize];
             for (int i = 0; i < responseArray.Count(); i++)
@@ -210,7 +211,7 @@ namespace BaboGameClient
                 // acumulem a la cua
                 if (ReceiverArgs.newDataFromServer == 0)
                 {
-                    byte[] responseBytes = new byte[32768];
+                    byte[] responseBytes = new byte[65536];
                     ReceiverArgs.server.Receive(responseBytes);
                     if(backOffRequested)
                     {
@@ -296,18 +297,19 @@ namespace BaboGameClient
                     while (ReceiverArgs.newDataFromServer != 0)
                     {
                         int data = ReceiverArgs.server.Available;
-                        if (data > 8192 && !backOffRequested)
+                        if (data > 16384 && (!backOffRequested || data > lastAvailable))
                         {
                             byte[] msg = System.Text.Encoding.ASCII.GetBytes("103/BACK-OFF");
                             ReceiverArgs.server.Send(msg);
                             backOffRequested = true;
                         }
-                        else if (data > 16384)
+                        else if (data > 32768)
                         {
                             byte[] msg = System.Text.Encoding.ASCII.GetBytes("103/BACK-OFF");
                             ReceiverArgs.server.Send(msg);
                             backOffRequested = true;
                         }
+                        lastAvailable = data;
                         Thread.Sleep(2);
                     }
                 }
@@ -455,7 +457,7 @@ namespace BaboGameClient
         private string ReceiveReponse()
         {
             //Recibimos la respuesta del servidor
-            byte[] response = new byte[8192];
+            byte[] response = new byte[32768];
             ReceiverArgs.server.Receive(response);
             return Encoding.ASCII.GetString(response).Split('|')[0];
         }
@@ -467,7 +469,7 @@ namespace BaboGameClient
         private ServerReceiver Receiver;
         Thread threadReceiver;
 
-        private const int SERVER_RSP_LEN = 8192;
+        private const int SERVER_RSP_LEN = 32768;
         private Socket server;
         private IPAddress serverIP; //= IPAddress.Parse("192.168.56.103");
         private IPEndPoint serverIPEP; //= new IPEndPoint(direc, 9092);
@@ -624,11 +626,11 @@ namespace BaboGameClient
         {
             threadReceiver.Abort();
             // Nos desconectamos
-            string request = "/0";
+            string request = "0/DISCONNECT";
             this.SendRequest(request);
 
             // parem el receiver
-            threadReceiver.Abort();
+            //threadReceiver.Abort();
 
             server.Shutdown(SocketShutdown.Both);
             server.Close();
