@@ -42,7 +42,7 @@ namespace BaboGame_test_2
         // aquí estarà la gràcia. En comptes d'actualitzar-los un per un a cada objecte, agafarem
         // tota la llista i calcularem tots els moviments i colisions.
         // caldrà fer saber als characters que han colisionat que tenen dany + la direcció de l'impacte.
-        public void UpdateProjectiles(GameTime gameTime, List<Character> characterList, List<ScenarioObjects> objectsList, bool testmode, Character Controllable)
+        public void UpdateProjectiles(GameTime gameTime, List<Character> characterList, List<ScenarioObjects> objectsList)
         {
             //Valorar el temps de vida de la sal a disparar i la eliminació d'aquest
             /* _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -66,8 +66,7 @@ namespace BaboGame_test_2
 
             foreach (var projectile in this.projectileList)
             {
-                if ((testmode) || (Controllable.IDcharacter == projectile.ShooterID))
-                {
+                
                     if (projectile.ProjectileType == 'D') //Sal directe
                         DirectSaltUpdate(characterList, objectsList, projectile);
                     else if (projectile.ProjectileType == 'S') //Slimed Salt
@@ -79,7 +78,7 @@ namespace BaboGame_test_2
                     {
                         projectile.Move();
                     }
-                }
+                
             }
         }
 
@@ -133,7 +132,7 @@ namespace BaboGame_test_2
 
             foreach (var Object in objectsList)
             {
-                if (projectile.DetectCollision(Object))
+                if ((projectile.DetectCollision(Object))||(projectile.Scale > 10))
                 {
                     projectile.KillProjectile();
                     foreach (Character chara in characterList)
@@ -337,7 +336,7 @@ namespace BaboGame_test_2
     public class Projectile : Sprite
     {
         // ATRIBUTS
-        public Vector2 Target { get; }
+        public Vector2 Target { get; set; }
         private Vector2 origin;
         private Vector2 trajectory;
         public int ShooterID { get; }
@@ -345,6 +344,7 @@ namespace BaboGame_test_2
         public char ProjectileType = 'N'; //N de Normal, D de directe i S de noNewtonian Slimed Salt
         public int HitCount = 0;
         public int projectileID;
+        public int ProjectileOnlineUpdates;
         
         
         
@@ -365,6 +365,7 @@ namespace BaboGame_test_2
             this.Damage = damage;
             this.Layer = 0.01f;
             this.projectileID = projectileID;
+            this.ProjectileOnlineUpdates = 0;
             //IsSaltShoot = true;
         }
 
