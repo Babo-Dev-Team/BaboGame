@@ -1347,6 +1347,18 @@
 /processorParam:TextureFormat=Color
 /build:Scenario/Scenario1.jpg
 
+#begin Sight/DarkScreen.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Sight/DarkScreen.png
+
 #begin Sight/Sight_off.png
 /importer:TextureImporter
 /processor:TextureProcessor

@@ -90,10 +90,6 @@ namespace BaboGame_test_2
 
                 if ((slime.PositiveCurrent < 8) && (slime.NegativeCurrent < 8))
                     slime._color = Color.Violet;
-                else if ((slime.PositiveCurrent < 8))
-                    slime._color = Color.Red;
-                else if ((slime.NegativeCurrent < 8))
-                    slime._color = Color.Blue;
                 else if (slime.IsSalted)
                     slime._color = Color.Silver;
                 else

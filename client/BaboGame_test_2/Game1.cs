@@ -33,13 +33,16 @@ namespace BaboGame_test_2
         bool testMode; //Mode de pràctiques offline
         bool playable; //Poder controlar el personatge
         Texture2D backgroundImage;
+        Texture2D PauseImage;
 
+        //Llista d'objectes en pantalla
         private List<Character> characterSprites;           // Personatges (inclòs el jugador)
         private List<Projectile> projectileSprites;         // Projectils, creats per projectileEngine
         private List<Sprite> overlaySprites;                // Sprites de la UI, de moment només la mira
         private List<Slime> slimeSprites;                   // Babes, creats per SlimeEngine
         private List<ScenarioObjects> scenarioSprites;      // Sprites per objectes sòlids que estiguin per pantalla
 
+        //Engines, managers i diccionaris d'animacions
         ProjectileEngine projectileEngine;
         ProjectileManager projectileManager;
         Dictionary<string, Texture2D> projectileTexture;
@@ -52,13 +55,15 @@ namespace BaboGame_test_2
         KeyboardState _previousState;
 
         CharacterEngine characterEngine;
-       
+        
+        //Textures dels objectes
         Texture2D slimeTexture;                             // Textura per instanciar les babes
         Texture2D slugTexture;
         Texture2D sightTexture;
         Texture2D scenarioTexture;
         Texture2D projectileMenuTexture;
 
+        //Objecte del text dels noms
         public class NameFontModel
         {
             public Vector2 Position;
@@ -70,8 +75,9 @@ namespace BaboGame_test_2
             public SpriteEffects effect;
             public Color color;
             public int charID;
+            public bool visible;
 
-            public NameFontModel(string name, Vector2 position,Color color, float rotation, float scale, Vector2 origin,SpriteEffects effect, float layer, int charID)
+            public NameFontModel(string name, Vector2 position,Color color, float rotation, float scale, Vector2 origin,SpriteEffects effect, float layer, int charID, bool visible)
             {
                 this.name = name;
                 this.Position = position;
@@ -82,10 +88,13 @@ namespace BaboGame_test_2
                 this.effect = effect;
                 this.layer = layer;
                 this.charID = charID;
+                this.visible = visible;
             }
         }
         List<NameFontModel> playersNames;
+        List<NameFontModel> otherTexts; // charID = -2 pausa offline, charID = -3 joc acabat 
 
+        //Estat del joc en Offline
         public class LocalGameState
         {
             public int[] Player_ID;
@@ -118,17 +127,27 @@ namespace BaboGame_test_2
         bool Initialized;
         bool InitRequested;
 
+        //Estats del joc
+        bool GameEnded;
+        bool GamePaused; //Només offline
+        bool HasWinner;
+        int IDwinner;
+
         //Temporització de les babes
         private static Timer timer;
         private static Timer slimeTimer;
-        int SlimeTime = 0;
+        float SlimeTime = 0;
         //Temportizació dels pdates cap el servidor
-        int UpdateOnlineTime = 0;
+        float UpdateOnlineTime = 0;
         int NextProjectileID;
         static int BulletThreshold = 20;
         static int projectileOnlineUpdateThreshold = 32;
-         
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Procediments de les estructures
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+            //Default
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -138,8 +157,12 @@ namespace BaboGame_test_2
             Initialized = false;
             InitRequested = false;
             NextProjectileID = 0;
+            GameEnded = false;
+            GamePaused = false;
+            HasWinner = false;
         }
 
+        //Mode Online
         public Game1(ServerHandler serverHandler)
         {
             graphics = new GraphicsDeviceManager(this);
@@ -148,6 +171,9 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferWidth = 1280;
             this.testMode = false;
             Initialized = false;
+            GameEnded = false;
+            GamePaused = false;
+            HasWinner = false;
 
             this.serverHandler = serverHandler;
             //serverHandler.SwitchToRealtimeMode();
@@ -156,6 +182,7 @@ namespace BaboGame_test_2
             NextProjectileID = 0;
         }
 
+        //Mode offline
         public Game1(LocalGameState localGameState, char difficulty)
         {
             graphics = new GraphicsDeviceManager(this);
@@ -167,6 +194,9 @@ namespace BaboGame_test_2
             this.localGameState = localGameState;
             Difficulty = difficulty;
             NextProjectileID = 0;
+            GameEnded = false;
+            GamePaused = false;
+            HasWinner = false;
         }
 
         /// <summary>
@@ -256,6 +286,7 @@ namespace BaboGame_test_2
 
             };
             playersNames = new List<NameFontModel>();
+            otherTexts = new List<NameFontModel>();
 
             //Llista de sprites de l'escenari
             scenarioSprites = new List<ScenarioObjects>()
@@ -294,6 +325,7 @@ namespace BaboGame_test_2
             _font = Content.Load<SpriteFont>("Font");
             _namesFont = Content.Load<SpriteFont>("NamesFont"); 
 
+            /*
             //timer
             timer = new Timer(0.1);
             timer.AutoReset = true;
@@ -302,8 +334,9 @@ namespace BaboGame_test_2
             slimeTimer = new Timer(60);
             slimeTimer.AutoReset = true;
             slimeTimer.Enabled = true;
-            debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, timer.Interval,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
-
+            */
+            debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, 0,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
+            
             //timer.Elapsed += OnTimedEvent;
             //slimeTimer.Elapsed += OnSlimeTimedEvent;
         }
@@ -337,8 +370,19 @@ namespace BaboGame_test_2
            // }
            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                Exit();
+            if ((Keyboard.GetState().IsKeyDown(Keys.Space))&&(GameEnded))
+                Exit();
             //if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
-                //graphics.ToggleFullScreen();
+            //graphics.ToggleFullScreen();
+
+            if (Keyboard.GetState().IsKeyDown(Keys.P) && (_previousState.IsKeyUp(Keys.P)) && (testMode))
+            {
+                if (GamePaused)
+                    GamePaused = false;
+                else
+                    GamePaused = true;
+            }
+            
 
             // Detectem inputs al teclat
             inputManager.detectKeysPressed();
@@ -450,14 +494,18 @@ namespace BaboGame_test_2
             playable = true;
         }
 
-        if (Initialized)
+        //La partida s'actualitza de forma normal
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if ((!GameEnded) && (!GamePaused)) //Si no es pausa ni s'acaba el joc
         {
-            // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
-            UpdateControllableCharacter(gameTime);
-            if ((testMode)&&(Difficulty != 'N'))
-            characterEngine.CPUDecision(scenarioSprites, projectileSprites,projectileEngine,projectileTexture, Difficulty);
-        }
-            
+            if (Initialized)
+            {
+                // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
+                UpdateControllableCharacter(gameTime);
+                if ((testMode) && (Difficulty != 'N'))
+                    characterEngine.CPUDecision(scenarioSprites, projectileSprites, projectileEngine, projectileTexture, Difficulty);
+            }
+
 
             //Això actualitzaria els objectes del escenari
             foreach (var ScenarioObj in scenarioSprites)
@@ -471,30 +519,30 @@ namespace BaboGame_test_2
                 // Això hauria de moure els projectils, calcular les colisions i notificar als characters si hi ha hagut dany.
                 projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites);
             }
-            // Generem les babes amb una certa espera per no sobrecarregar i les instanciem al update del personatge
+                // Generem les babes amb una certa espera per no sobrecarregar i les instanciem al update del personatge
 
-            // AIXO NOMES S'HAURIA DE FER 1 COP AL INICIALITZAR!!!!!
-            timer.Elapsed += OnTimedEvent;
-            slimeTimer.Elapsed += OnSlimeTimedEvent;
+                // AIXO NOMES S'HAURIA DE FER 1 COP AL INICIALITZAR!!!!!
+                UpdateOnlineTime += (float)gameTime.ElapsedGameTime.TotalMilliseconds;
+                SlimeTime += (float)gameTime.ElapsedGameTime.TotalMilliseconds;
 
             foreach (var character in characterSprites.ToArray())
             {
                 character.Update(gameTime, characterSprites);
                 heartManager.UpdateHealth(character.IDcharacter, character.Health);
-                if ((SlimeTime > 80) && (slimeSprites.Count < 400))
+                if ((SlimeTime > 60) && (slimeSprites.Count < 400))
                 {
                     slimeSprites.Add(
-                       new Slime(new Vector2(character.Position.X, character.Position.Y + 20), character.IDcharacter, slimeTexture, 0.15f)
-                       {
-                           timer = 0,
-                       }
-                       );
+                        new Slime(new Vector2(character.Position.X, character.Position.Y + 20), character.IDcharacter, slimeTexture, 0.15f)
+                        {
+                            timer = 0,
+                        }
+                        );
                     character.isSlip = false;
                 }
             }
 
-            if ((SlimeTime > 80))
-            {              
+            if ((SlimeTime > 60))
+            {
                 foreach (var slime in slimeSprites)
                 {
                     slime.timer++;
@@ -505,24 +553,17 @@ namespace BaboGame_test_2
             //Això hauria de fer reaccionar les babes a projectils, characters i objectes de l'escenari
             slimeEngine.UpdateSlime(gameTime, characterSprites, projectileSprites, scenarioSprites);
 
-            foreach (var overlay in this.overlaySprites)
-            {
-                overlay.Update(gameTime, overlaySprites);
-            }
-            
-            PostUpdate();
-
             //Envia missatges actualitzades
-            if ((UpdateOnlineTime >= 100)&&(!testMode)&&(Initialized)) //Diferència en milisegons de cada missatge a enviar
+            if ((UpdateOnlineTime >= 10) && (!testMode) && (Initialized)&&(playable)) //Diferència en milisegons de cada missatge a enviar
             {
                 UpdateOnlineTime = 0;
                 //Actualitza el jugador 
                 CharacterState characterState = new CharacterState();
                 characterState.charID = Controllable.IDcharacter;
-                characterState.posX = (int) Controllable.Position.X;
-                characterState.posY = (int) Controllable.Position.Y;
-                characterState.velX = (int) Controllable.Velocity.X;
-                characterState.velY = (int) Controllable.Velocity.Y;
+                characterState.posX = (int)Controllable.Position.X;
+                characterState.posY = (int)Controllable.Position.Y;
+                characterState.velX = (int)Controllable.Velocity.X;
+                characterState.velY = (int)Controllable.Velocity.Y;
                 characterState.dirX = Controllable.Direction.X;
                 characterState.dirY = Controllable.Direction.Y;
                 characterState.health = Controllable.Health;
@@ -530,7 +571,7 @@ namespace BaboGame_test_2
                 List<projectileState> projectileStates = new List<projectileState>();
                 foreach (Projectile projectile in projectileSprites)
                 {
-                    if((projectile.ShooterID == Controllable.IDcharacter)&&(projectile.ProjectileOnlineUpdates < projectileOnlineUpdateThreshold))
+                    if ((projectile.ShooterID == Controllable.IDcharacter) && (projectile.ProjectileOnlineUpdates < projectileOnlineUpdateThreshold) && (!projectile.IsRemoved))
                     {
 
                         //projectileStates.Add(new projectileState(projectile.projectileID, projectile.ShooterID, projectile.ProjectileType, (int) projectile.Position.X, (int) projectile.Position.Y, projectile.Direction.X, projectile.Direction.Y, projectile.LinearVelocity, projectile.HitCount, (int)projectile.Target.X, (int)projectile.Target.Y));
@@ -557,7 +598,59 @@ namespace BaboGame_test_2
                 playerClientUpdate.projectileStates = projectileStates;
                 //Passa el request
                 serverHandler.RequestRealTimeUpdate(playerClientUpdate);
+
+                    
             }
+            //Acaba el joc offline si es donen les condicions
+            if(Initialized)
+                EndOfflineGame();
+            //Posa invisible els texts d'altres pantalles
+            foreach (var text in otherTexts)
+            {
+                if (text.charID == -2)
+                    text.visible = false;
+                else if (text.charID == -3)
+                    text.visible = false;
+            }
+        }
+        //La partida obre un menú del joc
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        else if(GameEnded)
+        {
+
+            foreach (var character in characterSprites.ToArray())
+            {
+                character.Update(gameTime, characterSprites);
+                character.Layer = 0.85f;
+            }
+                //Posa invisible els texts d'altres pantalles
+
+            foreach (var text in otherTexts)
+            {
+                if (text.charID == -2)
+                    text.visible = false;
+                else if (text.charID == -3)
+                    text.visible = true;
+            }
+        }
+        else if(GamePaused)
+        {
+            //Posa invisible els tests d'altres pantalles
+            foreach(var text in otherTexts)
+            {
+                if (text.charID == -2)
+                    text.visible = true;
+                else if (text.charID == -3)
+                    text.visible = false;
+            }
+        }
+
+        foreach (var overlay in this.overlaySprites)
+        {
+            overlay.Update(gameTime, overlaySprites);
+        }
+
+            PostUpdate();
 
             base.Update(gameTime);
         }
@@ -642,15 +735,15 @@ namespace BaboGame_test_2
 
                 if (thisClient.charId == initGame.users[i].charId)
                 {
-                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId));
-                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, initGame.users[i].charId));
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId, true));
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.999f, initGame.users[i].charId, true));
                     projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, initGame.thisUser.charId, 0.1f);
                     //Controllable = characterSprites.ElementAt(i); 
                 }
                 else
                 {
-                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId));
-                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, initGame.users[i].charId));
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, initGame.users[i].charId, true));
+                    playersNames.Add(new NameFontModel(initGame.users[i].userName, new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.999f, initGame.users[i].charId, true));
                 }
                 
               
@@ -808,7 +901,7 @@ namespace BaboGame_test_2
                     }
                 }
 
-                Console.WriteLine(projectileState.LinearVelocity);
+                
 
             }
 
@@ -873,8 +966,8 @@ namespace BaboGame_test_2
                     HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
                     characterEngine.AddKnownCharacter(localGameState.PlayerCharacter_Selected, new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 20, localGameState.Player_ID[i], Color.White);
                     heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
-                    playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i]));
-                    playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, localGameState.Player_ID[i]));
+                    playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i], true));
+                    playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.999f, localGameState.Player_ID[i], true));
                     projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, localGameState.Player_ID[i], 0.1f);
                     Controllable = characterSprites.ToArray()[i];
                 }
@@ -883,11 +976,111 @@ namespace BaboGame_test_2
                     HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
                     characterEngine.AddKnownCharacter(localGameState.OpponentCharacter_Selected[i - 1], new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 20, localGameState.Player_ID[i], Color.White, true);
                     heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
-                    playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i]));
-                    playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 1f, localGameState.Player_ID[i]));
+                    playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i], true));
+                    playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.999f, localGameState.Player_ID[i], true));
 
                 }
 
+            }
+
+            otherTexts.Add(new NameFontModel("JOC PAUSAT", new Vector2(250, 300), Color.Black, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -2, false));
+            otherTexts.Add(new NameFontModel("JOC PAUSAT", new Vector2(250, 290), Color.White, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 1f, -2, false));
+        }
+
+        //Activa el final de la partida si queda només un jugador o menys al offline (excepte si el jugador ha decidit jugar sol)
+        private void EndOfflineGame()
+        {
+            if((testMode)&&(characterSprites.Count > 1))
+            {
+                int characterAlive = 0;
+                int IDwinnerOferted = -1;
+                foreach (Character chara in characterSprites)
+                {
+                    if ((!chara.Defeated) && (chara.Health > 0))
+                    {
+                        characterAlive++;
+                        IDwinnerOferted = chara.IDcharacter;
+                    }
+                }
+
+                if(characterAlive == 1)
+                {
+                    projectileSprites.Clear();
+                    slimeSprites.Clear();
+                    HasWinner = true;
+                    GameEnded = true;
+                    IDwinner = IDwinnerOferted;
+                    otherTexts.Add(new NameFontModel("GUANYADOR:", new Vector2(700, 90), Color.Black, 0f, 1f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
+                    otherTexts.Add(new NameFontModel("GUANYADOR:", new Vector2(700, 85), Color.White, 0f, 1f, new Vector2(0, 0), SpriteEffects.None, 1f, -3, false));
+                }
+                else if(characterAlive == 0)
+                {
+                    projectileSprites.Clear();
+                    slimeSprites.Clear();
+                    HasWinner = false;
+                    GameEnded = true;
+                }
+
+                
+                otherTexts.Add(new NameFontModel("Pitja ESC o el espai per sortir del joc", new Vector2(100, 650), Color.Black, 0f, 0.5f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
+                otherTexts.Add(new NameFontModel("Pitja ESC o el espai per sortir del joc", new Vector2(100, 645), Color.White, 0f, 0.5f, new Vector2(0, 0), SpriteEffects.None, 1f, -3, false));
+
+                //Actualitzem la pantalla només un cop
+
+                if ((HasWinner) && (GameEnded))
+                {
+                    foreach (Character character in characterSprites)
+                    {
+                        character.Direction = new Vector2(0, 1);
+                        if (character.IDcharacter == IDwinner)
+                        {
+                            character.Scale = 0.6f;
+
+                            character.Position = new Vector2(240, 240);
+                        }
+                        else
+                            character.Position = new Vector2(character.IDcharacter * 120 + 60, 480);
+
+                        character.Layer = 0.85f;
+                    }
+                    foreach (NameFontModel name in playersNames)
+                    {
+                        if (name.charID == IDwinner)
+                        {
+                            if (name.color == Color.Black)
+                                name.Position = new Vector2(700, 190);
+                            else
+                                name.Position = new Vector2(700, 185);
+                        }
+                        else
+                        {
+                            name.scale = 0.25f;
+                            if (name.color == Color.Black)
+                                name.Position = new Vector2(name.charID * 120 + 20, 555);
+                            else
+                                name.Position = new Vector2(name.charID * 120 + 20, 550);
+                        }
+                    }
+                }
+                else if (GameEnded)
+                {
+
+                    foreach (Character character in characterSprites)
+                    {
+                        character.Direction = new Vector2(0, 1);
+                        character.Layer = 0.85f;
+                        character.Position = new Vector2(character.IDcharacter * 120 + 60, 480);
+                    }
+
+                    foreach (NameFontModel name in playersNames)
+                    {
+                        name.scale = 0.25f;
+                        if (name.color == Color.Black)
+                            name.Position = new Vector2(name.charID * 120 + 20, 555);
+                        else
+                            name.Position = new Vector2(name.charID * 120 + 20, 550);
+                    }
+                }
             }
         }
        
@@ -912,6 +1105,13 @@ namespace BaboGame_test_2
             float backGroundScale = Math.Max(((float)graphics.PreferredBackBufferWidth / (float)backgroundImage.Width), ((float)graphics.PreferredBackBufferHeight / (float)backgroundImage.Height));
             spriteBatch.Draw(backgroundImage, new Vector2(0, 0), null, Color.White, 0f, new Vector2(0, 0), backGroundScale, SpriteEffects.None, 0f);
 
+            if ((GamePaused) || (GameEnded))
+            {
+                PauseImage = Content.Load<Texture2D>("Sight/DarkScreen");
+                float PauseScale = Math.Max(((float)graphics.PreferredBackBufferWidth / (float)PauseImage.Width), ((float)graphics.PreferredBackBufferHeight / (float)PauseImage.Height));
+                spriteBatch.Draw(PauseImage, new Vector2(0, 0), null, Color.White, 0f, new Vector2(0, 0), PauseScale, SpriteEffects.None, 0.8f);
+            }
+
             debugger.DrawText(spriteBatch);
 
             foreach (var sprite in scenarioSprites)
@@ -933,13 +1133,20 @@ namespace BaboGame_test_2
             }
             foreach (var overlay in overlaySprites)
             {
-                if(overlay.Visible)
+                if((overlay.Visible)&&((!overlay.IsHealth)||((overlay.IsHealth)&&(!GameEnded))))
                     overlay.Draw(spriteBatch);
             }
             foreach (var names in playersNames)
             {
-                spriteBatch.DrawString(_namesFont, names.name, names.Position, names.color, names.rotation, names.origin, names.scale, names.effect, names.layer);
+                if(names.visible)
+                    spriteBatch.DrawString(_namesFont, names.name, names.Position, names.color, names.rotation, names.origin, names.scale, names.effect, names.layer);
                 
+            }
+            foreach (var texts in otherTexts)
+            {
+                if (texts.visible)
+                    spriteBatch.DrawString(_namesFont, texts.name, texts.Position, texts.color, texts.rotation, texts.origin, texts.scale, texts.effect, texts.layer);
+
             }
             spriteBatch.End();
 
