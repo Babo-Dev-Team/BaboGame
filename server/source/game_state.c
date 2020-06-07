@@ -30,6 +30,8 @@ GameState* CreateGameState(int gameId, int n_players)
 			game->characterStatesList[i].projectileStates[j].projectileID = 0;
 			game->characterStatesList[i].projectileStates[j].shooterID = 0;
 			game->characterStatesList[i].projectileStates[j].projectileType = 'N';
+			game->characterStatesList[i].projectileStates[j].target_X = 0;
+			game->characterStatesList[i].projectileStates[j].target_Y = 0;
 		}
 	}
 	game->n_players = n_players;
@@ -179,6 +181,8 @@ void UpdateGameStateJson(GameState* game)
 			json_object* projectileDirY = json_object_new_double(game->characterStatesList[i].projectileStates[j].direction_Y);
 			json_object* projectileLinearVelocity = json_object_new_double(game->characterStatesList[i].projectileStates[j].LinearVelocity);
 			json_object* hitCount = json_object_new_int(game->characterStatesList[i].projectileStates[j].hitCount);
+			json_object* projectileTarX = json_object_new_int(game->characterStatesList[i].projectileStates[j].target_X);
+			json_object* projectileTarY = json_object_new_int(game->characterStatesList[i].projectileStates[j].target_Y);
 			
 			json_object_object_add(projectiles[j], "projectileID", projectileId);
 			json_object_object_add(projectiles[j], "shooterID", shooterId);
@@ -189,6 +193,8 @@ void UpdateGameStateJson(GameState* game)
 			json_object_object_add(projectiles[j], "directionY", projectileDirY);
 			json_object_object_add(projectiles[j], "LinearVelocity", projectileLinearVelocity);
 			json_object_object_add(projectiles[j], "hitCount", hitCount);
+			json_object_object_add(projectiles[j], "targetX", projectileTarX);
+			json_object_object_add(projectiles[j], "targetY", projectileTarY);
 		}
 		for (int j = 0; j < game->characterStatesList[i].projectileCount; j++)
 		{

@@ -13,6 +13,8 @@ typedef struct ProjectileState{
 	double direction_Y;
 	double LinearVelocity;
 	int hitCount;
+	int target_X;
+	int target_Y;
 }ProjectileState;
 
 

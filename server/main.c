@@ -17,7 +17,7 @@
 #include "game_table.h"
 #include "game_state.h"
 
-#define SHIVA_PORT 50084
+#define SHIVA_PORT 50085
 
 
 //#define NMBR_THREADS 100
@@ -276,6 +276,8 @@ void* gameProcessor (void* args)
 					gameState->characterStatesList[charId].projectileStates[j].direction_Y = clientUpdates[i]->charState->projectileStates[j].direction_Y;
 					gameState->characterStatesList[charId].projectileStates[j].LinearVelocity = clientUpdates[i]->charState->projectileStates[j].LinearVelocity;
 					gameState->characterStatesList[charId].projectileStates[j].hitCount = clientUpdates[i]->charState->projectileStates[j].hitCount;
+					gameState->characterStatesList[charId].projectileStates[j].target_X = clientUpdates[i]->charState->projectileStates[j].target_X;
+					gameState->characterStatesList[charId].projectileStates[j].target_Y = clientUpdates[i]->charState->projectileStates[j].target_Y;
 				}
 				
 				clientUpdates[i]->newDataFromClient = 0;
@@ -876,7 +878,7 @@ void* attendClient (void* args)
 						{
 							
 							//Eliminem la partida
-							//DeleteGameFromTable(gameTable,preGame);
+							DeleteGameFromTable(gameTable,preGame);
 							
 							printf("Crear partida FAIL: ALONE\n");
 							strcpy(response, "7/");
@@ -1202,6 +1204,7 @@ void* attendClient (void* args)
 					gameSend = 0;
 					pthread_mutex_lock(preGame->game_mutex);
 					sprintf(gameNotification, "12/CANCEL/%s/%s/",preGame->gameName,preGame->creator->username);
+					pthread_mutex_unlock(preGame->game_mutex);
 					sendToGame(gameSenderArgs[gameId], gameNotification, 0); 
 					sendToGame(gameSenderArgs[gameId], gameNotification, 1); 
 					DeleteGameFromTable(gameTable,preGame);
@@ -1234,7 +1237,9 @@ void* attendClient (void* args)
 					
 					// wake up the processor to allow init and send first game state to all clients
 					sleep(1);
+					
 					gameProcessorArgs[gameId]->initEnabled = 1;
+					
 					pthread_cond_signal(gameProcessorArgs[gameId]->gameProcessor_signal);				
 					
 				}
@@ -1385,6 +1390,8 @@ void* attendClient (void* args)
 						json_object* projectileDirY;
 						json_object* projectileLinearVelocity;
 						json_object* hitCount;
+						json_object* projectileTarX;
+						json_object* projectileTarY;
 						
 						/*	int projId;
 						int shtrId;
@@ -1411,6 +1418,8 @@ void* attendClient (void* args)
 							projectileDirY = json_object_object_get(jsonProjState, "directionY");
 							projectileLinearVelocity = json_object_object_get(jsonProjState, "LinearVelocity");
 							hitCount = json_object_object_get(jsonProjState, "hitCount");
+							projectileTarX = json_object_object_get(jsonProjState, "targetX");
+							projectileTarY = json_object_object_get(jsonProjState, "targetY");
 							
 							projState[i].projectileID = json_object_get_int(projectileId);
 							projState[i].shooterID = json_object_get_int(shooterId);
@@ -1421,6 +1430,8 @@ void* attendClient (void* args)
 							projState[i].direction_Y = json_object_get_int(projectileDirY);
 							projState[i].LinearVelocity = json_object_get_int(projectileLinearVelocity);
 							projState[i].hitCount = json_object_get_int(hitCount);
+							projState[i].target_X = json_object_get_int(projectileTarX);
+							projState[i].target_Y = json_object_get_int(projectileTarY);
 							
 							/*printf("Debug: Data from proj %d: ID: %d, shooter ID: %d, Type: %c\nPosX: %d, PosY: %d DirX: %f, DirY: %f, Vel: %f, hitCount: %d\n",
 							i, projState[i].projectileID, projState[i].shooterID, projState[i].projectileType, projState[i].position_X, projState[i].position_Y,
@@ -1467,6 +1478,8 @@ void* attendClient (void* args)
 									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].direction_Y = projState[i].direction_Y;
 									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].LinearVelocity = projState[i].LinearVelocity;
 									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].hitCount = projState[i].hitCount;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].target_X = projState[i].target_X;
+									gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->projectileStates[i].target_Y = projState[i].target_Y;
 								}
 								
 								gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient = 1;							
