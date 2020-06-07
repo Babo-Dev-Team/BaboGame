@@ -714,6 +714,7 @@ namespace BaboGameClient
             Invitation.Image = NotificationIcon.Image;
             Invitation.Tag = gameName;
             Notificacions_btn.DropDownItems.Add(Invitation);
+
             Notificacions_btn.BackColor = Color.LightGreen;
         }
 
@@ -826,6 +827,8 @@ namespace BaboGameClient
 
             using (var game = new Game1(this.serverHandler))
             game.Run();
+
+            StartGame_btn.Visible = false;
         }
 
         //Error en no haver escollit tothom personatge

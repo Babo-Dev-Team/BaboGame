@@ -126,6 +126,7 @@ namespace BaboGame_test_2
         int UpdateOnlineTime = 0;
         int NextProjectileID;
         static int BulletThreshold = 20;
+        static int projectileOnlineUpdateThreshold = 32;
          
 
         public Game1()
@@ -302,6 +303,9 @@ namespace BaboGame_test_2
             slimeTimer.AutoReset = true;
             slimeTimer.Enabled = true;
             debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, timer.Interval,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
+
+            //timer.Elapsed += OnTimedEvent;
+            //slimeTimer.Elapsed += OnSlimeTimedEvent;
         }
 
         /// <summary>
@@ -333,8 +337,8 @@ namespace BaboGame_test_2
            // }
            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                Exit();
-            if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
-                graphics.ToggleFullScreen();
+            //if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
+                //graphics.ToggleFullScreen();
 
             // Detectem inputs al teclat
             inputManager.detectKeysPressed();
@@ -353,8 +357,8 @@ namespace BaboGame_test_2
                     {
                         response = ReceiverArgs.responseFifo.Dequeue();
 
-                        Console.WriteLine("Response Received: Code " + response.responseType);
-                        Console.WriteLine(response.responseStr);
+                        //Console.WriteLine("Response Received: Code " + response.responseType);
+                        //Console.WriteLine(response.responseStr);
                         //UpdateOnline();
 
 
@@ -387,8 +391,8 @@ namespace BaboGame_test_2
                 else if (ReceiverArgs.newDataFromServer == 103 && Initialized)
                 {
                     GenericResponse response = ReceiverArgs.realtimeResponse;
-                    //Console.WriteLine("Response Received: Code " + response.responseType);
-                    //Console.WriteLine(response.responseStr);
+                    Console.WriteLine("Response Received: Code " + response.responseType);
+                    Console.WriteLine(response.responseStr);
                     gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
                     PeriodicalUpdate();
                 }
@@ -465,7 +469,7 @@ namespace BaboGame_test_2
             {
                 characterEngine.Update(gameTime, slimeSprites, scenarioSprites, testMode, Controllable);
                 // Això hauria de moure els projectils, calcular les colisions i notificar als characters si hi ha hagut dany.
-                projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites, testMode, Controllable);
+                projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites);
             }
             // Generem les babes amb una certa espera per no sobrecarregar i les instanciem al update del personatge
 
@@ -526,9 +530,25 @@ namespace BaboGame_test_2
                 List<projectileState> projectileStates = new List<projectileState>();
                 foreach (Projectile projectile in projectileSprites)
                 {
-                    if(projectile.ShooterID == Controllable.IDcharacter)
+                    if((projectile.ShooterID == Controllable.IDcharacter)&&(projectile.ProjectileOnlineUpdates < projectileOnlineUpdateThreshold))
                     {
-                        projectileStates.Add(new projectileState(projectile.projectileID, projectile.ShooterID, projectile.ProjectileType, (int) projectile.Position.X, (int) projectile.Position.Y, projectile.Direction.X, projectile.Direction.Y, projectile.LinearVelocity, projectile.HitCount));
+
+                        //projectileStates.Add(new projectileState(projectile.projectileID, projectile.ShooterID, projectile.ProjectileType, (int) projectile.Position.X, (int) projectile.Position.Y, projectile.Direction.X, projectile.Direction.Y, projectile.LinearVelocity, projectile.HitCount, (int)projectile.Target.X, (int)projectile.Target.Y));
+                        projectileState projectileStateAdded = new projectileState();
+                        projectileStateAdded.projectileID = projectile.projectileID;
+                        projectileStateAdded.shooterID = projectile.ShooterID;
+                        projectileStateAdded.projectileType = projectile.ProjectileType;
+                        projectileStateAdded.posX = (int)projectile.Position.X;
+                        projectileStateAdded.posY = (int)projectile.Position.Y;
+                        projectileStateAdded.directionX = projectile.Direction.X;
+                        projectileStateAdded.directionY = projectile.Direction.Y;
+                        projectileStateAdded.targetX = (int)projectile.Target.X;
+                        projectileStateAdded.targetY = (int)projectile.Target.Y;
+                        projectileStateAdded.hitCount = projectile.HitCount;
+                        projectileStateAdded.LinearVelocity = projectile.LinearVelocity;
+                        projectileStates.Add(projectileStateAdded);
+
+                        projectile.ProjectileOnlineUpdates++;
                     }
                 }
                 //Genera el paquet a passar per Json
@@ -728,11 +748,12 @@ namespace BaboGame_test_2
             if (gameState.playable == 1)
                 playable = true;
 
+            //Actualització dels personatges
             foreach (CharacterState characterState in gameState.characterStatesList)
             {
                 bool found = false;
                 int i = 0;
-                while((!found)&&(i<gameState.characterStatesList.Count))
+                while((!found)&&(i< characterSprites.Count))
                 {
                     if ((characterState.charID == characterSprites[i].IDcharacter) && ((characterState.charID != Controllable.IDcharacter) || !playable)) //Desacobla el client de les actualitzacions
                     {
@@ -747,6 +768,48 @@ namespace BaboGame_test_2
                 }
 
                 
+            }
+
+            //Actualització dels projectils
+            foreach (projectileState projectileState in gameState.projectileStates)
+            {
+                bool found = false;
+                int i = 0;
+                while ((!found) && (i < projectileSprites.Count))
+                {
+                    //Actualitzem el projectil
+                    if ((projectileState.shooterID == projectileSprites[i].ShooterID)&&(projectileState.projectileID == projectileSprites[i].projectileID) && ((projectileState.shooterID != Controllable.IDcharacter) || !playable)) //Desacobla el client de les actualitzacions
+                    {
+                        found = true;
+                        projectileSprites[i].Position = new Vector2(projectileState.posX, projectileState.posY);
+                        projectileSprites[i].Direction = new Vector2(projectileState.directionX, projectileState.directionY);
+                        projectileSprites[i].Target = new Vector2(projectileState.targetX, projectileState.targetY);
+                        projectileSprites[i].LinearVelocity = projectileState.LinearVelocity;
+                        projectileSprites[i].ProjectileType = projectileState.projectileType;
+                        projectileSprites[i].HitCount = projectileState.hitCount;
+                    }
+                    else
+                        i++;
+                }
+
+                if((!found)&& ((projectileState.shooterID != Controllable.IDcharacter) || !playable)) //El projectil no existeix, s'ha de crear
+                {
+                    if (projectileState.projectileType == 'N')
+                        projectileEngine.AddProjectile(new Vector2(projectileState.posX, projectileState.posY), new Vector2(projectileState.targetX, projectileState.targetY), projectileTexture["Normal"], projectileState.shooterID, projectileState.projectileType, projectileState.projectileID);
+                    else if (projectileState.projectileType == 'D')
+                        projectileEngine.AddProjectile(new Vector2(projectileState.posX, projectileState.posY), new Vector2(projectileState.targetX, projectileState.targetY), projectileTexture["Direct"], projectileState.shooterID, projectileState.projectileType, projectileState.projectileID);
+                    else if (projectileState.projectileType == 'S')
+                        projectileEngine.AddProjectile(new Vector2(projectileState.posX, projectileState.posY), new Vector2(projectileState.targetX, projectileState.targetY), projectileTexture["Slimed"], projectileState.shooterID, projectileState.projectileType, projectileState.projectileID);
+
+                    foreach(Character chara in characterSprites)
+                    {
+                        if (projectileState.shooterID == chara.IDcharacter)
+                            chara.BulletNumber++;
+                    }
+                }
+
+                Console.WriteLine(projectileState.LinearVelocity);
+
             }
 
 

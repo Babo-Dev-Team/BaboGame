@@ -41,6 +41,7 @@ namespace BaboGameClient
         public int playable { get; set; }
         public int nPlayers { get; set; }
         public List<CharacterState> characterStatesList { get; set; }
+        public List<projectileState> projectileStates { get; set; }
     }
 
     public class CharacterState
@@ -83,8 +84,12 @@ namespace BaboGameClient
         public float directionY { get; set; }
         public float LinearVelocity { get; set; }
         public int hitCount { get; set; }
+        public int targetX { get; set; }
+        public int targetY { get; set; }
 
-        public projectileState(int projectileID, int shooterID, char projectileType, int posX, int posY, float directionX, float directionY, float LinearVelocity, int hitCount)
+        /*
+
+        public projectileState(int projectileID, int shooterID, char projectileType, int posX, int posY, float directionX, float directionY, float LinearVelocity, int hitCount, int targetX, int targetY)
         {
             this.projectileID = projectileID;
             this.shooterID = shooterID;
@@ -95,7 +100,10 @@ namespace BaboGameClient
             this.directionY = directionY;
             this.LinearVelocity = LinearVelocity;
             this.hitCount = hitCount;
+            this.targetX = targetX;
+            this.targetY = targetY;
         }
+        */
     }
 
     public class playerUpdate
