@@ -1238,6 +1238,14 @@ void* attendClient (void* args)
 					// wake up the processor to allow init and send first game state to all clients
 					sleep(1);
 					
+					struct timespec s;
+					s.tv_sec = 0;
+					s.tv_nsec = 100000000L;
+					while (gameProcessorArgs[gameId]->initEnabled != 0)
+					{
+						nanosleep(&s, NULL);
+					}
+					
 					gameProcessorArgs[gameId]->initEnabled = 1;
 					
 					pthread_cond_signal(gameProcessorArgs[gameId]->gameProcessor_signal);				
@@ -1314,18 +1322,6 @@ void* attendClient (void* args)
 				userSend = 0;
 				globalSend = 0;
 				gameSend = 0;
-				
-				/*{
-					"characterState":
-					{
-						"charID":0,
-						"posX":125,
-						"posY":80,
-						"velX":0,
-						"velY":0
-					},					
-					"projectileStates":[]
-				}*/
 				
 				p = strtok(NULL, "|");
 				if(p == NULL)
@@ -1426,8 +1422,8 @@ void* attendClient (void* args)
 							projState[i].projectileType = *(json_object_get_string(projectileType));
 							projState[i].position_X = json_object_get_int(projectilePosX);
 							projState[i].position_Y = json_object_get_int(projectilePosY);
-							projState[i].direction_X = json_object_get_int(projectileDirX);
-							projState[i].direction_Y = json_object_get_int(projectileDirY);
+							projState[i].direction_X = json_object_get_double(projectileDirX);
+							projState[i].direction_Y = json_object_get_double(projectileDirY);
 							projState[i].LinearVelocity = json_object_get_int(projectileLinearVelocity);
 							projState[i].hitCount = json_object_get_int(hitCount);
 							projState[i].target_X = json_object_get_int(projectileTarX);
