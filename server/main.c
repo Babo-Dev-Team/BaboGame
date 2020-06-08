@@ -1508,7 +1508,7 @@ void* attendClient (void* args)
 				}
 				else
 				{
-					strcpy(request_str, strtok(NULL, "/"));
+					strcpy(request_str, p);
 					if(!strcmp(request_str, "DISCONNECT"))
 					{
 						// Se acabo el servicio para este cliente

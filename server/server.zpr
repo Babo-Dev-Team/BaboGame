@@ -19,7 +19,7 @@ current_source=main.c
 path_char=/
 [source]
 path=main.c
-cursor=880:7
+cursor=1510:26
 open=true
 [source]
 path=source/BBDD_Handler.c
