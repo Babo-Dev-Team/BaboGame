@@ -19,6 +19,7 @@ namespace BaboGameClient
     {
         ServerHandler serverHandler;
         MusicPlayer musicPlayer;
+        Thread loadingThread;
 
         Game1.LocalGameState TrainingState = new Game1.LocalGameState();
         // necessitem una ref. al Notification Worker per modificar el camp 
@@ -825,7 +826,16 @@ namespace BaboGameClient
             //BaboGame_test_2.Game1 BaboGame = new BaboGame_test_2.Game1();
             //BaboGame.Run();
 
-            using (var game = new Game1(this.serverHandler))
+            //Engegar el thread de carregant
+            Game1.Loading LoadVariable = new Game1.Loading();
+            LoadVariable.Loaded = false;
+
+            ThreadStart LoadingThreadStart = delegate { this.LoadingThread(LoadVariable); };
+            loadingThread = new Thread(LoadingThreadStart);
+            loadingThread.Start();
+
+            //Engegar el joc
+            using (var game = new Game1(this.serverHandler,LoadVariable))
             game.Run();
 
             StartGame_btn.Visible = false;
@@ -1331,12 +1341,27 @@ namespace BaboGameClient
                 MessageBox.Show("No has seleccionat el teu personatge");
             else
             {
-                using (var game = new Game1(TrainingState, Difficulty[DifficultyPos]))
+                Game1.Loading LoadVariable = new Game1.Loading();
+                LoadVariable.Loaded = false;
+
+                ThreadStart LoadingThreadStart = delegate { this.LoadingThread(LoadVariable); };
+                loadingThread = new Thread(LoadingThreadStart);
+                loadingThread.Start();
+
+                using (var game = new Game1(TrainingState, Difficulty[DifficultyPos], LoadVariable))
                     game.Run();
                 TrainingState.OpponentCharacter_Selected.Clear();
                 OpponentListPanel.Controls.Clear();
                 TrainingState.Opponentnum_players = 0;
             }
+        }
+
+        public void LoadingThread(Game1.Loading LoadVariable)
+        {
+            LoadingForm LoadForm = new LoadingForm(LoadVariable);
+            LoadForm.ShowDialog();
+
+            loadingThread.Abort();
         }
 
         //Escollir el personatge

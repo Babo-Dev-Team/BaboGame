@@ -142,6 +142,11 @@ namespace BaboGame_test_2
         int NextProjectileID;
         static int BulletThreshold = 20;
         static int projectileOnlineUpdateThreshold = 32;
+        public class Loading
+        {
+            public bool Loaded;
+        }
+        Loading LoadVariable;
         
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Procediments de les estructures
@@ -163,7 +168,7 @@ namespace BaboGame_test_2
         }
 
         //Mode Online
-        public Game1(ServerHandler serverHandler)
+        public Game1(ServerHandler serverHandler, Loading LoadVariable)
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -180,10 +185,11 @@ namespace BaboGame_test_2
             //AllocConsole();
             Console.WriteLine("testline");
             NextProjectileID = 0;
+            this.LoadVariable = LoadVariable;
         }
 
         //Mode offline
-        public Game1(LocalGameState localGameState, char difficulty)
+        public Game1(LocalGameState localGameState, char difficulty, Loading LoadVariable)
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -197,6 +203,7 @@ namespace BaboGame_test_2
             GameEnded = false;
             GamePaused = false;
             HasWinner = false;
+            this.LoadVariable = LoadVariable;
         }
 
         /// <summary>
@@ -212,7 +219,6 @@ namespace BaboGame_test_2
             slimeEngine = new SlimeEngine(slimeSprites);
             if(!testMode)
                 serverHandler.RequestInitState();
-
 
         }
 
@@ -336,9 +342,10 @@ namespace BaboGame_test_2
             slimeTimer.Enabled = true;
             */
             debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, 0,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
-            
+
             //timer.Elapsed += OnTimedEvent;
             //slimeTimer.Elapsed += OnSlimeTimedEvent;
+            
         }
 
         /// <summary>
@@ -382,7 +389,10 @@ namespace BaboGame_test_2
                 else
                     GamePaused = true;
             }
-            
+
+            //Tanquem el form de carregant
+            if (Initialized)
+                LoadVariable.Loaded = true;
 
             // Detectem inputs al teclat
             inputManager.detectKeysPressed();
