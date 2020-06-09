@@ -17,7 +17,7 @@
 #include "game_table.h"
 #include "game_state.h"
 
-#define SHIVA_PORT 50085
+#define SHIVA_PORT 50086
 
 
 //#define NMBR_THREADS 100
@@ -1266,6 +1266,55 @@ void* attendClient (void* args)
 				break;
 			}
 			
+			case 13: //Llista de jugadors en que he jugat
+			{
+				char* opponent_str = BBDD_opponentGameList(userId);
+				strcpy(response, "13/");
+				strcat(response, opponent_str);
+				free(opponent_str);
+				break;
+			}
+				
+			case 14: //Partides que he jugat amb aquells jugadors
+			{
+				int num;
+				p = strtok(NULL,"/");
+				num = atoi(p);
+				char players [100][USRN_LENGTH];
+				strcpy(players[0], username);
+				for(int i=0; i<num;i++)
+				{
+					p = strtok(NULL,"/");
+					strcpy(players[i + 1],p);
+				}
+				
+				char* gameResults_str = BBDD_gameResultsWithOtherPlayers(num+1,players);
+				strcpy(response, "14/");
+				strcat(response, gameResults_str);
+				free(gameResults_str);
+				break;
+			}
+				
+			case 15: //LLista de partides en un cert temps
+			{
+				char startInterval [100];
+				char endInterval [100];
+				p = strtok (NULL,"/");
+				strcpy(startInterval,p);
+				p = strtok (NULL,"/");
+				strcpy(endInterval,p);
+				
+				char* interval_str = BBDD_gameInTimeInterval(userId,startInterval,endInterval);
+				strcpy(response, "15/");
+				strcat(response, interval_str);
+				free(interval_str);
+				break;
+			}
+			
+			case 16: //Donar-se de baixa
+				break;
+			
+			//Missatges dins de la partida
 			case 101:
 			{
 				//printf("Request 101: %s\n", request);

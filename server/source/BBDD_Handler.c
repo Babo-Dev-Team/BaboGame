@@ -163,7 +163,7 @@ int BBDD_add_user(char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 	strcat(query, username);
 	strcat(query, "', '");
 	strcat(query, passwd);
-	strcat(query, "')");
+	strcat(query, "',1)");
 	
 	error = mysql_query(conn, query);
 	
@@ -213,7 +213,7 @@ int BBDD_connect ()
 	
 	// init connection
 	//conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
-	conn = mysql_real_connect (conn, "localhost","root", "mysql", "BaboGameBBDD", 0, NULL, 0);
+	conn = mysql_real_connect (conn, "localhost","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
 	if (conn == NULL) 
 	{
 		printf ("Error while initializing connection: %u %s\n", mysql_errno(conn), mysql_error(conn));
@@ -221,4 +221,172 @@ int BBDD_connect ()
 	}
 	
 	return error;
+}
+
+char* BBDD_opponentGameList(int idPlayer)
+{
+	char query[QUERY_LENGTH];	
+	char* opponent_str = malloc(sizeof(char) * 10000);
+	char opponent_rows[100][100];
+	
+	strcpy(query, "SELECT DISTINCT jugadors.nom, jugadors.id, jugadors.actiu FROM jugadors,participants WHERE (jugadors.id = participants.idJugador) AND (jugadors.id != ");
+	sprintf(query,"%s%d",query,idPlayer);
+	strcat(query, ") AND (participants.idPartida IN (SELECT participants.idPartida FROM participants WHERE (participants.idJugador = ");
+	sprintf(query,"%s%d",query,idPlayer);
+	strcat(query,")))");
+	
+	int error = send_query(query);		
+	
+	row = mysql_fetch_row(result);	
+	if (row == NULL)
+	{
+		//printf("No s'han trobat dades per a la consulta\n");
+		strcpy(opponent_str, "0/");
+	}
+	else
+	{
+		char player[USRN_LENGTH];
+		int id;
+		int actiu;
+		int i = 0;
+		while (row != NULL)
+		{
+			strcpy(player, row[0]);
+			id = atoi(row[1]);
+			actiu = atoi(row[2]);
+			sprintf(opponent_rows[i], "%s*%d*%d/", player, id, actiu);
+			i++;
+			row = mysql_fetch_row(result);
+		}
+		sprintf(opponent_str, "%d/", i);
+		for(int j = 0; j < i; j++)
+		{
+			strcat(opponent_str, opponent_rows[j]);
+		}
+	}
+	return opponent_str;
+}
+
+char* BBDD_gameResultsWithOtherPlayers (int num,char players [100][USRN_LENGTH])
+{
+	char query[QUERY_LENGTH];	
+	char* gameResults_str = malloc(sizeof(char) * 10000);
+	char gameResults_rows[100][100];
+	int idWinners [100];
+	char gameWinner_rows[100][100];
+		
+	strcpy(query,"SELECT partides.nom, partides.id, partides.idGuanyador FROM partides ");
+	if (num > 0)
+	{
+		strcat(query, "WHERE");
+		for(int i = 0; i < num; i++)
+		{
+			if(i != 0)
+				strcat(query, " AND");
+			
+			strcat(query, " (partides.id IN (SELECT participants.idPartida FROM participants, jugadors WHERE (jugadors.id = participants.idJugador)AND(jugadors.nom = '");
+			strcat(query, players[i]);
+			strcat(query, "')))");
+		}
+	}
+	
+	
+	int error = send_query(query);		
+	
+	row = mysql_fetch_row(result);	
+	if (row == NULL)
+	{
+		//printf("No s'han trobat dades per a la consulta\n");
+		strcpy(gameResults_str, "0/");
+	}
+	else
+	{
+		char player[USRN_LENGTH];
+		int id;
+		int i = 0;
+		while (row != NULL)
+		{
+			strcpy(player, row[0]);
+			id = atoi(row[1]);
+			idWinners[i] = atoi(row[2]);
+			sprintf(gameResults_rows[i], "%s*%d", player, id);
+			i++;
+			row = mysql_fetch_row(result);
+		}
+		for(int k = 0; k < i; k++)
+		{
+			strcpy(query, "SELECT nom FROM jugadors WHERE (id = ");
+			sprintf(query,"%s%d",query,idWinners[k]);
+			strcat(query,")");
+			int error = send_query(query);		
+			
+			row = mysql_fetch_row(result);	
+			if (row == NULL)
+			{
+				//printf("No s'han trobat dades per a la consulta\n");
+				strcpy(gameWinner_rows[k], "none");
+			}
+			else
+			{
+				while (row != NULL)
+				{
+					strcpy(gameWinner_rows[k], row[0]);
+					row = mysql_fetch_row(result);
+				}
+			}
+		}
+		sprintf(gameResults_str, "%d/", i);
+		for(int j = 0; j < i; j++)
+		{
+			sprintf(gameResults_rows[j],"%s*%s/",gameResults_rows[j],gameWinner_rows[j]);
+			strcat(gameResults_str, gameResults_rows[j]);
+		}
+	}
+	return gameResults_str;
+}
+
+char* BBDD_gameInTimeInterval(int idPlayer,char start[100], char end [100])
+{
+	char query[QUERY_LENGTH];	
+	char* interval_str = malloc(sizeof(char) * 10000);
+	char interval_rows[100][100];
+	
+	strcpy(query, "SELECT partides.nom, partides.id, partides.dataInici FROM partides,participants WHERE (participants.idJugador = ");
+	sprintf(query,"%s%d",query,idPlayer);
+	strcat(query, ") AND (participants.idPartida = partides.id) AND (partides.dataInici < ' ");
+	strcat(query,end);
+	strcat(query, " ') AND (partides.dataInici > ' ");
+	strcat(query,start);
+	strcat(query,"')");
+	
+	int error = send_query(query);		
+	
+	row = mysql_fetch_row(result);	
+	if (row == NULL)
+	{
+		//printf("No s'han trobat dades per a la consulta\n");
+		strcpy(interval_str, "0/");
+	}
+	else
+	{
+		char game[GAME_LEN];
+		int id;
+		char dateTime[100];
+		int i = 0;
+		while (row != NULL)
+		{
+			strcpy(game, row[0]);
+			id = atoi(row[1]);
+			strcpy(dateTime, row[2]);
+			sprintf(interval_rows[i], "%s*%d*%s/", game, id, dateTime);
+			i++;
+			row = mysql_fetch_row(result);
+		}
+		sprintf(interval_str, "%d/", i);
+		for(int j = 0; j < i; j++)
+		{
+			strcat(interval_str, interval_rows[j]);
+		}
+	}
+	return interval_str;
 }
