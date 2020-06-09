@@ -67,6 +67,7 @@ int IamAloneinGame(PreGameState* preGameState);
 	
 json_object* GameInitStateJson(PreGameState* preGameState, int userId);
 int GetCharIdFromUserId(PreGameState* state, int userId);
+void GetUsernameFromCharId(PreGameState* state, int charId, char username[USRN_LENGTH]);
 //------------------------------------------------------------------------------
 
 #endif
