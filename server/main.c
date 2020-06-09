@@ -56,10 +56,12 @@ typedef struct GameUpdatesFromClient{
 // el thread de process necessita el seu sender de partida, aixi com un array de punters a 
 // totes les estructures dels clients de la partida per a rebre les updates
 typedef struct GameProcessorArgs{
+	GameTable* gameTable;
 	GameSenderArgs* senderArgs;
 	GameUpdatesFromClient** gameUpdatesFromClients;
 	int initEnabled;
 	int processEnabled;
+	int deInitEnabled;
 	int n_players;
 	int gameId;
 	pthread_mutex_t* gameProcessor_mutex;
@@ -159,174 +161,214 @@ void* gameProcessor (void* args)
 	GameSenderArgs* senderArgs = procArgs->senderArgs;
 	GameUpdatesFromClient** clientUpdates;
 	
-	int n_clientsInit = 0;
-	pthread_mutex_lock(procArgs->gameProcessor_mutex);
-	while (!procArgs->initEnabled)
-	{	
-		printf("Game Processor entering sleep...\n");
-		pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);
-	}
-	//pthread_mutex_lock(procArgs->gameProcessor_mutex);
-	printf("Game Processor performing init...\n");
-	//pthread_mutex_lock(procArgs->gameProcessor_mutex);
-	int n_players = procArgs->n_players;
-	int gameId = procArgs->gameId;
-	char response[SERVER_RSP_LEN];
-	GameState* gameState = CreateGameState(gameId, n_players);
-	int** gamePositions = GetInitialPositions(n_players, SCREEN_MAX_X, SCREEN_MAX_Y);
-	SetInitialPositions(gameState, gamePositions);
-	
-	
-	
-	//pthread_mutex_unlock(procArgs->gameProcessor_mutex);
-	
-	while(!procArgs->processEnabled)
+	for(;;)
 	{
+		int n_clientsInit = 0;
+		pthread_mutex_lock(procArgs->gameProcessor_mutex);
+		procArgs->initEnabled = 0;
+		procArgs->processEnabled = 0;
+		procArgs->deInitEnabled = 0;
+		
+		while (!procArgs->initEnabled)
+		{	
+			printf("Game Processor entering sleep...\n");
+			pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);
+		}
 		//pthread_mutex_lock(procArgs->gameProcessor_mutex);
-		printf("Game processor sending init state\n");
-		UpdateGameStateJson(gameState);
-		sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
-		sendToGame(senderArgs, response, 1);		
+		printf("Game Processor performing init...\n");
+		//pthread_mutex_lock(procArgs->gameProcessor_mutex);
+		int n_players = procArgs->n_players;
+		int gameId = procArgs->gameId;
+		char response[SERVER_RSP_LEN];
+		GameState* gameState = CreateGameState(gameId, n_players);
+		int** gamePositions = GetInitialPositions(n_players, SCREEN_MAX_X, SCREEN_MAX_Y);
+		SetInitialPositions(gameState, gamePositions);
+			
 		
-		// auto enable realtime processing when all clients have been inisialized
-		if(++n_clientsInit >= procArgs->n_players)
+		//pthread_mutex_unlock(procArgs->gameProcessor_mutex);
+		
+		while(!procArgs->processEnabled)
 		{
-			printf("All Clients Initialized!\n");
-			procArgs->processEnabled = 1;
-			pthread_mutex_unlock(procArgs->gameProcessor_mutex);
-			sleep(1);
-		}
-		else
-		{
-			procArgs->initEnabled = 0;
-			while(!procArgs->initEnabled)
-			{			
-				printf("Game Processor entering sleep...\n");
-				pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);		
+			//pthread_mutex_lock(procArgs->gameProcessor_mutex);
+			printf("Game processor sending init state\n");
+			UpdateGameStateJson(gameState);
+			sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
+			sendToGame(senderArgs, response, 1);		
+			
+			// auto enable realtime processing when all clients have been inisialized
+			if(++n_clientsInit >= n_players)
+			{
+				printf("All Clients Initialized!\n");
+				procArgs->processEnabled = 1;
+				pthread_mutex_unlock(procArgs->gameProcessor_mutex);
+				sleep(1);
+			}
+			else
+			{
+				procArgs->initEnabled = 0;
+				while(!procArgs->initEnabled)
+				{			
+					printf("Game Processor entering sleep...\n");
+					pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);		
+				}
 			}
 		}
-	}
-	printf("Game Processor starting realtime processing...\n");
+		printf("Game Processor starting realtime processing...\n");
 
-	sendToGame(senderArgs, "102/START", 1);
-	
-	clientUpdates = procArgs->gameUpdatesFromClients; 
-	for (int i = 0; i < procArgs->n_players; i++)
-	{
-		clientUpdates[i]->charState->characterId = i;
-	}
-	
-
-	int counter = 0;
-	int operation = 1;
-	
-	gameState->playable = 1;
-	
-	// this function will auto-disable when game is over
-	while(procArgs->processEnabled)
-	{
-		/*pthread_mutex_lock(senderArgs->game->game_mutex);
+		sendToGame(senderArgs, "102/START", 1);
+		
+		clientUpdates = procArgs->gameUpdatesFromClients; 
 		for (int i = 0; i < n_players; i++)
 		{
-			int backOff = clientUpdates[i]->backOffRequested; 
-			// comprovem que estem accedint al user que toca!
-			// i restringim les updates a aquest user si ha demanat backOff
-			if(senderArgs->game->users[i]->charId == clientUpdates[i]->charState->characterId)
-			{
-				if(backOff)
-				{
-					senderArgs->game->users[i]->userState = 3;
-				}
-				else senderArgs->game->users[i]->userState = 1;
-			}
-			else 
-			{
-				printf("CRITICAL ERROR: Char ID's DO NOT MATCH\n");
-				pthread_exit(103);
-			}
-		}*/
-		//gameState->projectileCount = 0;
-		
-		
-		
-		for (int i = 0; i < n_players; i++)
-		{
-			if (clientUpdates[i]->newDataFromClient)
-			{
-				int userId = clientUpdates[i]->userId;
-				int charId = clientUpdates[i]->charState->characterId;
-				gameState->characterStatesList[charId].position_X = clientUpdates[i]->charState->position_X;
-				gameState->characterStatesList[charId].position_Y = clientUpdates[i]->charState->position_Y;
-				gameState->characterStatesList[charId].velocity_X = clientUpdates[i]->charState->velocity_X;
-				gameState->characterStatesList[charId].velocity_Y = clientUpdates[i]->charState->velocity_Y;
-				gameState->characterStatesList[charId].direction_X = clientUpdates[i]->charState->direction_X;
-				gameState->characterStatesList[charId].direction_Y = clientUpdates[i]->charState->direction_Y;
-				gameState->characterStatesList[charId].health = clientUpdates[i]->charState->health;
-				
-				int n_proj = clientUpdates[i]->charState->projectileCount;
-				gameState->characterStatesList[charId].projectileCount = n_proj;
-				for (int j = 0; j < n_proj; j++)
-				{
-					gameState->characterStatesList[charId].projectileStates[j].projectileID = clientUpdates[i]->charState->projectileStates[j].projectileID;
-					gameState->characterStatesList[charId].projectileStates[j].shooterID = clientUpdates[i]->charState->projectileStates[j].shooterID;
-					gameState->characterStatesList[charId].projectileStates[j].projectileType = clientUpdates[i]->charState->projectileStates[j].projectileType;
-					gameState->characterStatesList[charId].projectileStates[j].position_X = clientUpdates[i]->charState->projectileStates[j].position_X;
-					gameState->characterStatesList[charId].projectileStates[j].position_Y = clientUpdates[i]->charState->projectileStates[j].position_Y;
-					gameState->characterStatesList[charId].projectileStates[j].direction_X = clientUpdates[i]->charState->projectileStates[j].direction_X;
-					gameState->characterStatesList[charId].projectileStates[j].direction_Y = clientUpdates[i]->charState->projectileStates[j].direction_Y;
-					gameState->characterStatesList[charId].projectileStates[j].LinearVelocity = clientUpdates[i]->charState->projectileStates[j].LinearVelocity;
-					gameState->characterStatesList[charId].projectileStates[j].hitCount = clientUpdates[i]->charState->projectileStates[j].hitCount;
-					gameState->characterStatesList[charId].projectileStates[j].target_X = clientUpdates[i]->charState->projectileStates[j].target_X;
-					gameState->characterStatesList[charId].projectileStates[j].target_Y = clientUpdates[i]->charState->projectileStates[j].target_Y;
-				}
-				
-				clientUpdates[i]->newDataFromClient = 0;
-			}
+			clientUpdates[i]->charState->characterId = i;
 		}
-
-/*
-		if (operation)
+		
+		gameState->playable = 1;
+		
+		char winner[USRN_LENGTH];
+		int activeChars = n_players;
+		int inGamePlayers = n_players;
+		int endCount = 100;
+		int endCountStarted = 0;
+		// this function will auto-disable when game is over
+		while(procArgs->processEnabled)
 		{
-			gameState->characterStatesList[0].position_X += 2;
-			gameState->characterStatesList[0].position_Y += 2;
-			gameState->characterStatesList[1].position_X -= 2;
-			gameState->characterStatesList[1].position_Y -= 2;
+			// si algun thread ha rebut un 105 de desconnexió durant la partida
+			// vol dir que l'usuari ha marxat, per tant el que fem es comptar
+			if(procArgs->deInitEnabled)
+			{
+					--inGamePlayers;
+					// tothom ha marxat, la partida acaba aquí
+					if(inGamePlayers <= 0)
+					{
+						procArgs->processEnabled = 0;
+					}
+					procArgs->deInitEnabled = 0;
+					printf("one player left mid game!\n");
+			}
+			
+			for (int i = 0; i < n_players; i++)
+			{
+				if (clientUpdates[i]->newDataFromClient)
+				{
+					int userId = clientUpdates[i]->userId;
+					int charId = clientUpdates[i]->charState->characterId;
+					gameState->characterStatesList[charId].position_X = clientUpdates[i]->charState->position_X;
+					gameState->characterStatesList[charId].position_Y = clientUpdates[i]->charState->position_Y;
+					gameState->characterStatesList[charId].velocity_X = clientUpdates[i]->charState->velocity_X;
+					gameState->characterStatesList[charId].velocity_Y = clientUpdates[i]->charState->velocity_Y;
+					gameState->characterStatesList[charId].direction_X = clientUpdates[i]->charState->direction_X;
+					gameState->characterStatesList[charId].direction_Y = clientUpdates[i]->charState->direction_Y;
+					gameState->characterStatesList[charId].health = clientUpdates[i]->charState->health;
+					
+					int n_proj = clientUpdates[i]->charState->projectileCount;
+					gameState->characterStatesList[charId].projectileCount = n_proj;
+					for (int j = 0; j < n_proj; j++)
+					{
+						gameState->characterStatesList[charId].projectileStates[j].projectileID = clientUpdates[i]->charState->projectileStates[j].projectileID;
+						gameState->characterStatesList[charId].projectileStates[j].shooterID = clientUpdates[i]->charState->projectileStates[j].shooterID;
+						gameState->characterStatesList[charId].projectileStates[j].projectileType = clientUpdates[i]->charState->projectileStates[j].projectileType;
+						gameState->characterStatesList[charId].projectileStates[j].position_X = clientUpdates[i]->charState->projectileStates[j].position_X;
+						gameState->characterStatesList[charId].projectileStates[j].position_Y = clientUpdates[i]->charState->projectileStates[j].position_Y;
+						gameState->characterStatesList[charId].projectileStates[j].direction_X = clientUpdates[i]->charState->projectileStates[j].direction_X;
+						gameState->characterStatesList[charId].projectileStates[j].direction_Y = clientUpdates[i]->charState->projectileStates[j].direction_Y;
+						gameState->characterStatesList[charId].projectileStates[j].LinearVelocity = clientUpdates[i]->charState->projectileStates[j].LinearVelocity;
+						gameState->characterStatesList[charId].projectileStates[j].hitCount = clientUpdates[i]->charState->projectileStates[j].hitCount;
+						gameState->characterStatesList[charId].projectileStates[j].target_X = clientUpdates[i]->charState->projectileStates[j].target_X;
+						gameState->characterStatesList[charId].projectileStates[j].target_Y = clientUpdates[i]->charState->projectileStates[j].target_Y;
+					}
+					
+					clientUpdates[i]->newDataFromClient = 0;
+				}
+			}
 			
 			
+			UpdateGameStateJson(gameState);
+			sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
+			sendToGame(senderArgs, response, 1);
+			
+			// calcular quan acaba la partida	
+			activeChars = 0;
+			for (int i = 0; i < n_players; i++)
+			{
+				if(gameState->characterStatesList[i].health > 0)
+				{
+					++activeChars;
+				}
+			}
+			
+			if (activeChars == 1)
+			{
+				if (!endCountStarted)
+				{
+					endCountStarted = 1;
+					printf("One active character remaining: start game end count\n");
+				}
+				--endCount;
+				if (endCount <= 0)
+				{
+					procArgs->processEnabled = 0;
+					int winnerFound = 0;
+					for (int i = 0; i < n_players; i++)
+					{
+						if(gameState->characterStatesList[i].health > 0)
+						{
+							winnerFound = 1;
+							int winnerId = gameState->characterStatesList[i].characterId;
+							GetUsernameFromCharId(senderArgs->game, winnerId, winner);
+						}
+					}
+					if (!winnerFound)
+					{
+						strcpy(winner, "DRAW");
+					}
+					printf("end count finished: winner is %s\n", winner);
+				}
+			}
+			
+			else if (activeChars == 0)
+			{
+				printf("No active characters remaining: game draw\n");
+				procArgs->processEnabled == 0;
+				strcpy(winner, "DRAW");
+			}
+			
+
+			// sleep for 15 ms
+			struct timespec s;
+			s.tv_sec = 0;
+			s.tv_nsec = 10000000L;
+			nanosleep(&s, NULL);		
+		}
+		if(inGamePlayers <= 0)
+		{
+			printf("All players left mid game! stopping game proccessor...\n");
 		}
 		else 
 		{
-			gameState->characterStatesList[0].position_X -= 2;
-			gameState->characterStatesList[0].position_Y -= 2;
-			gameState->characterStatesList[1].position_X += 2;
-			gameState->characterStatesList[1].position_Y += 2;
-		}
-		
-		counter++;
-		if (counter > 150)
-		{
-			counter = 0;
-			if (operation)
+			sprintf(response, "102/END/%s", winner);
+			sendToGame(senderArgs, response, 1);
+			
+			struct timespec s;
+			s.tv_sec = 0;
+			s.tv_nsec = 1000000L;
+			
+			while(inGamePlayers > 0)
 			{
-				operation = 0;
+				while (!procArgs->deInitEnabled)
+				{
+					nanosleep(&s, NULL);
+				}
+				if (procArgs->deInitEnabled)
+				{
+					--inGamePlayers;
+					procArgs->deInitEnabled = 0;
+				}
 			}
-			else operation = 1;
+			printf("All players exited the game. preparing game proccessor for the next game...\n");
+			DeleteGameFromTable(procArgs->gameTable, senderArgs->game);
 		}
-		*/
-		UpdateGameStateJson(gameState);
-		sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
-		sendToGame(senderArgs, response, 1);
-		
-		// sleep for 15 ms
-		struct timespec s;
-		s.tv_sec = 0;
-		s.tv_nsec = 10000000L;
-		nanosleep(&s, NULL);
-		
-		// calcular quan acaba la partida
-		
 	}
-	sendToGame(senderArgs, "102/END", 1);
 	pthread_exit(0);
 }
 
@@ -985,16 +1027,17 @@ void* attendClient (void* args)
 					if(preGameRejected != NULL)
 					{
 						preGameUserPos = GetPreGameUserPosByName(preGameRejected, username);
-						pthread_mutex_lock(preGameRejected->game_mutex);
-						gameId = preGameRejected->gameId;
-						if(preGameUserPos != -1)
-						{
-							preGameRejected->users[preGameUserPos]->userState = -1; //Marca la partida com a rebutjada
-						}
-						pthread_mutex_unlock(preGameRejected->game_mutex);
+						//pthread_mutex_lock(preGameRejected->game_mutex);
+						//gameId = preGameRejected->gameId;
+						//if(preGameUserPos != -1)
+						//{
+						//	preGameRejected->users[preGameUserPos]->userState = -1; //Marca la partida com a rebutjada
+						//}
+						//pthread_mutex_unlock(preGameRejected->game_mutex);
 						
 						if(preGameUserPos != -1)
 						{
+							DeletePreGameUser(preGameRejected, preGameRejected->users[preGameUserPos]);
 							printf("%s rebutja la partida %s\n", username, p);
 							strcpy(response, "9/");
 							strcat(response, "REJECTED");
@@ -1131,7 +1174,18 @@ void* attendClient (void* args)
 					{
 						pthread_mutex_lock(gameProcessorArgs[gameId]->gameProcessor_mutex);
 						gameProcessorArgs[gameId]->gameId = preGame->gameId;
-						gameProcessorArgs[gameId]->n_players = preGame->userCount;
+						//gameProcessorArgs[gameId]->n_players = preGame->userCount;
+						int activePlayers = 0;
+						for (int i = 0; i < preGame->userCount; i++)
+						{
+							if(preGame->users[i]->userState == 1)
+							{
+								++activePlayers;
+							}
+						}
+						gameProcessorArgs[gameId]->n_players = activePlayers;
+						
+						gameProcessorArgs[gameId]->gameTable = gameTable;
 						
 						// incialitzem les estructures per a que els clients reportin els updates
 						gameProcessorArgs[gameId]->gameUpdatesFromClients = malloc(preGame->userCount * sizeof(GameUpdatesFromClient*));
@@ -1216,11 +1270,11 @@ void* attendClient (void* args)
 			{
 				//printf("Request 101: %s\n", request);
 				userSend = 0;
-				charId = GetCharIdFromUserId(preGame, userId);
-				printf("char ID assigned to user %s: %d\n", username, charId);
 				p = strtok(NULL, "/");
 				if(strcmp(p, "HELLO") == 0)
 				{
+					charId = GetCharIdFromUserId(preGame, userId);
+					printf("char ID assigned to user %s: %d\n", username, charId);
 					char initStateResponse [SERVER_RSP_LEN];
 					json_object* initJson = GameInitStateJson(preGame, connectedUser->id);
 					if (initJson != NULL)
@@ -1238,10 +1292,67 @@ void* attendClient (void* args)
 					// wake up the processor to allow init and send first game state to all clients
 					sleep(1);
 					
+					struct timespec s;
+					s.tv_sec = 0;
+					s.tv_nsec = 100000000L;
+					while (gameProcessorArgs[gameId]->initEnabled != 0)
+					{
+						nanosleep(&s, NULL);
+					}
+					
 					gameProcessorArgs[gameId]->initEnabled = 1;
 					
 					pthread_cond_signal(gameProcessorArgs[gameId]->gameProcessor_signal);				
 					
+				}
+				// debilitem el personatge que marxa de la partida
+				else if (strcmp(p, "LEAVE") == 0)
+				{
+					char byeResponse[SERVER_RSP_LEN];
+					strcpy(byeResponse, "101/GOODBYE|");
+					write(sock_conn, byeResponse, strlen(byeResponse));
+					
+					printf("user %s is leaving the game\n", username);
+					if (preGame == NULL)
+					{
+						printf("Warning: user has already left the game!\n");
+					}
+					else
+					{
+						pthread_mutex_lock(preGameUser->user_mutex);
+						preGameUser->userState = -1;
+						pthread_mutex_unlock(preGameUser->user_mutex);
+						
+						struct timespec s;
+						s.tv_sec = 0;
+						s.tv_nsec = 100000000L;
+						if (gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient)
+						{
+							nanosleep(&s, NULL);
+						}
+						gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->charState->health = 0;
+						gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->newDataFromClient = 1;
+						
+						// indiquem que ha caigut un usuari
+						while(gameProcessorArgs[gameId]->deInitEnabled == 1)
+						{
+							nanosleep(&s, NULL);
+						}
+						gameProcessorArgs[gameId]->deInitEnabled = 1;
+						
+						
+						// tornem a inicialitzar els parametres relacionats amb la partida on juga l'usuari, sense esborrar-la.
+						preGame = NULL;
+						preGameUser = NULL;
+						gameId = -1;
+						charId = -1;
+						*gameName = '\0';
+						
+						globalSend = 0;
+						gameSend = 0;
+						gameSendUserState = -2;
+						printf("user %s left the game\n", username);	
+					}
 				}
 				break;				
 			}
@@ -1314,18 +1425,6 @@ void* attendClient (void* args)
 				userSend = 0;
 				globalSend = 0;
 				gameSend = 0;
-				
-				/*{
-					"characterState":
-					{
-						"charID":0,
-						"posX":125,
-						"posY":80,
-						"velX":0,
-						"velY":0
-					},					
-					"projectileStates":[]
-				}*/
 				
 				p = strtok(NULL, "|");
 				if(p == NULL)
@@ -1426,8 +1525,8 @@ void* attendClient (void* args)
 							projState[i].projectileType = *(json_object_get_string(projectileType));
 							projState[i].position_X = json_object_get_int(projectilePosX);
 							projState[i].position_Y = json_object_get_int(projectilePosY);
-							projState[i].direction_X = json_object_get_int(projectileDirX);
-							projState[i].direction_Y = json_object_get_int(projectileDirY);
+							projState[i].direction_X = json_object_get_double(projectileDirX);
+							projState[i].direction_Y = json_object_get_double(projectileDirY);
 							projState[i].LinearVelocity = json_object_get_int(projectileLinearVelocity);
 							projState[i].hitCount = json_object_get_int(hitCount);
 							projState[i].target_X = json_object_get_int(projectileTarX);

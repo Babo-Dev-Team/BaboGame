@@ -131,6 +131,7 @@ int AddPreGameUser(PreGameState* gameState, PreGameUser* user)
 		int pos = gameState->userCount;
 		user->charId = pos;
 		gameState->users[pos] = user;
+		gameState->users[pos]->user_mutex = gameState->game_mutex;
 		gameState->userCount++;		
 		pthread_mutex_unlock(gameState->game_mutex);
 		return 0;
@@ -253,7 +254,7 @@ int AddGameToGameTable(GameTable* table, PreGameState* gameState)
 				{
 					gameState->users[i]->user_mutex = gameState->game_mutex;
 				}
-				
+				gameState->creator->user_mutex = gameState->game_mutex;
 				// Afegim la partida a la taula de partides
 				table->createdGames[emptyPos] = gameState;
 				table->gameCount++;
@@ -364,14 +365,16 @@ int IamAloneinGame(PreGameState* preGameState)
 	for(i=0;i<preGameState->userCount;i++)
 	{
 		if((preGameState->users[i]->userState == 0)||(preGameState->users[i]->userState == 1))
-			count=0;
+		{
+			++count;
+		}
 	}
 	pthread_mutex_unlock(preGameState->game_mutex);
 	int ret;
 	if(count > 1)
-		ret=0;
+		ret = 0;
 	else
-		ret=1;
+		ret = 1;
 	return ret;
 }
 
@@ -554,6 +557,27 @@ int GetCharIdFromUserId(PreGameState* state, int userId)
 	else ret = -1;
 	pthread_mutex_unlock(state->game_mutex);
 	return ret;
+}
+
+void GetUsernameFromCharId(PreGameState* state, int charId, char username[USRN_LENGTH])
+{
+	int found = 0;
+	int i = 0;
+	pthread_mutex_lock(state->game_mutex);
+	while (!found && i < state->userCount)
+	{
+		if (charId == state->users[i]->charId)
+		{
+			found = 1;
+		}
+		else ++i;
+	}
+	if (found)
+	{
+		strcpy(username, state->users[i]->username);
+	}
+	else username = NULL;
+	pthread_mutex_unlock(state->game_mutex);
 }
 
 //------------------------------------------------------------------------------
