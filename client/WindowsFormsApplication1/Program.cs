@@ -296,6 +296,84 @@ namespace BaboGameClient
                         QueriesForm.Invoke(invitationMessageDelegate, new object[] { splitResponse[1], splitResponse[2] });
                     }
                 }
+
+                //Jugadors en qui ja he jugat
+                else if (responseType == 13)
+                {
+                    string OpponentList = ReceiverArgs.responseStr;
+                    CharacterListDelegate opponentDelegate = new CharacterListDelegate(this.QueriesForm.UpdateOpponent);
+
+                    int n_pairs = Convert.ToInt32(OpponentList.Split('/')[0]);
+                    string[] opponentPairs = new string[n_pairs];
+                    string[][] opponents = new string[n_pairs][];
+                    for (int i = 0; i < n_pairs; i++)
+                    {
+                        opponents[i] = new string[3];
+                    }
+                    if (n_pairs > 0)
+                    {
+                        OpponentList = OpponentList.Remove(0, OpponentList.IndexOf("/") + 1); //eliminem el n_chars de la resposta
+                        for (int i = 0; i < n_pairs; i++)
+                        {
+                            opponentPairs = OpponentList.Split('/');
+                            opponents[i] = opponentPairs[i].Split('*');
+                        }
+                    }
+
+                    QueriesForm.Invoke(opponentDelegate, new object[] { opponents });
+                }
+
+                //Resultat de partides jugades amb altres jugadors
+                else if (responseType == 14)
+                {
+                    string gameResultsList = ReceiverArgs.responseStr;
+                    CharacterListDelegate gameResultsDelegate = new CharacterListDelegate(this.QueriesForm.UpdateGameResultsWithOthers);
+
+                    int n_pairs = Convert.ToInt32(gameResultsList.Split('/')[0]);
+                    string[] gameResultsPairs = new string[n_pairs];
+                    string[][] gameResults = new string[n_pairs][];
+                    for (int i = 0; i < n_pairs; i++)
+                    {
+                        gameResults[i] = new string[3];
+                    }
+                    if (n_pairs > 0)
+                    {
+                        gameResultsList = gameResultsList.Remove(0, gameResultsList.IndexOf("/") + 1); //eliminem el n_chars de la resposta
+                        for (int i = 0; i < n_pairs; i++)
+                        {
+                            gameResultsPairs = gameResultsList.Split('/');
+                            gameResults[i] = gameResultsPairs[i].Split('*');
+                        }
+                    }
+
+                    QueriesForm.Invoke(gameResultsDelegate, new object[] { gameResults });
+                }
+
+                //Resultat de l'interval de partides
+                else if (responseType == 15)
+                {
+                    string gameResultsList = ReceiverArgs.responseStr;
+                    CharacterListDelegate gameResultsDelegate = new CharacterListDelegate(this.QueriesForm.UpdateGameInterval);
+
+                    int n_pairs = Convert.ToInt32(gameResultsList.Split('/')[0]);
+                    string[] gameResultsPairs = new string[n_pairs];
+                    string[][] gameResults = new string[n_pairs][];
+                    for (int i = 0; i < n_pairs; i++)
+                    {
+                        gameResults[i] = new string[3];
+                    }
+                    if (n_pairs > 0)
+                    {
+                        gameResultsList = gameResultsList.Remove(0, gameResultsList.IndexOf("/") + 1); //eliminem el n_chars de la resposta
+                        for (int i = 0; i < n_pairs; i++)
+                        {
+                            gameResultsPairs = gameResultsList.Split('/');
+                            gameResults[i] = gameResultsPairs[i].Split('*');
+                        }
+                    }
+
+                    QueriesForm.Invoke(gameResultsDelegate, new object[] { gameResults });
+                }
             }
         }
 

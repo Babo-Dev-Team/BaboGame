@@ -444,16 +444,9 @@ namespace BaboGame_test_2
                             else if (response.responseStr.Split('/')[0] == "END")
                             {
                                 playable = false;
-                                    string winner = response.responseStr.Split('/')[1];
-                                    Console.WriteLine("Winner is:" + winner);
-                                    if (winner == "DRAW")
-                                    {
-                                        // la partida es resol en empat
-                                    }
-                                    else
-                                    {
-                                        // winner conté el nom d'usuari del guanyador
-                                    }
+                                string winner = response.responseStr.Split('/')[1];
+                                Console.WriteLine("Winner is:" + winner);
+                                EndOnlineGame(winner);
                             }
                         }
                         /*
@@ -464,7 +457,7 @@ namespace BaboGame_test_2
                             }*/
                         }
                 }
-                else if (ReceiverArgs.newDataFromServer == 103 && Initialized)
+                else if ((ReceiverArgs.newDataFromServer == 103 && Initialized)&&(!GameEnded))
                 {
                     GenericResponse response = ReceiverArgs.realtimeResponse;
                     //Console.WriteLine("Response Received: Code " + response.responseType);
@@ -501,18 +494,11 @@ namespace BaboGame_test_2
                                 playable = false;
                                 string winner = response.responseStr.Split('/')[1];
                                 Console.WriteLine("Winner is:" + winner);
-                                if (winner == "DRAW")
-                                {
-                                    // la partida es resol en empat
-                                }
-                                else
-                                {
-                                    // winner conté el nom d'usuari del guanyador
-                                }
+                                EndOnlineGame(winner);
                             }
                         }
                     }
-                    if (Initialized)
+                    if ((Initialized)&& (!GameEnded))
                     {
                         response = ReceiverArgs.realtimeResponse;
                         //Console.WriteLine("Response Received: Code " + response.responseType);
@@ -949,6 +935,46 @@ namespace BaboGame_test_2
 
         }
 
+        //Acaba el joc online
+        private void EndOnlineGame(string winner)
+        {
+            if (winner == "DRAW")
+            {
+                projectileSprites.Clear();
+                slimeSprites.Clear();
+                scenarioSprites.Clear();
+                HasWinner = false;
+                GameEnded = true;
+                otherTexts.Add(new NameFontModel("EMPAT", new Vector2(300, 100), Color.Black, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
+                otherTexts.Add(new NameFontModel("EMPAT", new Vector2(300, 100), Color.White, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 1f, -3, false));
+            }
+            else
+            {
+                projectileSprites.Clear();
+                slimeSprites.Clear();
+                scenarioSprites.Clear();
+                HasWinner = true;
+                GameEnded = true;
+                foreach (NameFontModel name in playersNames)
+                {
+                    if (name.name == winner)
+                    {
+                        IDwinner = name.charID;
+                    }
+                }
+                otherTexts.Add(new NameFontModel("GUANYADOR:", new Vector2(700, 90), Color.Black, 0f, 1f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
+                otherTexts.Add(new NameFontModel("GUANYADOR:", new Vector2(700, 85), Color.White, 0f, 1f, new Vector2(0, 0), SpriteEffects.None, 1f, -3, false));
+            }
+
+            otherTexts.Add(new NameFontModel("Pitja ESC o el espai per sortir del joc", new Vector2(100, 650), Color.Black, 0f, 0.5f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
+            otherTexts.Add(new NameFontModel("Pitja ESC o el espai per sortir del joc", new Vector2(100, 645), Color.White, 0f, 0.5f, new Vector2(0, 0), SpriteEffects.None, 1f, -3, false));
+
+            //Actualitzem la pantalla només un cop
+
+            EndGame();
+        }
+
+
         //Control dels personatges
         private void UpdateControllableCharacter(GameTime gameTime)
         {
@@ -1048,6 +1074,7 @@ namespace BaboGame_test_2
                 {
                     projectileSprites.Clear();
                     slimeSprites.Clear();
+                    scenarioSprites.Clear();
                     HasWinner = true;
                     GameEnded = true;
                     IDwinner = IDwinnerOferted;
@@ -1058,6 +1085,7 @@ namespace BaboGame_test_2
                 {
                     projectileSprites.Clear();
                     slimeSprites.Clear();
+                    scenarioSprites.Clear();
                     HasWinner = false;
                     GameEnded = true;
                     otherTexts.Add(new NameFontModel("EMPAT", new Vector2(300, 100), Color.Black, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
@@ -1074,6 +1102,8 @@ namespace BaboGame_test_2
             }
         }
 
+
+        //Acaba el joc
         private void EndGame()
         {
             if ((HasWinner) && (GameEnded))

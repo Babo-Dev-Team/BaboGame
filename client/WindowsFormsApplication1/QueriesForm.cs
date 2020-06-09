@@ -72,6 +72,10 @@ namespace BaboGameClient
         Button NewParty_btn;
         Button Training_btn;
 
+        //Elements del menú de queries
+        DataGridView MultipleStringSelected_dgv;
+        Button AddToMultipleStringSelected_btn;
+
         string[] characterSelected;
         string[] characterDescription;
         int charSelectedPos;
@@ -136,6 +140,10 @@ namespace BaboGameClient
             //Element del menú principal
             NewParty_btn = new Button();
             Training_btn = new Button();
+
+            //Elements del menú de Queries
+            MultipleStringSelected_dgv = new DataGridView();
+            AddToMultipleStringSelected_btn = new Button();
 
             characterSelected = new string[] { "Babo", "Limax", "Kaler", "Swalot" };
 
@@ -478,6 +486,30 @@ namespace BaboGameClient
             this.Controls.Add(DifficultySelected_pb);
             DifficultyPos = 0;
 
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Creació del menú de consultes
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //LLista de múltiples respostes
+            MultipleStringSelected_dgv.Visible = false;
+            MultipleStringSelected_dgv.Size = new Size(250, 240);
+            MultipleStringSelected_dgv.Location = new Point(625, 25);
+            MultipleStringSelected_dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            MultipleStringSelected_dgv.Name = "MultipleStringSelected_dgv";
+            MultipleStringSelected_dgv.TabIndex = 0;
+            MultipleStringSelected_dgv.RowTemplate.Height = 20;
+            MultipleStringSelected_dgv.Enabled = true;
+            this.Controls.Add(MultipleStringSelected_dgv);
+            MultipleStringSelected_dgv.CellClick += new DataGridViewCellEventHandler(this.MultipleStringSelected_dgv_CellClick);
+
+            //Butó per afegir elements a la llista
+            AddToMultipleStringSelected_btn.Location = new Point(625, 270);
+            AddToMultipleStringSelected_btn.Size = new Size(80, 30);
+            AddToMultipleStringSelected_btn.Text = "Afegeix";
+            AddToMultipleStringSelected_btn.Visible = false;
+            AddToMultipleStringSelected_btn.Click += new EventHandler(this.AddToMultipleSelected_btn_Click);
+            this.Controls.Add(AddToMultipleStringSelected_btn);
+
+
             TrainingState.Player_ID = new int[] {1,2,3,4,5,6,7,8};
             
 
@@ -536,6 +568,15 @@ namespace BaboGameClient
             //showGames_rb.Visible = QueriesScreen;
             TimePlayed_rb.Visible = QueriesScreen;
             queries_tb.Visible = QueriesScreen;
+            Opponents_rb.Visible = QueriesScreen;
+            AddToMultipleStringSelected_btn.Visible = QueriesScreen;
+            MultipleStringSelected_dgv.Visible = QueriesScreen;
+            gameResultsWithPlayers_rb.Visible = QueriesScreen;
+            TimeInterval1_lbl.Visible = QueriesScreen;
+            TimeInterval2_lbl.Visible = QueriesScreen;
+            dateTimeEnd.Visible = QueriesScreen;
+            dateTimeStart_dt.Visible = QueriesScreen;
+            GameListInterval_rb.Visible = QueriesScreen;
             this.BackColor = Color.LightGreen;
 
             //CreatePartyScreen
@@ -666,6 +707,79 @@ namespace BaboGameClient
 
         }
 
+        //Actualitzem llista de jugadors en que hem jugat
+        public void UpdateOpponent(string[][] opponents)
+        {
+            QueryGrid.Rows.Clear();
+            QueryGrid.Columns.Clear();
+            QueryGrid.Columns.Add("username", "Usuari");
+            QueryGrid.Columns.Add("ID", "ID");
+
+            for (int i = 0; i < opponents.GetLength(0); i++)// array rows
+            {
+                string[] row = new string[opponents[i].GetLength(0) - 1];
+
+                for (int j = 0; j < opponents[i].GetLength(0) - 1; j++)
+                {
+                    if ((opponents[i][2].ToString() == "0") && (j == 0))
+                        row[j] = opponents[i][j] + "(Inhabilitat)";
+                    else
+                        row[j] = opponents[i][j];
+                }
+
+                QueryGrid.Rows.Add(row);
+            }
+            QueryGrid.Refresh();
+
+        }
+
+        //Actualitza llista de partides amb altres jugadors
+        public void UpdateGameResultsWithOthers(string[][] games)
+        {
+            QueryGrid.Rows.Clear();
+            QueryGrid.Columns.Clear();
+            QueryGrid.Columns.Add("gameName", "Nom de la partida");
+            QueryGrid.Columns.Add("ID", "ID");
+            QueryGrid.Columns.Add("winner", "Guanyador");
+
+            for (int i = 0; i < games.GetLength(0); i++)// array rows
+            {
+                string[] row = new string[games[i].GetLength(0)];
+
+                for (int j = 0; j < games[i].GetLength(0); j++)
+                {
+                        row[j] = games[i][j];
+                }
+
+                QueryGrid.Rows.Add(row);
+            }
+            QueryGrid.Refresh();
+
+        }
+
+        //Actualitza llista de partides amb un interval
+        public void UpdateGameInterval(string[][] games)
+        {
+            QueryGrid.Rows.Clear();
+            QueryGrid.Columns.Clear();
+            QueryGrid.Columns.Add("gameName", "Nom de la partida");
+            QueryGrid.Columns.Add("ID", "ID");
+            QueryGrid.Columns.Add("startdate", "Inici de la partida");
+
+            for (int i = 0; i < games.GetLength(0); i++)// array rows
+            {
+                string[] row = new string[games[i].GetLength(0)];
+
+                for (int j = 0; j < games[i].GetLength(0); j++)
+                {
+                    row[j] = games[i][j];
+                }
+
+                QueryGrid.Rows.Add(row);
+            }
+            QueryGrid.Refresh();
+
+        }
         //Envia el missatge del temps jugat
         public void TimePlayedPopup(string TimePlayed)
         {
@@ -838,7 +952,9 @@ namespace BaboGameClient
             using (var game = new Game1(this.serverHandler,LoadVariable))
             game.Run();
 
-            StartGame_btn.Visible = false;
+            //Canviem a la pantalla principal
+            ScreenSelected = 0;
+            UpdateScreen();
         }
 
         //Error en no haver escollit tothom personatge
@@ -1048,6 +1164,27 @@ namespace BaboGameClient
                 }
             }
             */
+            else if (Opponents_rb.Checked)
+            {
+                serverHandler.RequestOpponentPlayed();
+            }
+            else if (gameResultsWithPlayers_rb.Checked)
+            {
+                string[] players = new string[8];
+                for (int i = 0; i < MultipleStringSelected_dgv.RowCount - 1; i++)
+                {
+                    players[i] = MultipleStringSelected_dgv[0, i].Value.ToString();
+                }
+
+                serverHandler.RequestgamePlayedwithPlayers(MultipleStringSelected_dgv.RowCount - 1, players);
+            }
+            else if (GameListInterval_rb.Checked)
+            {
+                string startInterval = dateTimeStart_dt.Value.ToString("u");
+                string endInterval = dateTimeEnd.Value.ToString("u");
+
+                serverHandler.RequestgameInterval(startInterval, endInterval);
+            }
             else
                 MessageBox.Show("Selecciona alguna opció");
         }
@@ -1120,6 +1257,36 @@ namespace BaboGameClient
         {
             Chatting_tb.Text = "{" + StickerName + "}";
             serverHandler.RequestChatMessage(Chatting_tb.Text);
+        }
+
+        private void gameResultsWithPlayers_rb_CheckedChanged(object sender, EventArgs e)
+        {
+            if (gameResultsWithPlayers_rb.Checked)
+            {
+                MultipleStringSelected_dgv.Rows.Clear();
+                MultipleStringSelected_dgv.Columns.Clear();
+                MultipleStringSelected_dgv.Columns.Add("players", "Jugadors");
+                this.Width = 900;
+            }
+            else
+            {
+                this.Width = 616;
+            }
+        }
+
+        private void AddToMultipleSelected_btn_Click(object sender,EventArgs e)
+        {
+            if((!string.IsNullOrWhiteSpace(queries_tb.Text))&&(MultipleStringSelected_dgv.Rows.Count < 8))
+                MultipleStringSelected_dgv.Rows.Add(queries_tb.Text);
+        }
+
+        private void MultipleStringSelected_dgv_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                MultipleStringSelected_dgv.Rows.RemoveAt(e.RowIndex);
+            }
+            catch { }
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1465,5 +1632,6 @@ namespace BaboGameClient
             DifficultySelected_pb.Refresh();
 
         }
+
     }
 }
