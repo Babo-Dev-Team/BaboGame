@@ -581,6 +581,52 @@ namespace BaboGameClient
         public void SwitchToNotificationMode()
         {
             threadReceiver.Abort();
+            Console.WriteLine("Attempting to leave the game...");
+            //Thread.Sleep(1000);
+            this.SendRequest("103/BACK-OFF");
+            Thread.Sleep(100);
+            this.SendRequest("103/BACK-OFF");
+            Thread.Sleep(100);
+            this.SendRequest("103/BACK-OFF");
+            Thread.Sleep(100);
+            this.SendRequest("101/LEAVE");
+            int counter = 0;
+            bool success = false;
+            while (!success)
+            {
+                counter = 0;
+                Console.WriteLine("Reached the counter");
+                while (this.server.Available == 0 && counter < 50)
+                { 
+                 
+                    ++counter;
+                    Thread.Sleep(10);
+                }
+                if(server.Available > 0)
+                {
+                    Console.WriteLine("Threre is data in socket");
+                    string response = this.ReceiveReponse();
+                    Console.WriteLine("Response received: " + response);
+                    if (response != "101/GOODBYE")
+                    {
+                        this.SendRequest("103/BACK-OFF");
+                        Thread.Sleep(50);
+                        this.SendRequest("101/LEAVE");
+                    }
+                    else
+                    {
+                        success = true;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Nothing available in server");
+                    this.SendRequest("103/BACK-OFF");
+                    Thread.Sleep(100);
+                    this.SendRequest("101/LEAVE");
+                }
+            }       
+            Console.WriteLine("Successfully left the game. Now entering Notifications mode...");
             ThreadStart threadStart = delegate { this.Receiver.StartNotificationMode(); };
             threadReceiver = new Thread(threadStart);
             threadReceiver.Start();

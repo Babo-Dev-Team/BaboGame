@@ -358,6 +358,19 @@ namespace BaboGame_test_2
             FreeConsole();
         }
 
+        //----------------------------------------------------------------------------------
+        // Override del event de tancar la finestra
+        //----------------------------------------------------------------------------------
+        protected override void OnExiting(Object sender, EventArgs args)
+        {
+            this.serverHandler.SwitchToNotificationMode();
+            base.OnExiting(sender, args);
+
+            // amb aquesta crida notifiquem al servidor que sortim de la partida
+            // i tornem al sistema de notificaicions
+
+        }
+
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Funció Upload
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -424,29 +437,38 @@ namespace BaboGame_test_2
                         }
                         else if (response.responseType == 102)
                         {
-                            /*if (response.responseStr == "START")
+                            if (response.responseStr == "START")
                             {
                                 playable = true;
                             }
                             else if (response.responseStr.Split('/')[0] == "END")
                             {
                                 playable = false;
-                                // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
-                            }*/
+                                    string winner = response.responseStr.Split('/')[1];
+                                    Console.WriteLine("Winner is:" + winner);
+                                    if (winner == "DRAW")
+                                    {
+                                        // la partida es resol en empat
+                                    }
+                                    else
+                                    {
+                                        // winner conté el nom d'usuari del guanyador
+                                    }
+                            }
                         }
                         /*
-                        else if ((response.responseType == 103) && (Initialized))
-                        {
-                            gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
-                            PeriodicalUpdate();
-                        }*/
-                    }
+                            else if ((response.responseType == 103) && (Initialized))
+                            {
+                                gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
+                                PeriodicalUpdate();
+                            }*/
+                        }
                 }
                 else if (ReceiverArgs.newDataFromServer == 103 && Initialized)
                 {
                     GenericResponse response = ReceiverArgs.realtimeResponse;
-                    Console.WriteLine("Response Received: Code " + response.responseType);
-                    Console.WriteLine(response.responseStr);
+                    //Console.WriteLine("Response Received: Code " + response.responseType);
+                    //Console.WriteLine(response.responseStr);
                     gameState = JsonSerializer.Deserialize<GameState>(response.responseStr);
                     PeriodicalUpdate();
                 }
@@ -477,7 +499,16 @@ namespace BaboGame_test_2
                             else if (response.responseStr.Split('/')[0] == "END")
                             {
                                 playable = false;
-                                // TODO: CODI PER PARAR LA PARTIDA, extreure resultats etc.
+                                string winner = response.responseStr.Split('/')[1];
+                                Console.WriteLine("Winner is:" + winner);
+                                if (winner == "DRAW")
+                                {
+                                    // la partida es resol en empat
+                                }
+                                else
+                                {
+                                    // winner conté el nom d'usuari del guanyador
+                                }
                             }
                         }
                     }
@@ -884,12 +915,12 @@ namespace BaboGame_test_2
                     if ((projectileState.shooterID == projectileSprites[i].ShooterID)&&(projectileState.projectileID == projectileSprites[i].projectileID) && ((projectileState.shooterID != Controllable.IDcharacter) || !playable)) //Desacobla el client de les actualitzacions
                     {
                         found = true;
-                        projectileSprites[i].Position = new Vector2(projectileState.posX, projectileState.posY);
-                        projectileSprites[i].Direction = new Vector2(projectileState.directionX, projectileState.directionY);
-                        projectileSprites[i].Target = new Vector2(projectileState.targetX, projectileState.targetY);
-                        projectileSprites[i].LinearVelocity = projectileState.LinearVelocity;
-                        projectileSprites[i].ProjectileType = projectileState.projectileType;
-                        projectileSprites[i].HitCount = projectileState.hitCount;
+                        //projectileSprites[i].Position = new Vector2(projectileState.posX, projectileState.posY);
+                        //projectileSprites[i].Direction = new Vector2(projectileState.directionX, projectileState.directionY);
+                        //projectileSprites[i].Target = new Vector2(projectileState.targetX, projectileState.targetY);
+                        //projectileSprites[i].LinearVelocity = projectileState.LinearVelocity;
+                        //projectileSprites[i].ProjectileType = projectileState.projectileType;
+                        //projectileSprites[i].HitCount = projectileState.hitCount;
                     }
                     else
                         i++;
