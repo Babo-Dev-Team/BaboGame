@@ -39,6 +39,13 @@
             this.Notificacions_btn = new System.Windows.Forms.ToolStripMenuItem();
             this.MainMenu_btn = new System.Windows.Forms.ToolStripMenuItem();
             this.QueriesMenu_btn = new System.Windows.Forms.ToolStripMenuItem();
+            this.Opponents_rb = new System.Windows.Forms.RadioButton();
+            this.gameResultsWithPlayers_rb = new System.Windows.Forms.RadioButton();
+            this.dateTimeStart_dt = new System.Windows.Forms.DateTimePicker();
+            this.dateTimeEnd = new System.Windows.Forms.DateTimePicker();
+            this.GameListInterval_rb = new System.Windows.Forms.RadioButton();
+            this.TimeInterval1_lbl = new System.Windows.Forms.Label();
+            this.TimeInterval2_lbl = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.QueryGrid)).BeginInit();
             this.MenúExtres.SuspendLayout();
             this.SuspendLayout();
@@ -56,7 +63,7 @@
             // 
             // Send_btn
             // 
-            this.Send_btn.Location = new System.Drawing.Point(149, 345);
+            this.Send_btn.Location = new System.Drawing.Point(149, 393);
             this.Send_btn.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Send_btn.Name = "Send_btn";
             this.Send_btn.Size = new System.Drawing.Size(160, 46);
@@ -67,7 +74,7 @@
             // 
             // queries_tb
             // 
-            this.queries_tb.Location = new System.Drawing.Point(149, 79);
+            this.queries_tb.Location = new System.Drawing.Point(118, 55);
             this.queries_tb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.queries_tb.Name = "queries_tb";
             this.queries_tb.Size = new System.Drawing.Size(191, 22);
@@ -76,7 +83,7 @@
             // TimePlayed_rb
             // 
             this.TimePlayed_rb.AutoSize = true;
-            this.TimePlayed_rb.Location = new System.Drawing.Point(149, 133);
+            this.TimePlayed_rb.Location = new System.Drawing.Point(23, 98);
             this.TimePlayed_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.TimePlayed_rb.Name = "TimePlayed_rb";
             this.TimePlayed_rb.Size = new System.Drawing.Size(204, 21);
@@ -88,7 +95,7 @@
             // Ranking_rb
             // 
             this.Ranking_rb.AutoSize = true;
-            this.Ranking_rb.Location = new System.Drawing.Point(149, 175);
+            this.Ranking_rb.Location = new System.Drawing.Point(23, 132);
             this.Ranking_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Ranking_rb.Name = "Ranking_rb";
             this.Ranking_rb.Size = new System.Drawing.Size(160, 21);
@@ -100,7 +107,7 @@
             // Characters_rb
             // 
             this.Characters_rb.AutoSize = true;
-            this.Characters_rb.Location = new System.Drawing.Point(149, 220);
+            this.Characters_rb.Location = new System.Drawing.Point(23, 166);
             this.Characters_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Characters_rb.Name = "Characters_rb";
             this.Characters_rb.Size = new System.Drawing.Size(260, 21);
@@ -112,7 +119,7 @@
             // ConnectedList_rb
             // 
             this.ConnectedList_rb.AutoSize = true;
-            this.ConnectedList_rb.Location = new System.Drawing.Point(149, 262);
+            this.ConnectedList_rb.Location = new System.Drawing.Point(23, 191);
             this.ConnectedList_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ConnectedList_rb.Name = "ConnectedList_rb";
             this.ConnectedList_rb.Size = new System.Drawing.Size(155, 21);
@@ -156,11 +163,87 @@
             this.QueriesMenu_btn.Text = "Consultes";
             this.QueriesMenu_btn.Click += new System.EventHandler(this.QueriesMenu_btn_Click);
             // 
+            // Opponents_rb
+            // 
+            this.Opponents_rb.AutoSize = true;
+            this.Opponents_rb.Location = new System.Drawing.Point(23, 225);
+            this.Opponents_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.Opponents_rb.Name = "Opponents_rb";
+            this.Opponents_rb.Size = new System.Drawing.Size(239, 21);
+            this.Opponents_rb.TabIndex = 10;
+            this.Opponents_rb.TabStop = true;
+            this.Opponents_rb.Text = "Llista de jugadors en qui he jugat";
+            this.Opponents_rb.UseVisualStyleBackColor = true;
+            // 
+            // gameResultsWithPlayers_rb
+            // 
+            this.gameResultsWithPlayers_rb.AutoSize = true;
+            this.gameResultsWithPlayers_rb.Location = new System.Drawing.Point(23, 259);
+            this.gameResultsWithPlayers_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.gameResultsWithPlayers_rb.Name = "gameResultsWithPlayers_rb";
+            this.gameResultsWithPlayers_rb.Size = new System.Drawing.Size(237, 21);
+            this.gameResultsWithPlayers_rb.TabIndex = 11;
+            this.gameResultsWithPlayers_rb.TabStop = true;
+            this.gameResultsWithPlayers_rb.Text = "Llista de partides amb x jugadors";
+            this.gameResultsWithPlayers_rb.UseVisualStyleBackColor = true;
+            this.gameResultsWithPlayers_rb.CheckedChanged += new System.EventHandler(this.gameResultsWithPlayers_rb_CheckedChanged);
+            // 
+            // dateTimeStart_dt
+            // 
+            this.dateTimeStart_dt.Location = new System.Drawing.Point(131, 322);
+            this.dateTimeStart_dt.Name = "dateTimeStart_dt";
+            this.dateTimeStart_dt.Size = new System.Drawing.Size(281, 22);
+            this.dateTimeStart_dt.TabIndex = 12;
+            // 
+            // dateTimeEnd
+            // 
+            this.dateTimeEnd.Location = new System.Drawing.Point(131, 350);
+            this.dateTimeEnd.Name = "dateTimeEnd";
+            this.dateTimeEnd.Size = new System.Drawing.Size(281, 22);
+            this.dateTimeEnd.TabIndex = 13;
+            // 
+            // GameListInterval_rb
+            // 
+            this.GameListInterval_rb.AutoSize = true;
+            this.GameListInterval_rb.Location = new System.Drawing.Point(25, 296);
+            this.GameListInterval_rb.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.GameListInterval_rb.Name = "GameListInterval_rb";
+            this.GameListInterval_rb.Size = new System.Drawing.Size(279, 21);
+            this.GameListInterval_rb.TabIndex = 14;
+            this.GameListInterval_rb.TabStop = true;
+            this.GameListInterval_rb.Text = "Partides jugades a un interval de temps";
+            this.GameListInterval_rb.UseVisualStyleBackColor = true;
+            // 
+            // TimeInterval1_lbl
+            // 
+            this.TimeInterval1_lbl.AutoSize = true;
+            this.TimeInterval1_lbl.Location = new System.Drawing.Point(16, 327);
+            this.TimeInterval1_lbl.Name = "TimeInterval1_lbl";
+            this.TimeInterval1_lbl.Size = new System.Drawing.Size(109, 17);
+            this.TimeInterval1_lbl.TabIndex = 15;
+            this.TimeInterval1_lbl.Text = "Inici del interval:";
+            // 
+            // TimeInterval2_lbl
+            // 
+            this.TimeInterval2_lbl.AutoSize = true;
+            this.TimeInterval2_lbl.Location = new System.Drawing.Point(12, 355);
+            this.TimeInterval2_lbl.Name = "TimeInterval2_lbl";
+            this.TimeInterval2_lbl.Size = new System.Drawing.Size(115, 17);
+            this.TimeInterval2_lbl.TabIndex = 16;
+            this.TimeInterval2_lbl.Text = "Final del interval:";
+            // 
             // QueriesForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.TimeInterval2_lbl);
+            this.Controls.Add(this.TimeInterval1_lbl);
+            this.Controls.Add(this.GameListInterval_rb);
+            this.Controls.Add(this.dateTimeEnd);
+            this.Controls.Add(this.dateTimeStart_dt);
+            this.Controls.Add(this.gameResultsWithPlayers_rb);
+            this.Controls.Add(this.Opponents_rb);
             this.Controls.Add(this.ConnectedList_rb);
             this.Controls.Add(this.Characters_rb);
             this.Controls.Add(this.Ranking_rb);
@@ -196,5 +279,12 @@
         private System.Windows.Forms.ToolStripMenuItem Notificacions_btn;
         private System.Windows.Forms.ToolStripMenuItem MainMenu_btn;
         private System.Windows.Forms.ToolStripMenuItem QueriesMenu_btn;
+        private System.Windows.Forms.RadioButton Opponents_rb;
+        private System.Windows.Forms.RadioButton gameResultsWithPlayers_rb;
+        private System.Windows.Forms.DateTimePicker dateTimeStart_dt;
+        private System.Windows.Forms.DateTimePicker dateTimeEnd;
+        private System.Windows.Forms.RadioButton GameListInterval_rb;
+        private System.Windows.Forms.Label TimeInterval1_lbl;
+        private System.Windows.Forms.Label TimeInterval2_lbl;
     }
 }

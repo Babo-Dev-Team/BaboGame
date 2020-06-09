@@ -446,6 +446,39 @@ namespace BaboGameClient
                     }
                     ReceiverArgs.responseStr = gameStr;
                     break;
+
+                // llista de jugadors en qui he jugat
+                case 13:
+                    string Opponent_str = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        Opponent_str = Opponent_str + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = Opponent_str;
+                    break;
+
+                // llista de partides jugades amb algú altre
+                case 14:
+                    string gameResults_str = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        gameResults_str = gameResults_str + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = gameResults_str;
+                    break;
+
+                // llista de partides en un cert interval
+                case 15:
+                    string interval_str = splitResponse[1];
+                    for (int i = 2; i < splitResponse.Length; i++)
+                    {
+                        interval_str = interval_str + "/" + splitResponse[i];
+
+                    }
+                    ReceiverArgs.responseStr = interval_str;
+                    break;
                 case 101:
                     ReceiverArgs.responseStr = splitResponse[1];
                     break;
@@ -556,6 +589,28 @@ namespace BaboGameClient
         public void RequestSelectCharacter(string gameName, string character)
         {
             this.SendRequest("12/CHARACTER/" + character + "/");
+        }
+
+        public void RequestOpponentPlayed()
+        {
+            this.SendRequest("13/");
+        }
+
+        public void RequestgamePlayedwithPlayers(int num, string[] playerList)
+        {
+            string message = "14/" + num + "/";
+            for(int i= 0; i < num; i++)
+            {
+                message += playerList[i] + "/";
+            }
+
+            this.SendRequest(message);
+
+        }
+
+        public void RequestgameInterval(string start, string end)
+        {
+            this.SendRequest("15/" + start + "/" + end + "/");
         }
 
         //Request pel mode joc online
