@@ -1029,6 +1029,8 @@ namespace BaboGame_test_2
                     slimeSprites.Clear();
                     HasWinner = false;
                     GameEnded = true;
+                    otherTexts.Add(new NameFontModel("EMPAT", new Vector2(300, 100), Color.Black, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -3, false));
+                    otherTexts.Add(new NameFontModel("EMPAT", new Vector2(300, 100), Color.White, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 1f, -3, false));
                 }
 
                 
@@ -1037,52 +1039,38 @@ namespace BaboGame_test_2
 
                 //Actualitzem la pantalla només un cop
 
-                if ((HasWinner) && (GameEnded))
+                EndGame();
+            }
+        }
+
+        private void EndGame()
+        {
+            if ((HasWinner) && (GameEnded))
+            {
+                foreach (Character character in characterSprites)
                 {
-                    foreach (Character character in characterSprites)
+                    character.Direction = new Vector2(0, 1);
+                    if (character.IDcharacter == IDwinner)
                     {
-                        character.Direction = new Vector2(0, 1);
-                        if (character.IDcharacter == IDwinner)
-                        {
-                            character.Scale = 0.6f;
+                        character.Scale = 0.6f;
 
-                            character.Position = new Vector2(240, 240);
-                        }
-                        else
-                            character.Position = new Vector2(character.IDcharacter * 120 + 60, 480);
-
-                        character.Layer = 0.85f;
+                        character.Position = new Vector2(240, 240);
                     }
-                    foreach (NameFontModel name in playersNames)
-                    {
-                        if (name.charID == IDwinner)
-                        {
-                            if (name.color == Color.Black)
-                                name.Position = new Vector2(700, 190);
-                            else
-                                name.Position = new Vector2(700, 185);
-                        }
-                        else
-                        {
-                            name.scale = 0.25f;
-                            if (name.color == Color.Black)
-                                name.Position = new Vector2(name.charID * 120 + 20, 555);
-                            else
-                                name.Position = new Vector2(name.charID * 120 + 20, 550);
-                        }
-                    }
-                }
-                else if (GameEnded)
-                {
-
-                    foreach (Character character in characterSprites)
-                    {
-                        character.Direction = new Vector2(0, 1);
-                        character.Layer = 0.85f;
+                    else
                         character.Position = new Vector2(character.IDcharacter * 120 + 60, 480);
-                    }
 
-                    foreach (NameFontModel name in playersNames)
+                    character.Layer = 0.85f;
+                }
+                foreach (NameFontModel name in playersNames)
+                {
+                    if (name.charID == IDwinner)
+                    {
+                        if (name.color == Color.Black)
+                            name.Position = new Vector2(700, 190);
+                        else
+                            name.Position = new Vector2(700, 185);
+                    }
+                    else
                     {
                         name.scale = 0.25f;
                         if (name.color == Color.Black)
@@ -1090,6 +1078,25 @@ namespace BaboGame_test_2
                         else
                             name.Position = new Vector2(name.charID * 120 + 20, 550);
                     }
+                }
+            }
+            else if (GameEnded)
+            {
+
+                foreach (Character character in characterSprites)
+                {
+                    character.Direction = new Vector2(0, 1);
+                    character.Layer = 0.85f;
+                    character.Position = new Vector2(character.IDcharacter * 120 + 60, 480);
+                }
+
+                foreach (NameFontModel name in playersNames)
+                {
+                    name.scale = 0.25f;
+                    if (name.color == Color.Black)
+                        name.Position = new Vector2(name.charID * 120 + 20, 555);
+                    else
+                        name.Position = new Vector2(name.charID * 120 + 20, 550);
                 }
             }
         }
