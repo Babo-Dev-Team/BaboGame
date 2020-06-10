@@ -117,5 +117,38 @@ namespace BaboGameClient
                 }
             }
         }
+
+        private void DeleteUserButton_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(UsernameTextBox.Text) || string.IsNullOrWhiteSpace(PasswordTextBox.Text))
+            {
+                MessageBox.Show("Els camps estan buits!");
+                return;
+            }
+            int error = serverHandler.Connect(local2_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            if (error != 0)
+            {
+                MessageBox.Show("Connection Error.");
+
+            }
+            else
+            {
+                error = serverHandler.Deregister(this.UsernameTextBox.Text, this.PasswordTextBox.Text);
+                if (error == 0)
+                {
+                    MessageBox.Show("Usuari esborrat.");
+                }
+                else if (error == -1)
+                {
+                    MessageBox.Show("Error. Usuari / contrassenya incorrectes!");
+                }
+                else if (error == -2)
+                {
+                    MessageBox.Show("Error en el missatge");
+                }
+            }
+        }
+
+
     }
 }
