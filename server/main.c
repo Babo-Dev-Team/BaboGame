@@ -160,7 +160,8 @@ void* gameProcessor (void* args)
 	GameProcessorArgs* procArgs = (GameProcessorArgs*) args;
 	GameSenderArgs* senderArgs = procArgs->senderArgs;
 	GameUpdatesFromClient** clientUpdates;
-	
+	time_t rawTime;
+
 	for(;;)
 	{
 		int n_clientsInit = 0;
@@ -226,10 +227,25 @@ void* gameProcessor (void* args)
 		gameState->playable = 1;
 		
 		char winner[USRN_LENGTH];
+		int winnerUserId;
 		int activeChars = n_players;
 		int inGamePlayers = n_players;
 		int endCount = 100;
 		int endCountStarted = 0;
+		
+		char timeInit[100];
+		char timeEnd[100];
+		int duration; // in seconds
+		rawTime = time(NULL);
+		struct tm *ptmInit = localtime(&rawTime);
+		struct tm *ptmInitCpy = malloc(sizeof(struct tm));
+		ptmInitCpy->tm_hour = ptmInit->tm_hour;
+		ptmInitCpy->tm_min = ptmInit->tm_min;
+		ptmInitCpy->tm_sec = ptmInit->tm_sec;
+		
+		sprintf(timeInit, "%d-%d-%d %d:%d:%d", ptmInit->tm_year + 1900, ptmInit->tm_mon + 1, ptmInit->tm_mday, ptmInit->tm_hour, ptmInit->tm_min, ptmInit->tm_sec); 
+		printf("Time of game start: %s\n", timeInit);
+		
 		// this function will auto-disable when game is over
 		while(procArgs->processEnabled)
 		{
@@ -316,6 +332,7 @@ void* gameProcessor (void* args)
 							winnerFound = 1;
 							int winnerId = gameState->characterStatesList[i].characterId;
 							GetUsernameFromCharId(senderArgs->game, winnerId, winner);
+							winnerUserId = GetUserIdFromCharId(senderArgs->game, winnerId);
 						}
 					}
 					if (!winnerFound)
@@ -329,7 +346,7 @@ void* gameProcessor (void* args)
 			else if (activeChars == 0)
 			{
 				printf("No active characters remaining: game draw\n");
-				procArgs->processEnabled == 0;
+				procArgs->processEnabled = 0;
 				strcpy(winner, "DRAW");
 			}
 			
@@ -340,6 +357,7 @@ void* gameProcessor (void* args)
 			s.tv_nsec = 10000000L;
 			nanosleep(&s, NULL);		
 		}
+		
 		if(inGamePlayers <= 0)
 		{
 			printf("All players left mid game! stopping game proccessor...\n");
@@ -365,7 +383,46 @@ void* gameProcessor (void* args)
 					procArgs->deInitEnabled = 0;
 				}
 			}
+			rawTime = time(NULL);
+			struct tm *ptmEnd = localtime(&rawTime);
+			sprintf(timeEnd, "%d-%d-%d %d:%d:%d", ptmEnd->tm_year + 1900, ptmEnd->tm_mon + 1, ptmEnd->tm_mday, ptmEnd->tm_hour, ptmEnd->tm_min, ptmEnd->tm_sec); 			
+			printf("Time of game End: %s\n", timeEnd);
+			int duration = 3600 * (ptmEnd->tm_hour - ptmInitCpy->tm_hour) + 60 * (ptmEnd->tm_min - ptmInitCpy->tm_min) + (ptmEnd->tm_sec - ptmInitCpy->tm_sec);
+			printf("game duration (seconds): %d\n", duration);
 			printf("All players exited the game. preparing game proccessor for the next game...\n");
+			
+			pthread_mutex_lock(senderArgs->game->game_mutex);
+			
+			char usernames[n_players][USRN_LENGTH];
+			char* charnames[n_players];
+			for (int i = 0; i < n_players; i++)
+			{
+				charnames[i] = malloc(USRN_LENGTH * sizeof(char));
+			}
+			int userIds[n_players];
+			int scores[n_players];
+			
+			for (int i = 0; i < n_players; i++)
+			{
+				userIds[i] = senderArgs->game->users[i]->id;
+				strcpy(usernames[i], senderArgs->game->users[i]->username);
+				strcpy(charnames[i], senderArgs->game->users[i]->charname);
+				if(!strcmp(winner, usernames[i]))
+				{
+					scores[i] = 1000;
+				}
+				else 
+				{
+					scores[i] = 0;
+				}
+			}
+		
+			
+			BBDD_add_game_scores(senderArgs->game->gameName, n_players, charnames, userIds, scores, winnerUserId, timeInit, timeEnd, duration);
+			
+								 
+			
+			pthread_mutex_unlock(senderArgs->game->game_mutex);
 			DeleteGameFromTable(procArgs->gameTable, senderArgs->game);
 		}
 	}
@@ -757,6 +814,7 @@ void* attendClient (void* args)
 					int err = AddConnected(connectedList, connectedUser);
 					strcpy(response, "5/");
 					strcat(response, "OK");
+					printf("User created OK\n");
 					
 					json_object* listJson = connectedListToJson(connectedList);
 					
@@ -771,7 +829,8 @@ void* attendClient (void* args)
 				else 
 				{
 					strcpy(response, "5/");				
-					strcpy(response, "USED");
+					strcat(response, "USED");
+					printf("User created FAIL: user already exists\n");
 				}
 				break;
 			}
@@ -1024,6 +1083,9 @@ void* attendClient (void* args)
 				{
 					PreGameState* preGameRejected;
 					preGameRejected = GetPreGameStateByName(gameTable, p);
+					pthread_mutex_lock(preGameRejected->game_mutex);
+					gameId = preGameRejected->gameId;
+					pthread_mutex_unlock(preGameRejected->game_mutex);
 					if(preGameRejected != NULL)
 					{
 						preGameUserPos = GetPreGameUserPosByName(preGameRejected, username);
@@ -1037,7 +1099,12 @@ void* attendClient (void* args)
 						
 						if(preGameUserPos != -1)
 						{
-							DeletePreGameUser(preGameRejected, preGameRejected->users[preGameUserPos]);
+							int e = DeletePreGameUserWithCharIdResassignment(preGameRejected, preGameRejected->users[preGameUserPos]);
+							if (e)
+							{
+								printf("Error: usuari no trobat al intentar esborrar-lo de la partida\n");
+							}
+							else printf("Esborrar user de la partida OK\n");
 							printf("%s rebutja la partida %s\n", username, p);
 							strcpy(response, "9/");
 							strcat(response, "REJECTED");
@@ -1312,7 +1379,32 @@ void* attendClient (void* args)
 			}
 			
 			case 16: //Donar-se de baixa
+			{
+				userSend = 1;
+				gameSend = 0;
+				globalSend = 0;
+				char deregUsername[USRN_LENGTH];
+				char deregPasswd[PASS_LENGTH];
+				strcpy(deregUsername, strtok(NULL, "/"));
+				strcpy(deregPasswd, strtok(NULL, "/"));
+				printf("User: %s\n", deregUsername);
+				printf("Password: %s\n", deregPasswd);
+				int error = BBDD_deregister_user(deregUsername, deregPasswd);
+				if (!error)
+				{
+					strcpy(response, "16/");
+					strcat(response, "OK");
+					printf("User deregister ok!\n");
+				}
+				else 
+				{
+					strcpy(response, "16/");
+					strcat(response, "FAIL");	
+					printf("User deregister fail, not found in database\n");
+				}
 				break;
+			}
+
 			
 			//Missatges dins de la partida
 			case 101:
@@ -1746,7 +1838,13 @@ int main(int argc, char *argv[])
 	UpdateGameStateJson(state);
 	strcpy(teststr, json_object_to_json_string_ext(state->gameStateJson, JSON_C_TO_STRING_PRETTY));	
 	printf("\n\n%s\n\n", teststr);*/
-	
+	/*time_t rawTime;
+	rawTime = time(NULL);
+	struct tm *ptm = localtime(&rawTime);
+	char prova[100];
+	sprintf(prova, "%d-%d-%d %d:%d:%d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec); 
+	printf(prova);
+	*/
 	
 	// iniciem el seed per generar aleatorietat
 	srand(time(NULL));
@@ -1986,7 +2084,7 @@ int main(int argc, char *argv[])
 	{
 		free(threadArgs[i].connectedUser);
 	}*/
-	
+	printf("Exiting the program...\n");
 	DeleteConnectedList(connectedList);  // eliminem la llista de connectats i tots els usuaris
 	DeleteGameTable(gameTable);		// eliminem la taula de partides i totes les partides
 	pthread_mutex_destroy(mutexConnectedList);

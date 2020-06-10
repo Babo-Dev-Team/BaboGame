@@ -5,7 +5,7 @@
 
 #include "BBDD_Handler.h"
 
-#define QUERY_LENGTH 500
+#define QUERY_LENGTH 4096
 
 // Mysql data structures
 MYSQL *conn;
@@ -144,33 +144,42 @@ int BBDD_add_user(char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 {
 	char query[QUERY_LENGTH];
 	
-	strcpy(query, "select MAX(jugadors.id) from jugadors");
+	strcpy(query, "select jugadors.id from jugadors where jugadors.nom = '");
+	strcat(query, username);
+	strcat(query, "'");
+	
 	int error = send_query(query);
 	row = mysql_fetch_row(result);
-	
-	if (row == NULL)
+	if (row != NULL)
 	{
-		//no users yet
-		user_id = 1;
+		// this user already exists!!!
+		return -1;
 	}
 	else
 	{
-		user_id = atoi(row[0]) + 1;
+		strcpy(query, "select MAX(jugadors.id) from jugadors");
+		int error = send_query(query);
+		row = mysql_fetch_row(result);
+		
+		if (row == NULL)
+		{
+			//no users yet
+			user_id = 1;
+		}
+		else
+		{
+			user_id = atoi(row[0]) + 1;
+		}
+		sprintf(query, "insert into jugadors values ( %d", user_id);
+		strcat(query, ", '");
+		strcat(query, username);
+		strcat(query, "', '");
+		strcat(query, passwd);
+		strcat(query, "',1)");
+		
+		error = mysql_query(conn, query);
+		return user_id;		
 	}
-	
-	sprintf(query, "insert into jugadors values ( %d", user_id);
-	strcat(query, ", '");
-	strcat(query, username);
-	strcat(query, "', '");
-	strcat(query, passwd);
-	strcat(query, "',1)");
-	
-	error = mysql_query(conn, query);
-	
-	//TO DO: afegir comprovacio d-usuari prexistent
-	
-	return user_id;
-	
 }
 
 int BBDD_check_login (char username[USRN_LENGTH], char passwd[PASS_LENGTH])
@@ -181,8 +190,7 @@ int BBDD_check_login (char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 	strcat(query, username);
 	strcat(query, "' and jugadors.passwd = '");
 	strcat(query, passwd);
-	strcat(query, "'");
-
+	strcat(query, "' and jugadors.actiu = 1");
 	
 	int error = send_query(query);
 	
@@ -390,3 +398,67 @@ char* BBDD_gameInTimeInterval(int idPlayer,char start[100], char end [100])
 	}
 	return interval_str;
 }
+
+int BBDD_deregister_user(char username[USRN_LENGTH], char password[PASS_LENGTH])
+{
+	char query[QUERY_LENGTH];
+	
+	strcpy(query, "select jugadors.id from jugadors where jugadors.nom = '");
+	strcat(query, username);
+	strcat(query, "' and jugadors.passwd = '");
+	strcat(query, password);
+	strcat(query, "'");
+	
+	int error = send_query(query);
+	
+	row = mysql_fetch_row(result);
+	
+	if (row == NULL)
+	{
+		// delete FAIL
+		return -1;
+	}
+	else
+	{
+		int id = atoi(row[0]);
+		sprintf(query, "update jugadors set actiu=0 where id=%d", id);
+		error = send_query(query);
+		return 0;
+	}
+}
+
+
+int BBDD_add_game_scores(char name[GAME_LEN], int nPlayers, char** charnames, int* userIds, int* scores, int winnerId, char* initDate, char* endDate, int duration)
+{
+	char query[QUERY_LENGTH];
+	int gameId;
+	strcpy(query, "select MAX(partides.id) from partides");
+	int error = send_query(query);
+	if (error)
+		return -1;
+	row = mysql_fetch_row(result);
+	
+	if (row == NULL)
+	{
+		//no users yet
+		gameId = 0;
+	}
+	else
+	{
+		gameId = atoi(row[0]) + 1;
+	}
+	sprintf(query, "insert into partides values (%d, '%s', '%s', '%s', %d, %d)", gameId, name, initDate, endDate, duration, winnerId);
+	 error = send_query(query);
+	if (error)
+		return -1;
+	
+	for (int i = 0; i < nPlayers; i++)
+	{
+		sprintf(query, "insert into participants values (%d, %d, '%s', %d)", userIds[i], gameId, charnames[i], scores[i]);
+		error = send_query(query);
+		if (error)
+			return -1;
+	}
+	return 0;
+}
+

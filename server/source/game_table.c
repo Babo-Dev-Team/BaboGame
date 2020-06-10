@@ -37,7 +37,7 @@ void __deletePreGame(PreGameState* game)
 	{
 		__deletePreGameUser(game->users[i]);
 	}
-	pthread_mutex_destroy(game->game_mutex);
+	//pthread_mutex_destroy(game->game_mutex);
 	free(game);
 }
 
@@ -176,6 +176,44 @@ int DeletePreGameUser(PreGameState* gameState, PreGameUser* user)
 		ret = -1;
 	pthread_mutex_unlock(gameState->game_mutex);
 	return ret;
+}
+
+int DeletePreGameUserWithCharIdResassignment(PreGameState* gameState, PreGameUser* user)
+{
+	pthread_mutex_lock(gameState->game_mutex);
+	int userCount = gameState->userCount;
+	int pos;
+	int found = 0;
+	int i = 0;
+	while (i < userCount && !found)
+	{
+		if(gameState->users[i] == user)
+		{
+			found = 1;
+			pos = i;
+		}
+		else 
+		   i++;
+	}
+	int ret;
+	if (found)
+	{
+		__deletePreGameUser(gameState->users[pos]); // alliberem el PreGameUser de la memoria
+		for(int j = pos; j < userCount - 1; j++)
+		{
+			gameState->users[j] = gameState->users[j + 1];
+		}
+		gameState->userCount--;
+		for (int j = 0; j < gameState->userCount; j++)
+		{
+			gameState->users[j]->charId = j;
+		}
+		ret = 0;
+	}
+	else 
+		ret = -1;
+	pthread_mutex_unlock(gameState->game_mutex);
+	return ret;	
 }
 
 // creem una partida en estat PreGame (sala de partida on es poden unir altres jugadors)
@@ -580,4 +618,26 @@ void GetUsernameFromCharId(PreGameState* state, int charId, char username[USRN_L
 	pthread_mutex_unlock(state->game_mutex);
 }
 
+int GetUserIdFromCharId(PreGameState* state, int charId)
+{
+	int ret;
+	int found = 0;
+	int i = 0;
+	pthread_mutex_lock(state->game_mutex);
+	while (!found && i < state->userCount)
+	{
+		if (charId == state->users[i]->charId)
+		{
+			found = 1;
+		}
+		else ++i;
+	}
+	if (found)
+	{
+		ret = state->users[i]->id;
+	}
+	else ret = -1;
+	pthread_mutex_unlock(state->game_mutex);
+	return ret;
+}
 //------------------------------------------------------------------------------

@@ -14,4 +14,7 @@ char* BBDD_gameResultsWithOtherPlayers (int num,char players [100][USRN_LENGTH])
 char* BBDD_gameInTimeInterval(int idPlayer,char start[100], char end [100]);
 int send_query();
 
+int BBDD_deregister_user(char username[USRN_LENGTH], char password[PASS_LENGTH]);
+int BBDD_add_game_scores(char name[GAME_LEN], int nPlayers, char** charnames, int* userIds, int* scores, int winnerId, char* initDate, char* endDate, int duration);
+
 #endif
