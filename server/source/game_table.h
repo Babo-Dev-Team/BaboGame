@@ -67,7 +67,9 @@ int IamAloneinGame(PreGameState* preGameState);
 	
 json_object* GameInitStateJson(PreGameState* preGameState, int userId);
 int GetCharIdFromUserId(PreGameState* state, int userId);
+int GetUserIdFromCharId(PreGameState* state, int charId);
 void GetUsernameFromCharId(PreGameState* state, int charId, char username[USRN_LENGTH]);
+int DeletePreGameUserWithCharIdResassignment(PreGameState* gameState, PreGameUser* user);
 //------------------------------------------------------------------------------
 
 #endif

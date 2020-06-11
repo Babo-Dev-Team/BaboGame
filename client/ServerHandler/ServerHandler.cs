@@ -613,6 +613,8 @@ namespace BaboGameClient
             this.SendRequest("15/" + start + "/" + end + "/");
         }
 
+    
+
         //Request pel mode joc online
         public void RequestInitState()
         {
@@ -791,6 +793,30 @@ namespace BaboGameClient
             }
             else error = -2;
             return error;
+        }
+
+        public int Deregister(string username, string password)
+        {
+            {
+                int error;
+                if ((username == null) || (password == null))
+                    return -2;
+                error = this.SendRequest("16/" + username + "/" + password + "/");
+                if (error != 0)
+                    return error;
+
+                string response = this.ReceiveReponse();
+                if (response == "16/OK")
+                {
+                    error = 0;
+                }
+                else if (response == "16/FAIL")
+                {
+                    error = -1;
+                }
+                else error = -2;
+                return error;
+            }
         }
 
         private int SendRequest(string request)
