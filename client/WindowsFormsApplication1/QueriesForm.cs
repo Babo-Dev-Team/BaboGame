@@ -206,11 +206,12 @@ namespace BaboGameClient
 
             //Button per sortir del menú de seleccionar jugadors
             NewPartyBack_btn.Location = new Point(25, 300);
-            NewPartyBack_btn.Text = "Surt";
-            NewPartyBack_btn.Size = new Size(80, 60);
+            //NewPartyBack_btn.Text = "Surt";
+            NewPartyBack_btn.Size = new Size(40,40);
             NewPartyBack_btn.Visible = false;
             this.Controls.Add(NewPartyBack_btn);
             NewPartyBack_btn.Click += new EventHandler(this.NewPartyBack_btn_Click);
+            NewPartyBack_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Creació del menú de selecció de personatges (ScreenSelected = 3)
@@ -329,22 +330,25 @@ namespace BaboGameClient
 
             //Chatting_Btn
             Chatting_btn.Location = new Point(625, 300);
-            Chatting_btn.Text = "Xateja";
-            Chatting_btn.Size = new Size(80, 25);
+            //Chatting_btn.Text = "Xateja";
+            Chatting_btn.Size = new Size(55, 30);
             Chatting_btn.Visible = false;
             this.Controls.Add(Chatting_btn);
             Chatting_btn.Click += new EventHandler(this.Chatting_btn_Click);
+            Chatting_btn.Image = Image.FromFile("../../../Pictures/Layouts/Send.png");
 
             //Stickers_Btn
-            Stickers_btn.Location = new Point(625, 325);
-            Stickers_btn.Text = "Adhesius";
-            Stickers_btn.Size = new Size(80, 25);
+            Stickers_btn.Location = new Point(835, 300);
+            //Stickers_btn.Text = "Adhesius";
+            Stickers_btn.Size = new Size(40, 40);
             Stickers_btn.Visible = false;
             this.Controls.Add(Stickers_btn);
             Stickers_btn.Click += new EventHandler(this.Stickers_btn_Click);
+            Stickers_btn.Image = Image.FromFile("../../../Pictures/Layouts/Sticker.png");
 
             //Chattting_tb
-            Chatting_tb.Location = new Point(725, 300);
+            Chatting_tb.Location = new Point(690, 300);
+            Chatting_tb.Size = new Size(135, 50);
             Chatting_tb.Visible = false;
             this.Controls.Add(Chatting_tb);
 
@@ -375,11 +379,12 @@ namespace BaboGameClient
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Butó per tornar enrere 
             Return_btn.Location = new Point(25, 30);
-            Return_btn.Text = "Enrere";
-            Return_btn.Size = new Size(80, 30);
+            //Return_btn.Text = "Enrere";
+            Return_btn.Size = new Size(40, 40);
             Return_btn.Visible = false;
             this.Controls.Add(Return_btn);
             Return_btn.Click += new EventHandler(this.Return_btn_Click);
+            Return_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
 
             //Butó per començar l'entrenament
             Train_btn.Location = new Point(224, 300);
@@ -1443,7 +1448,11 @@ namespace BaboGameClient
             if (string.IsNullOrWhiteSpace(gameName))
                 MessageBox.Show("No s'ha seleccionat cap partida per començar");
             else
+            {
                 serverHandler.RequestCancelGame(gameName);
+                ScreenSelected = 0;
+                UpdateScreen();
+            }
         }
 
         //QuitGame
