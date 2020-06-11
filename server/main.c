@@ -1,3 +1,4 @@
+#include <my_global.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -19,21 +20,18 @@
 
 #define SHIVA_PORT 50086
 
-
-//#define NMBR_THREADS 100
-
 //------------------------------------------------------------------------------
 // DATA STRUCTS
 //------------------------------------------------------------------------------
 
-// Arguments del global sender (inclosos a thread args amb punter)
+// Arguments del thread global sender (a tots els connectats)
 typedef struct SenderArgs{
 	char globalResponse[SERVER_RSP_LEN];
-	//int sockets [CNCTD_LST_LENGTH];
 	pthread_mutex_t* sender_mutex;
 	pthread_cond_t* sender_signal;
 }SenderArgs;
 
+// Arguments dels threads Game Sender (als jugadors d'una partida)
 typedef struct GameSenderArgs{
 	char gameResponse[SERVER_RSP_LEN];
 	int userState;
@@ -43,18 +41,16 @@ typedef struct GameSenderArgs{
 	int newData;
 }GameSenderArgs;
 
-// el client passa les updates amb una instancia d'aquesta estructura
+// Esctructura per a que els threads attend client passin els updates
+// enviats pels clients al thread Game Processor
 typedef struct GameUpdatesFromClient{
 	CharacterState* charState;
-	//ProjectileState** projectileStates;
 	int userId;
 	int newDataFromClient;
 	int backOffRequested;
-	//int projectileCount;
 }GameUpdatesFromClient;
 
-// el thread de process necessita el seu sender de partida, aixi com un array de punters a 
-// totes les estructures dels clients de la partida per a rebre les updates
+// arguments dels threads Game Processor
 typedef struct GameProcessorArgs{
 	GameTable* gameTable;
 	GameSenderArgs* senderArgs;
@@ -68,7 +64,7 @@ typedef struct GameProcessorArgs{
 	pthread_cond_t* gameProcessor_signal;
 }GameProcessorArgs;
 
-// Arugments que es passen a cada thread
+// Arugments que es passen als threads Attend Client
 typedef struct ThreadArgs{
 	ConnectedList* connectedList;			// punter a la llista de connectats
 	ConnectedUser* connectedUser;			// punter a l'usuari que gestiona el thread 
@@ -79,11 +75,58 @@ typedef struct ThreadArgs{
 	GameProcessorArgs** gameProcessorArgs;
 }ThreadArgs;
 
+int initialPositions[13][2] = {{762, 65}, {522, 75}, {128, 113}, {1114, 113}, {1114, 623}, {128, 623}, {625, 640},
+							   {77, 343}, {1154, 343}, {878, 637}, {408, 348}, {883, 46}, {625, 360}};
+
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+// MISC FUNCTIONS
+//------------------------------------------------------------------------------
 
+// funció per generar posicions inicials de forma aleatòria
+int** GetInitialPositions (int n_players)
+{
+	int** positions = malloc(n_players * sizeof(int*));
+	int chosenPositions[n_players];
+	int proposedPosition;
+	for (int i = 0; i < n_players; i++)
+	{
+		int acceptedPosition = 0;
+		while (!acceptedPosition)
+		{
+			proposedPosition = rand() % 13;
+			printf("Proposed position for player %d: %d\n", i, proposedPosition);
+			int positionFree = 1;
+			int j = 0;
+			while (positionFree && j < i)
+			{
+					if (proposedPosition == chosenPositions[j])
+					{
+						positionFree = 0;
+						printf("Position Taken.\n");
+					}
+					else j++;
+			}
+			if (positionFree)
+			{
+				acceptedPosition = proposedPosition;
+				printf("Position Accepted.\n");
+			}
+		}		
+		positions[i] = malloc(2 * sizeof(int));
+		positions[i][0] = initialPositions[acceptedPosition][0];
+		positions[i][1] = initialPositions[acceptedPosition][1];
+		chosenPositions[i] = acceptedPosition;
+	}
+	for (int i = 0; i < n_players; i++)
+	{
+		printf("Positions for player %d: %d, %d\n", i, positions[i][0], positions	[i][1]);
+	}
+	return positions;
+}
 
-// funció per enviar a tothom, activa el thread globalSender
+// funció per enviar un missatge a tothom, activa els threads Global Sender
 void sendToAll (SenderArgs* args, char response[SERVER_RSP_LEN])
 {
 	// adquirim el lock del sender (alliberat pel pthread_mutex_wait en el seu thread)
@@ -96,23 +139,7 @@ void sendToAll (SenderArgs* args, char response[SERVER_RSP_LEN])
 	pthread_mutex_unlock(args->sender_mutex);
 }
 
-//------------------------------------------------------------------------------
-// THREAD FUNCTIONS
-//------------------------------------------------------------------------------
-
-int** GetInitialPositions (int n_players, int game_max_x, int game_max_y)
-{
-	int** positions = malloc(n_players * sizeof(int*));
-	for (int i = 0; i < n_players; i++)
-	{
-		positions[i] = malloc(2 * sizeof(int));
-		positions[i][0] = rand() % game_max_x;
-		positions[i][1] = rand() % game_max_y;
-	}
-	return positions;
-}
-
-// funció per enviar a tothom, activa el thread globalSender
+// funció per enviar un missatge a tots els jugadors d'una partida, activa el thread Game Sender
 void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userState)
 {
 	struct timespec s;
@@ -155,6 +182,16 @@ void sendToGame (GameSenderArgs* args, char response[SERVER_RSP_LEN], int userSt
 	pthread_mutex_unlock(args->gameSender_mutex);
 }
 
+
+//------------------------------------------------------------------------------
+// THREAD FUNCTIONS
+//------------------------------------------------------------------------------
+
+// Funció pels threads Game Processor. s'encarrega de gestionar la partida des del moment 
+// en que els clients instancien el motor gràfic per començar a jugar fins que la partida acaba
+// i s'anuncien els resultats. Controla el fluxe dels diferents estats de la partida, i integra totes
+// les actualitzacions que rep del client en un estat de partida únic en temps real. També 
+// s'encarrega de distribuir aquest estat en forma de missatges globals als clients de la partida.
 void* gameProcessor (void* args)
 {
 	GameProcessorArgs* procArgs = (GameProcessorArgs*) args;
@@ -162,41 +199,41 @@ void* gameProcessor (void* args)
 	GameUpdatesFromClient** clientUpdates;
 	time_t rawTime;
 
+	// aquí comença la gestió de la partida
 	for(;;)
 	{
+		// Estat incial: clients no inicialitzats
 		int n_clientsInit = 0;
 		pthread_mutex_lock(procArgs->gameProcessor_mutex);
 		procArgs->initEnabled = 0;
 		procArgs->processEnabled = 0;
 		procArgs->deInitEnabled = 0;
 		
+		// Esperem a que un thread attend client ens demani començar la inicialització
+		// dels clients amb el flag initEnabled i la senyalització de tipus pthread_cont_t
 		while (!procArgs->initEnabled)
 		{	
 			printf("Game Processor entering sleep...\n");
 			pthread_cond_wait(procArgs->gameProcessor_signal, procArgs->gameProcessor_mutex);
 		}
-		//pthread_mutex_lock(procArgs->gameProcessor_mutex);
+		
+		// comencem a inicialitzar els clients a mesura que aquests ho demanin
 		printf("Game Processor performing init...\n");
-		//pthread_mutex_lock(procArgs->gameProcessor_mutex);
 		int n_players = procArgs->n_players;
 		int gameId = procArgs->gameId;
 		char response[SERVER_RSP_LEN];
 		GameState* gameState = CreateGameState(gameId, n_players);
-		int** gamePositions = GetInitialPositions(n_players, SCREEN_MAX_X, SCREEN_MAX_Y);
+		int** gamePositions = GetInitialPositions(n_players);
 		SetInitialPositions(gameState, gamePositions);
 			
-		
-		//pthread_mutex_unlock(procArgs->gameProcessor_mutex);
-		
 		while(!procArgs->processEnabled)
 		{
-			//pthread_mutex_lock(procArgs->gameProcessor_mutex);
 			printf("Game processor sending init state\n");
 			UpdateGameStateJson(gameState);
 			sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
 			sendToGame(senderArgs, response, 1);		
 			
-			// auto enable realtime processing when all clients have been inisialized
+			// un cop hem inicialitzat tots els clients entrarem en l'estat d'actualitzacions en temps real
 			if(++n_clientsInit >= n_players)
 			{
 				printf("All Clients Initialized!\n");
@@ -214,8 +251,9 @@ void* gameProcessor (void* args)
 				}
 			}
 		}
+		
+		// comença la partida: entrem en mode temps real
 		printf("Game Processor starting realtime processing...\n");
-
 		sendToGame(senderArgs, "102/START", 1);
 		
 		clientUpdates = procArgs->gameUpdatesFromClients; 
@@ -246,11 +284,12 @@ void* gameProcessor (void* args)
 		sprintf(timeInit, "%d-%d-%d %d:%d:%d", ptmInit->tm_year + 1900, ptmInit->tm_mon + 1, ptmInit->tm_mday, ptmInit->tm_hour, ptmInit->tm_min, ptmInit->tm_sec); 
 		printf("Time of game start: %s\n", timeInit);
 		
-		// this function will auto-disable when game is over
+		// bucle d'actualització: mentre continuem en el bucle la partida continua.
 		while(procArgs->processEnabled)
 		{
-			// si algun thread ha rebut un 105 de desconnexió durant la partida
-			// vol dir que l'usuari ha marxat, per tant el que fem es comptar
+			// si algun thread ha rebut un 101 de LEAVE durant la partida
+			// vol dir que l'usuari ha marxat, per tant el que fem es decrementar el nombre de jugadors actius.
+			// Si no en queda cap, tots els jugadors han abandonat la partida
 			if(procArgs->deInitEnabled)
 			{
 					--inGamePlayers;
@@ -263,6 +302,9 @@ void* gameProcessor (void* args)
 					printf("one player left mid game!\n");
 			}
 			
+			// bucle d'actualització d'estat. llegim els updates de tots els clients i els integrem en 
+			// l'estat global de partida gameState. Això només ho fem pels clients que ens fan arribar nova
+			// informació mitjançant el flag newDataFromClient
 			for (int i = 0; i < n_players; i++)
 			{
 				if (clientUpdates[i]->newDataFromClient)
@@ -294,16 +336,19 @@ void* gameProcessor (void* args)
 						gameState->characterStatesList[charId].projectileStates[j].target_Y = clientUpdates[i]->charState->projectileStates[j].target_Y;
 					}
 					
+					// posem el flag a 0, permetent un nou cicle d'actualitzacions per cada client.
 					clientUpdates[i]->newDataFromClient = 0;
 				}
 			}
 			
-			
+			// generem el JSON que enviem als clients
 			UpdateGameStateJson(gameState);
 			sprintf(response, "103/%s", json_object_to_json_string_ext(gameState->gameStateJson, JSON_C_TO_STRING_PRETTY));
 			sendToGame(senderArgs, response, 1);
 			
-			// calcular quan acaba la partida	
+			// calculem quan acaba la partida: si només queda un jugador, deixem que la partida
+			// transcorri uns quants cicles més per si aquest jugador fos eliminat també per un projectil que encara està actiu,
+			// llavors acabaríem en empat. Altrament, l'últim jugador actiu és el guanyador
 			activeChars = 0;
 			for (int i = 0; i < n_players; i++)
 			{
@@ -351,13 +396,14 @@ void* gameProcessor (void* args)
 			}
 			
 
-			// sleep for 15 ms
+			// sleep for 10 ms
 			struct timespec s;
 			s.tv_sec = 0;
 			s.tv_nsec = 10000000L;
 			nanosleep(&s, NULL);		
 		}
 		
+		// sortim del bucle: la partida ha acabat i fem arribar els resultats als clients
 		if(inGamePlayers <= 0)
 		{
 			printf("All players left mid game! stopping game proccessor...\n");
@@ -371,6 +417,7 @@ void* gameProcessor (void* args)
 			s.tv_sec = 0;
 			s.tv_nsec = 1000000L;
 			
+			// comptem tots els clients que es van desconnectant fins que ja no en quedi cap
 			while(inGamePlayers > 0)
 			{
 				while (!procArgs->deInitEnabled)
@@ -383,6 +430,8 @@ void* gameProcessor (void* args)
 					procArgs->deInitEnabled = 0;
 				}
 			}
+			
+			// partida acabada. actualitzem la base de dades i esborrem la partida de la taula de partides.
 			rawTime = time(NULL);
 			struct tm *ptmEnd = localtime(&rawTime);
 			sprintf(timeEnd, "%d-%d-%d %d:%d:%d", ptmEnd->tm_year + 1900, ptmEnd->tm_mon + 1, ptmEnd->tm_mday, ptmEnd->tm_hour, ptmEnd->tm_min, ptmEnd->tm_sec); 			
@@ -417,11 +466,7 @@ void* gameProcessor (void* args)
 				}
 			}
 		
-			
-			BBDD_add_game_scores(senderArgs->game->gameName, n_players, charnames, userIds, scores, winnerUserId, timeInit, timeEnd, duration);
-			
-								 
-			
+			BBDD_add_game_scores(senderArgs->game->gameName, n_players, charnames, userIds, scores, winnerUserId, timeInit, timeEnd, duration);			
 			pthread_mutex_unlock(senderArgs->game->game_mutex);
 			DeleteGameFromTable(procArgs->gameTable, senderArgs->game);
 		}
@@ -430,7 +475,7 @@ void* gameProcessor (void* args)
 }
 
 
-
+// Thread per enviar notificacions a tots els jugadors de partida. Utilitzat pel Game Processor i Attend Client
 void* gameSender (void* args)
 {
 	GameSenderArgs* senderArgs = (GameSenderArgs*) args;
@@ -460,23 +505,23 @@ void* gameSender (void* args)
 	while(1)
 	{
 		
-		// indiquem posant userState a -2 que estem esperant per rebre noves dades.
+		// indiquem posant new data a 0 que estem esperant per rebre noves dades.
 		// No farem res fins que sendToGame no ens passi info i un userState valid per enviar
 		senderArgs->newData = 0;
 		while(senderArgs->newData == 0)
 		{
 		//	printf("game sender entering sleep\n");
-			// alliberem els args per a que la funcio sendToAll els pugui modificar
+			// alliberem els args per a que la funcio sendToGame els pugui modificar
 			// i esperem que ens indiqui amb el sender_signal que tenim dades per enviar
 			if(pthread_cond_wait(senderArgs->gameSender_signal, senderArgs->gameSender_mutex))
 			{
 				printf("game sender CONDITION WAIT ERROR\n");
 			}
 		}
-		// consultem els sockets actius a la llista de connectats	
-		
-		// la idea es que durant la partida, el thread de calcul cridi directament la funcio sendtogame.
+	
 		//printf("game sender waking up\n");
+		
+		// copiem el missatge a enviar
 		thisSenderArgs.userState = senderArgs->userState;
 		thisSenderArgs.game = senderArgs->game;
 		strcpy(thisSenderArgs.gameResponse, senderArgs->gameResponse);
@@ -484,6 +529,10 @@ void* gameSender (void* args)
 		
 		
 		pthread_mutex_lock(thisSenderArgs.game->game_mutex);
+		
+		// determinem a qui hem d'enviar el missatge. Aquí s'implementa el mecanisme de Back-Off
+		// que permet als clients demanar una pausa temporal dels updates en temps real durant la partida.
+		// això permet adaptar la taxa d'enviament del servidor a cada client si és necessari.
 		int n_users = thisSenderArgs.game->userCount;
 		for(int i = 0; i < n_users; i++)
 		{
@@ -515,7 +564,7 @@ void* gameSender (void* args)
 		
 		strcat(thisSenderArgs.gameResponse, "|");
 		
-		// enviem a tots els sockets actius
+		// Enviem a tots els sockets actius
 		//printf("Sending to game users with User State = %d\n", thisSenderArgs.userState);
 		for (int i = 0; i < n_users; i++)
 		{		
@@ -525,12 +574,10 @@ void* gameSender (void* args)
 				write (activeSocketList[i], thisSenderArgs.gameResponse, strlen(thisSenderArgs.gameResponse));			
 			}
 		}	
-		//pthread_mutex_unlock(senderArgs->gameSender_mutex);
 	}
-	//pthread_mutex_unlock(threadArgs->threadArgs_mutex);
 }
 
-// sender globa, envia a tots els connectats.
+// sender global, envia a tots els connectats.
 // fa anar un senyal pthread. El sender estarà inactiu fins que es cridi 
 // la funció SendToAll
 void* globalSender (void* args)
@@ -566,6 +613,7 @@ void* globalSender (void* args)
 		}
 		pthread_mutex_unlock(threadArgs->connectedList->mutex);
 		strcat(senderArgs->globalResponse, "|");
+		
 		// enviem a tots els sockets actius
 		for (int i = 0; i < n_users; i++)
 		{			
@@ -578,12 +626,7 @@ void* globalSender (void* args)
 	pthread_mutex_unlock(threadArgs->threadArgs_mutex);
 }
 
-//Thread del client
-// DONE: enviar llista de connectats modificada al fer login 
-//		Afegir separador | a totes les respostes del server (final de missatge)
-// TODO: enviar llista de connectats modificada al desconnectar client,
-// 	    Enviar llista de connectats modificada al fer sign-up 
-// 		enviar taula de partides modificada com a notif. global
+//Threads de gestió del client. Reben i processen tots els requests i determinen les accions corresponenets.
 void* attendClient (void* args)
 {
 	int err = BBDD_connect();
@@ -596,6 +639,8 @@ void* attendClient (void* args)
 	
 	// Punters als paràmetres del thread: connectedUser és l'usuari que gestiona,
 	// connectedList i gameTable són les estructures globals que contenen els usuaris i les partides
+	// gameSenderArgs ens permet utilitzar els threads d'enviament de partida
+	// gameProcessorArgs ens permet controlar els estats dels threads de procés de la partida
 	ConnectedUser* connectedUser = threadArgs->connectedUser;
 	ConnectedList* connectedList = threadArgs->connectedList;
 	GameTable* gameTable = threadArgs->gameTable;
@@ -640,15 +685,15 @@ void* attendClient (void* args)
 	int userSend;
 	
 	int gameId;
-
 	
+	// bucle d'atenció al client
 	int disconnect = 0;
 	while(!disconnect)
 	{
 		request[0] = '\0';
 		request_string[0] = '\0';
 		
-		// Ahora recibimos el mensaje, que dejamos en request
+		// rebem el request provinent del client
 		request_length = read(sock_conn, request, sizeof(request));
 		if (request_length >= CLIENT_REQ_LEN)
 		{
@@ -772,7 +817,6 @@ void* attendClient (void* args)
 						strcat(globalResponse, json_object_to_json_string(listJson));
 						globalSend = 1;
 						
-						// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
 						free(listJson);
 					}
 					else 
@@ -838,12 +882,9 @@ void* attendClient (void* args)
 			case 6:
 			{
 				json_object* listJson = connectedListToJson(connectedList);
-				//strcpy(response, json_object_to_json_string_ext(listJson, JSON_C_TO_STRING_PRETTY));
 				strcpy(response, "6/");
 				strcat(response, json_object_to_json_string(listJson));
 				
-				// DESTRUIR LLISTA JSON!!!
-				// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
 				free(listJson);
 				
 				break;
@@ -939,8 +980,6 @@ void* attendClient (void* args)
 						pthread_mutex_unlock(preGame->game_mutex);
 						if(preGame->userCount > 1)
 						{
-							
-							// TODO: retornar partida per JSON
 							printf("Crear partida OK\n");
 							strcpy(response, "7/");
 							strcat(response, "OK");
@@ -962,22 +1001,12 @@ void* attendClient (void* args)
 							gameSenderArgs[gameId]->game = preGame;
 							pthread_mutex_unlock(gameSenderArgs[gameId]->gameSender_mutex);
 							
-							
-							//sendToGame(gameSenderArgs[gameId], gameNotification, 0);
-							
 							// indiquem que volem que s'envii la notifiacio als usuaris amb estat 0 al final del switch
 							gameSend = 1;
 							gameSendUserState = 0;
-							
-							/*for(int i=0;i<preGame->userCount;i++)
-							{
-							if(preGame->users[i]->userState == 0)
-							write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-							}*/
 						}
 						else
 						{
-							
 							//Eliminem la partida
 							DeleteGameFromTable(gameTable,preGame);
 							
@@ -1005,12 +1034,7 @@ void* attendClient (void* args)
 				json_object* gameTableJson = GameTableToJson(gameTable);
 				strcpy(response, "8/");
 				strcat(response, json_object_to_json_string_ext(gameTableJson, JSON_C_TO_STRING_PRETTY));
-				//strcpy(response, json_object_to_json_string(listJson));
-				
-				// DESTRUIR LLISTA JSON!!!
-				// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
 				free(gameTableJson);
-				
 				break;
 			}
 			
@@ -1026,8 +1050,6 @@ void* attendClient (void* args)
 				strcpy(option,p);
 				p = strtok(NULL,"/");
 				int preGameUserPos;
-				
-				
 				
 				//Accepta la peticio d'entrar en el joc
 				if(strcmp(option,"ACCEPT") == 0)
@@ -1054,7 +1076,6 @@ void* attendClient (void* args)
 							strcpy(response, "9/");
 							strcat(response, "ACCEPTED");
 							
-							//char notify_group [SERVER_RSP_LEN];
 							json_object* gameStateJson = GameStateToJson(preGame);
 							strcpy(gameNotification, "10/");
 							strcat(gameNotification, json_object_to_json_string_ext(gameStateJson, JSON_C_TO_STRING_PRETTY));
@@ -1089,14 +1110,6 @@ void* attendClient (void* args)
 					if(preGameRejected != NULL)
 					{
 						preGameUserPos = GetPreGameUserPosByName(preGameRejected, username);
-						//pthread_mutex_lock(preGameRejected->game_mutex);
-						//gameId = preGameRejected->gameId;
-						//if(preGameUserPos != -1)
-						//{
-						//	preGameRejected->users[preGameUserPos]->userState = -1; //Marca la partida com a rebutjada
-						//}
-						//pthread_mutex_unlock(preGameRejected->game_mutex);
-						
 						if(preGameUserPos != -1)
 						{
 							int e = DeletePreGameUserWithCharIdResassignment(preGameRejected, preGameRejected->users[preGameUserPos]);
@@ -1154,27 +1167,6 @@ void* attendClient (void* args)
 				break;
 			}
 			
-			// el creador d'una partida indica que comenci la partida:
-			// es posa el estat de la partida en actiu a PreGameState.
-			// s'inicialitzen estructures per contenir l'estat de la partida real.
-			// aquí, o mantenim els threads oberts i passem a una funcionalitat de partida des del propi thread de cada usuari,
-			// on caldria potser fer servir variables des de main per emmagatzemar l'estat de la partida per a que siguin accessibles
-			// per tots els threads, on es podria posar el id de la partida en una llista de partides actives i tots els threads
-			// que busquin la seva partida per id i hi accedeixin per referència
-			// Per fer això caldria que el client Forms pugues passar els paràmetres de connexió al client MonoGame.
-			
-			// o bé parem tots els threads dels usuaris d'aquesta partida i esperem una nova connexió. en aquesta, l'usuari es loguejarà amb
-			// username i token de partida que haurem passat a monogame. Llavors, crearem nous threads, un per user i un thread de gestió de partida
-			// els threads de user s'encarreguen de rebre updates dels clients i enviar updates als clients. el thread de gestió
-			// calcula les colisions i altres dinàmiques de partida. Això tb es podria fer amb la 1a opció, caldria crear un nou thread de gestió
-			
-			// la diferència més que res és en si incorporem els protocols de comunicació servidor client in-game en aquesta funció,
-			// o bé creem nous threads amb la seva funció específica per gestionar la partida en execució.
-			case 10:
-			{
-				break;
-			}
-			
 			//codi perque els usuaris es connectin per xat
 			case 11:
 			{
@@ -1201,8 +1193,6 @@ void* attendClient (void* args)
 			//Inici de la partida
 			case 12:
 			{
-				//printf("%s\n",request_string);
-				
 				p = strtok(NULL,"/");
 				char option [CLIENT_REQ_LEN];
 				strcpy(option,p);
@@ -1222,10 +1212,6 @@ void* attendClient (void* args)
 						gameSend = 1;
 						gameSendUserState = 1;
 						free(gameStateJson);
-						
-						//json_object* initState = GameInitStateJson(preGame, preGameUser->id);
-						//printf("\n\n%s\n\n", json_object_to_json_string_ext(initState, JSON_C_TO_STRING_PRETTY));
-						
 					}
 					else
 					{
@@ -1241,7 +1227,6 @@ void* attendClient (void* args)
 					{
 						pthread_mutex_lock(gameProcessorArgs[gameId]->gameProcessor_mutex);
 						gameProcessorArgs[gameId]->gameId = preGame->gameId;
-						//gameProcessorArgs[gameId]->n_players = preGame->userCount;
 						int activePlayers = 0;
 						for (int i = 0; i < preGame->userCount; i++)
 						{
@@ -1261,24 +1246,9 @@ void* attendClient (void* args)
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i] = malloc(sizeof(GameUpdatesFromClient));
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->newDataFromClient = 0;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->backOffRequested = 0;
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileCount = 0;
-							
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->userId = preGame->users[i]->id;
 							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState = malloc(sizeof(CharacterState));
-							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->projectileCount = 0;
-							
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates = malloc(PROJ_COUNT_PLAYER * sizeof(ProjectileState*));
-							/*
-							for (int j = 0; j < PROJ_COUNT_PLAYER; j++)
-							{
-								gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->projectileStates[j] = malloc(sizeof(ProjectileState));
-							}*/
-																											
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->characterId = i;
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_X = 0;
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->position_Y = 0;
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_X = 0;
-							//gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->velocity_Y = 0;			
+							gameProcessorArgs[gameId]->gameUpdatesFromClients[i]->charState->projectileCount = 0;							
 						}
 						pthread_mutex_unlock(gameProcessorArgs[gameId]->gameProcessor_mutex);
 						char notif2[SERVER_RSP_LEN];
@@ -1288,30 +1258,12 @@ void* attendClient (void* args)
 						gameSend = 0;
 						strcpy(notif2, "12/START");
 						sendToGame(gameSenderArgs[gameId], notif2, 1);
-						/*for(int i=0;i<preGame->userCount;i++)
-						{
-						if(preGame->users[i]->userState == 1)
-						write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-						}
-						*/
-						
-						//sleep(1);
+
 						pthread_mutex_lock(preGame->game_mutex);
 						sprintf(notif3, "9/LOSE/%s/%s/",preGame->gameName,preGame->creator->username);
 						pthread_mutex_unlock(preGame->game_mutex);
 						sendToGame(gameSenderArgs[gameId], notif3, 0); 
-						/*strcat(notify_group, "|");
-						
-						for(int i=0;i<preGame->userCount;i++)
-						{
-						if(preGame->users[i]->userState == 0)
-						write(preGame->users[i]->socket, notify_group, strlen(notify_group));
-						}
-						
-						pthread_mutex_unlock(preGame->game_mutex);
-						*/
 					}
-					
 					else
 					{
 						printf("No ha triat tothom el seu personatge en %s\n", gameName);
@@ -1328,6 +1280,8 @@ void* attendClient (void* args)
 					pthread_mutex_unlock(preGame->game_mutex);
 					sendToGame(gameSenderArgs[gameId], gameNotification, 0); 
 					sendToGame(gameSenderArgs[gameId], gameNotification, 1); 
+					printf("%s\n", gameNotification);
+					sleep(2);
 					DeleteGameFromTable(gameTable,preGame);
 				}
 				break;
@@ -1404,12 +1358,14 @@ void* attendClient (void* args)
 				}
 				break;
 			}
-
 			
-			//Missatges dins de la partida
+
+			// 101/HELLO:
+			// el client saluda i demana al servidor que li envii l'estat inicial i els paràmetres d'inicialització de la partida
+			// 101/LEAVE: 
+			// el client anuncia que marxa de la partida, ja sigui duran el transcurs de la partida o un cop acabada.
 			case 101:
 			{
-				//printf("Request 101: %s\n", request);
 				userSend = 0;
 				p = strtok(NULL, "/");
 				if(strcmp(p, "HELLO") == 0)
@@ -1497,6 +1453,11 @@ void* attendClient (void* args)
 				}
 				break;				
 			}
+			
+			// el client solicita Back-Off al servidor. El Back-Off només afecta els missatges
+			// servidor -> client de tipus 103, les actualitzacions en temps real durant la partida.
+			// el Back-Off té un temportizador i es cancel·larà automàticament, tot i així, el client 
+			// pot demanar que el servidor reemprengui les actualitzacions de forma immediata enviant un 103/RESUME
 			case 103:
 			{
 				userSend = 0;
@@ -1509,7 +1470,6 @@ void* attendClient (void* args)
 					if (charId != -1)
 					{
 						printf("user has a valid char ID, access to pre game user by array index is possible\n");
-						//gameProcessorArgs[gameId]->gameUpdatesFromClients[charId]->backOffRequested = 1;
 						pthread_mutex_lock(preGame->game_mutex);
 						
 						if(preGame->users[charId]->charId == charId)
@@ -1561,7 +1521,15 @@ void* attendClient (void* args)
 				}
 				break;
 			}
-			case 104: //Actualització estat del client
+			
+			// El client fa arribat al servidor les seves actualitzacions d'estat en temps real.
+			// Aquestes inclouen els atributs del personatge controlat per l'usuari 
+			// així com si s'han creat nous projectils i les seves propietats.
+			// quan es crea un nou projectil, el client ens enviarà actualitzacions sobre aquest
+			// durant un període de gràcia, passat el quan ja no rebrem més acutalitzacions d'aquest objecte.
+			// Això és perquè el moviment dels porjectils és determinista i els clients el poden calcular pel seu compte
+			// Partint d'una posició, direcció i velocitat inicials.
+			case 104:
 			{
 				userSend = 0;
 				globalSend = 0;
@@ -1607,7 +1575,6 @@ void* attendClient (void* args)
 					double dY = json_object_get_double(dirY);
 					int h = json_object_get_int(health);
 					
-					//LLista de projectils I don't know da wae xd
 					json_object* jsonProjectileListState;
 					json_object_object_get_ex(obj, "projectileStates", &jsonProjectileListState);
 					
@@ -1633,16 +1600,6 @@ void* attendClient (void* args)
 						json_object* projectileTarX;
 						json_object* projectileTarY;
 						
-						/*	int projId;
-						int shtrId;
-						char projType;
-						int projPx;
-						int projPy;
-						double projDx;
-						double projDy;
-						double projLinVel;
-						int n_hits;
-						*/	
 						ProjectileState projState[arrayLen];
 						
 						for (int i = 0; i < arrayLen; i++) 
@@ -1672,12 +1629,6 @@ void* attendClient (void* args)
 							projState[i].hitCount = json_object_get_int(hitCount);
 							projState[i].target_X = json_object_get_int(projectileTarX);
 							projState[i].target_Y = json_object_get_int(projectileTarY);
-							
-							/*printf("Debug: Data from proj %d: ID: %d, shooter ID: %d, Type: %c\nPosX: %d, PosY: %d DirX: %f, DirY: %f, Vel: %f, hitCount: %d\n",
-							i, projState[i].projectileID, projState[i].shooterID, projState[i].projectileType, projState[i].position_X, projState[i].position_Y,
-							projState[i].direction_X, projState[i].direction_Y, projState[i].LinearVelocity, projState[i].hitCount);
-							*/
-							
 						}
 						
 						
@@ -1735,7 +1686,6 @@ void* attendClient (void* args)
 			}
 			
 			// request 0 -> Disconnect	
-			// TODO: S'ha d'eliminar el user de la llista de connectats!!!
 			case 0:
 			{
 				
@@ -1768,7 +1718,7 @@ void* attendClient (void* args)
 				break;
 			}
 			
-			// Enviamos response siempre que no se haya recibido request de disconnect
+			// Enviamos resposta a l'usuari
 			if((request_code)&&(userSend))
 			{	
 				strcat(response, "|");
@@ -1776,6 +1726,7 @@ void* attendClient (void* args)
 				write (sock_conn, response, strlen(response));	
 			}
 			
+			// enviem notificacions de partida
 			if (gameSend)
 			{
 				sendToGame(gameSenderArgs[gameId], gameNotification, gameSendUserState);
@@ -1803,8 +1754,6 @@ void* attendClient (void* args)
 	strcpy(globalResponse, "6/");
 	strcat(globalResponse, json_object_to_json_string(listJson));
 	sendToAll(threadArgs->senderArgs, globalResponse); 
-	
-	// COMPROVAR SI LA LLIBRERIA DISPOSA D'UN METODE PER ELIMINAR json_object
 	free(listJson);
 	
 	//Acabar el thread
@@ -1816,36 +1765,7 @@ void* attendClient (void* args)
 // MAIN FUNCTION
 //------------------------------------------------------------------------------
 int main(int argc, char *argv[])
-{		
-	/*int **positions;
-	positions = GetInitialPositions(4, SCREEN_MAX_X, SCREEN_MAX_Y);
-	for (int i = 0; i < 4; i++)
-	{
-		printf("%d\t%d\n", positions[i][0], positions[i][1]);
-	}*/
-	
-	/*GameState* state = CreateGameState(10, 4);
-	char teststr [8192];
-	strcpy(teststr, json_object_to_json_string_ext(state->gameStateJson, JSON_C_TO_STRING_PRETTY));	
-	printf("\n\n%s\n\n", teststr);
-	
-	state->playable = 1;
-	state->characterStatesList[0].position_X = 300;
-	state->characterStatesList[0].position_Y = 200;
-	state->characterStatesList[3].position_X = 30;
-	state->characterStatesList[3].position_Y = 500;
-	
-	UpdateGameStateJson(state);
-	strcpy(teststr, json_object_to_json_string_ext(state->gameStateJson, JSON_C_TO_STRING_PRETTY));	
-	printf("\n\n%s\n\n", teststr);*/
-	/*time_t rawTime;
-	rawTime = time(NULL);
-	struct tm *ptm = localtime(&rawTime);
-	char prova[100];
-	sprintf(prova, "%d-%d-%d %d:%d:%d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec); 
-	printf(prova);
-	*/
-	
+{			
 	// iniciem el seed per generar aleatorietat
 	srand(time(NULL));
 	
@@ -1865,20 +1785,19 @@ int main(int argc, char *argv[])
 	// asocia el socket a cualquiera de las IP de la maquina. 
 	// htonl formatea el numero que recibe al formato necesario
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	// escucharemos en el puerto 50084, 50085 i/o 50086
+	
+	// escoltarem als ports 50084, 50085 i/o 50086
 	serv_addr.sin_port = htons(SHIVA_PORT);
 	if (bind(sock_listen, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 		printf ("Socket Bind Error\n");
-	//La cola de requestes pendientes no podr? ser superior a 4
+	
 	if (listen(sock_listen, 200) < 0)
 		printf("Socket Listen Error\n");
 	
-	//CONNEXIÓ
-	pthread_t threadConnected[CNCTD_LST_LENGTH];
+
+	pthread_t threadConnected[CNCTD_LST_LENGTH]; // array de threads per atendre els clients
 	pthread_t senderThread;		// creem el thread del sender global
-	//pthread_t gameSenderThread;
-	//int sockets[CNCTD_LST_LENGTH];
-	
+
 	// Llista de connectats.
 	// creem el mutex de la llista de connectats
 	// que també utilitzaran els connected users
@@ -1895,13 +1814,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_t* mutexGameTable = malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mutexGameTable, NULL);
 	GameTable* gameTable = CreateGameTable(mutexGameTable);
-	
-	//GameTable* gameTable = malloc(sizeof(GameTable));
-	//gameTable->gameCount = 0;
-	//gameTable->game_table_mutex = malloc(sizeof(pthread_mutex_t));
-	//pthread_mutex_init(gameTable->game_table_mutex, NULL);
-	
-	
+		
 	// inicialitzem el ThreadArgs que passarem al thread del sender
 	ThreadArgs senderThreadArgs;
 	pthread_mutex_t* mutexSenderThreadArgs = malloc(sizeof(pthread_mutex_t));
@@ -1926,20 +1839,6 @@ int main(int argc, char *argv[])
 	// creem el thread del sender
 	pthread_create(&senderThread, NULL, globalSender, &senderThreadArgs);
 	
-	// inicialitzem els threadArgs que passarem al thread per enviar a partides
-	/*ThreadArgs gameSenderThreadArgs;
-	pthread_mutex_t* mutexGameSenderThreadArgs = malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(mutexGameSenderThreadArgs, NULL);	
-	gameSenderThreadArgs.connectedList = NULL;
-	gameSenderThreadArgs.gameTable = gameTable;
-	gameSenderThreadArgs.connectedUser = NULL;
-	gameSenderThreadArgs.threadArgs_mutex = mutexSenderThreadArgs;
-	gameSenderThreadArgs.senderArgs = NULL;
-	
-	pthread_create(&gameSenderThread, NULL, gameSender, &gameSenderThreadArgs);
-	*/
-
-	
 	// inicialitzem els arguments dels senders de cada partida i arrenquem els threads
 	pthread_t threadGameSender[MAX_GAMES];
 	GameSenderArgs* gameSenderArgs[MAX_GAMES];
@@ -1947,12 +1846,10 @@ int main(int argc, char *argv[])
 	{
 		gameSenderArgs[i] = malloc(sizeof(GameSenderArgs));
 	}
-	//pthread_mutex_t* gameSenderMutex[MAX_GAMES];
 	for(int i = 0; i < MAX_GAMES; i++)
 	{
 		gameSenderArgs[i]->game = NULL;
 		gameSenderArgs[i]->newData = 0;
-		//gameSenderArgs[i].gameResponse = NULL;
 		gameSenderArgs[i]->gameSender_mutex = malloc(sizeof(pthread_mutex_t));
 		pthread_mutex_init(gameSenderArgs[i]->gameSender_mutex, NULL);
 		gameSenderArgs[i]->gameSender_signal = malloc(sizeof(pthread_cond_t));
@@ -2000,7 +1897,7 @@ int main(int argc, char *argv[])
 		threadArgs[i].gameProcessorArgs = gameProcessorArgs;
 	}
 	
-	
+	// creem els threads dels game sender i els game processor
 	for (int i = 0; i < MAX_GAMES; i++)
 	{
 		pthread_create(&threadGameSender[i], NULL, gameSender, gameSenderArgs[i]);
@@ -2016,7 +1913,6 @@ int main(int argc, char *argv[])
 	while(1)
 	{
 		printf ("Escuchando\n");					
-		//sock_conn es el socket que usaremos para este cliente
 		sock_conn = accept(sock_listen, NULL, NULL);				
 		printf ("He recibido conexi?n\n");
 		
@@ -2059,11 +1955,6 @@ int main(int argc, char *argv[])
 				char response[20] = "OK|";
 				write (sock_conn, response, strlen(response));	
 				printf("%s\n", response);
-				
-				// guardem l'id del socket
-				// TODO: mirar si això es pot fer sense mutex, és a dir,
-				// si modificar un int que forma part d'un array és atomic en C
-				//senderArgs.sockets[i] = sock_conn;
 				
 				pthread_mutex_lock(mutexThreadArgs);
 				// Creem el l'usuari per cada thread que s'instancia i el posem

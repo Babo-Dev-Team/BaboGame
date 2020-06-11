@@ -1,7 +1,9 @@
 #include "game_state.h"
 #include "json.h"
 
-
+// funció per crear i inicialitzar l'estat global d'una partida. Aquesta funció es fa servir 
+// per generar els estats de partida dels Game Processors, i com que només els threads Game Processor
+// hi tindran accés, no cal implementan mecanismes d'exclusió mútua en aquesta estructura d'estat.
 GameState* CreateGameState(int gameId, int n_players)
 {
 	GameState* game = malloc(sizeof(GameState));
@@ -35,25 +37,7 @@ GameState* CreateGameState(int gameId, int n_players)
 		}
 	}
 	game->n_players = n_players;
-//	game->projectileCount = 0;
-	
-	//game->projectileStates = malloc(n_players * PROJ_COUNT_PLAYER * sizeof(ProjectileState*));?
-	/*
-	game->projectileStates  = malloc(n_players * PROJ_COUNT_PLAYER * sizeof(ProjectileState*));
-	for (int j = 0; j < n_players * PROJ_COUNT_PLAYER; j++)
-	{
-		//game->projectileStates[j] = malloc(sizeof(ProjectileState));
-		game->projectileStates[j].direction_X = 0;
-		game->projectileStates[j].direction_Y = 0;
-		game->projectileStates[j].position_X = 0;
-		game->projectileStates[j].position_Y = 0;
-		game->projectileStates[j].LinearVelocity = 0;
-		game->projectileStates[j].hitCount = 0;
-		game->projectileStates[j].projectileID = 0;
-		game->projectileStates[j].shooterID = 0;
-		game->projectileStates[j].projectileType = 'N';
-	}
-	*/
+
 	game->gameStateJson = json_object_new_object();
 	json_object* chars_array = json_object_new_array();
 	json_object* projStates_array = json_object_new_array();
@@ -100,13 +84,15 @@ GameState* CreateGameState(int gameId, int n_players)
 	return game;
 }
 
+// eliminem l'estat de partida i alliberem la memòria assignada de forma dinàmica.
 void DeleteGameState(GameState* game)
 {
 	free(game->characterStatesList);
-	//free(game->projectileStates);
 	free(game);
 }
 
+// actualitzem el JSON que representa l'estat de la partida per a que incorpori l'estat més recent. Aquest 
+// objecte json és el que s'envia als clients
 void UpdateGameStateJson(GameState* game)
 {
 	int err;

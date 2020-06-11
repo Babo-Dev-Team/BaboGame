@@ -178,6 +178,7 @@ int DeletePreGameUser(PreGameState* gameState, PreGameUser* user)
 	return ret;
 }
 
+// aquesta funció és útil quan volem esborrar un usuari d'una partida, però necessitem reassingar les id de character als usuaris restants de forma que siguin nombres sequencials.
 int DeletePreGameUserWithCharIdResassignment(PreGameState* gameState, PreGameUser* user)
 {
 	pthread_mutex_lock(gameState->game_mutex);
@@ -328,6 +329,7 @@ int DeleteGameFromTable(GameTable* table, PreGameState* gameState)
 	return ret;
 }
 
+// creem la taula de partides. Requeteix un mutex ja inicialitzat.
 GameTable* CreateGameTable(pthread_mutex_t* mutex)
 {
 	GameTable* table = malloc(sizeof(GameTable));
@@ -447,10 +449,13 @@ PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_L
 	int found = 0;
 	while((i < gameTable->gameCount)&&(!found))
 	{
-		if(!strcmp(gameName,gameTable->createdGames[i]->gameName))
-		   found = 1;
-		else
-			i++;
+		if(gameTable->createdGames[i] != NULL)
+		{
+			if(!strcmp(gameName,gameTable->createdGames[i]->gameName))
+				found = 1;
+			else
+				i++;
+		}
 	}
 	
 	if(found)
@@ -465,6 +470,7 @@ PreGameState* GetPreGameStateByName (GameTable* gameTable, char gameName [GAME_L
 	return ret;
 }
 
+// Passem tota la taula de partides a qui la demani en format json.
 json_object* GameTableToJson(GameTable* table)
 {
 	json_object* gameJson = json_object_new_array();
@@ -494,7 +500,7 @@ json_object* GameTableToJson(GameTable* table)
 	return gameJson;
 }
 
-//Treure el json de la partida
+//Generaem un json que inclou l'estat d'una partida.
 json_object* GameStateToJson(PreGameState* preGameState)
 {
 	json_object* gameJson = json_object_new_array();
@@ -522,6 +528,8 @@ json_object* GameStateToJson(PreGameState* preGameState)
 	return gameJson;
 }
 
+// generem un JSON que conté paràmetres d'incialització de la partida. Aquesta és la informació que respon el servidor a una petició de tipus 101/HELLO.
+// S'envia sempre de forma individual
 json_object* GameInitStateJson(PreGameState* preGameState, int userId)
 {
 	int formatOk = 0;
@@ -573,7 +581,7 @@ json_object* GameInitStateJson(PreGameState* preGameState, int userId)
 	else return NULL;
 }
 
-
+// obttenim el char id d'un personatge a partir de la seva id d'usuari
 int GetCharIdFromUserId(PreGameState* state, int userId)
 {
 	int found = 0;
@@ -597,6 +605,7 @@ int GetCharIdFromUserId(PreGameState* state, int userId)
 	return ret;
 }
 
+// obttenim el nom d'usuari d'un personatge a partir de la seva id de character en una partida.
 void GetUsernameFromCharId(PreGameState* state, int charId, char username[USRN_LENGTH])
 {
 	int found = 0;
@@ -618,6 +627,7 @@ void GetUsernameFromCharId(PreGameState* state, int charId, char username[USRN_L
 	pthread_mutex_unlock(state->game_mutex);
 }
 
+// obtenim l'id de l'usuari a partir de la seva char id en una partida concreta.
 int GetUserIdFromCharId(PreGameState* state, int charId)
 {
 	int ret;
