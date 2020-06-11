@@ -13,7 +13,7 @@ namespace BaboGame_test_2
     {
         //Variables entorn a la electricitat
         public bool HasConducitivity = false;
-        public char Charge = 'N'; //High H, Low L, Null N
+        public char Charge = 'I'; //Positive P, Negative N, Insulating I
         
         public ScenarioObjects(Texture2D texture)
             : base(texture)
