@@ -20,6 +20,9 @@ namespace BaboGame_test_2
         private double _timer1;
         private int heightscreen, widthscreen;
 
+        //Codi per mostrar informació dels objectes en pantalla
+        //Actualment està deshabilitat
+
         public Debugger (List<Character> CharacterSprite, List<Projectile> ProjectileSprite, List<Sprite> overlaySprite, List<Slime> slimeSprite,double timer1,int widthscreen,int heightscreen, SpriteFont font)
         {
             _font = font;
@@ -38,7 +41,7 @@ namespace BaboGame_test_2
 
             foreach (var Character in _CharacterSprite)
             {
-                spriteBatch.DrawString(_font, string.Format("Direction: {0}    Velocity: {1}    Slipping:{2}", VectorOps.Vector2ToDeg(Character.Direction), Character.VelocityInform, Character.isSlip), new Vector2(10, fontY += 20), Color.Black);
+                spriteBatch.DrawString(_font, string.Format("Position: {3} Direction: {0}    Velocity: {1}    Slipping:{2}", VectorOps.Vector2ToDeg(Character.Direction), Character.VelocityInform, Character.isSlip, Character.Position), new Vector2(10, fontY += 20), Color.Black);
                 
             }
 

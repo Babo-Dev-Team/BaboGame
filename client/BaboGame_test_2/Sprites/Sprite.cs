@@ -140,9 +140,9 @@ using Microsoft.Xna.Framework;
             {
                 if (_texture != null)
                     if (HitBoxScaleH == 0 || HitBoxScaleW == 0)
-                        return new Rectangle((int)(Position.X - Origin.X * Scale), (int)(Position.Y - Origin.Y * Scale), (int)(_texture.Width * Scale * HitBoxScale), (int)(_texture.Height * Scale * HitBoxScale));
+                        return new Rectangle((int)(Position.X - Origin.X * Scale * HitBoxScale), (int)(Position.Y - Origin.Y * Scale * HitBoxScale), (int)(_texture.Width * Scale * HitBoxScale), (int)(_texture.Height * Scale * HitBoxScale));
                     else
-                        return new Rectangle((int)(Position.X - Origin.X * Scale), (int)(Position.Y - Origin.Y * Scale), (int)(_texture.Width * Scale * HitBoxScaleW), (int)(_texture.Height * Scale * HitBoxScaleH));
+                        return new Rectangle((int)(Position.X - Origin.X * Scale * HitBoxScaleW), (int)(Position.Y - Origin.Y * Scale *HitBoxScaleH), (int)(_texture.Width * Scale * HitBoxScaleW), (int)(_texture.Height * Scale * HitBoxScaleH));
                 else
                     return _animationManager.AnimationRectangle();
             }

@@ -46,6 +46,7 @@ namespace BaboGame_test_2
         ProjectileEngine projectileEngine;
         ProjectileManager projectileManager;
         Dictionary<string, Texture2D> projectileTexture;
+        Dictionary<string, Texture2D> scenarioTextures;
         Dictionary<string, Animation> slugHealth;
         Dictionary<string, Animation> sightAnimation;
         SlimeEngine slimeEngine;
@@ -201,7 +202,7 @@ namespace BaboGame_test_2
             Difficulty = difficulty;
             NextProjectileID = 0;
             GameEnded = false;
-            GamePaused = false;
+            GamePaused = true;
             HasWinner = false;
             this.LoadVariable = LoadVariable;
         }
@@ -255,10 +256,24 @@ namespace BaboGame_test_2
                 {"OFF", new Animation(Content.Load<Texture2D>("Sight/Sight_off"), 1) },
             };
 
+            //Textures de l'escenari
+            scenarioTextures = new Dictionary<string, Texture2D>()
+            {
+                {"Block", Content.Load<Texture2D>("Scenario/Block") },
+                {"Beer", Content.Load<Texture2D>("Scenario/Beer") },
+                {"Beer1", Content.Load<Texture2D>("Scenario/Beer 1") },
+                {"Beer2", Content.Load<Texture2D>("Scenario/Beer 2") },
+                {"Battery down", Content.Load<Texture2D>("Scenario/Pila Frontal") },
+                {"Battery left", Content.Load<Texture2D>("Scenario/Pila esquerra") },
+                {"Battery right", Content.Load<Texture2D>("Scenario/Pila dreta") },
+                {"Cabbage", Content.Load<Texture2D>("Scenario/Cabbage") },
+                {"Lettuce", Content.Load<Texture2D>("Scenario/Lettuce") },
+            };
+
             //Textures
             slugTexture = Content.Load<Texture2D>("Babo/Babo down0 s0");
             sightTexture = Content.Load<Texture2D>("Sight/Sight_off");
-            scenarioTexture = Content.Load<Texture2D>("Scenario/Block");
+            
 
             //Menú de les bales del llimac
             projectileMenuTexture = Content.Load<Texture2D>("Slug_status/SaltMenu");
@@ -297,25 +312,76 @@ namespace BaboGame_test_2
             //Llista de sprites de l'escenari
             scenarioSprites = new List<ScenarioObjects>()
             {
-                new ScenarioObjects(scenarioTexture)
+                new ScenarioObjects(scenarioTextures["Cabbage"])
                 {
                     Position = new Vector2(400,100),
-                    Scale = 0.2f,
+                    Scale = 0.4f,
                     SolidObject = true,
-                    HitBoxScale = 1f,
+                    HitBoxScale = 0.4f,
                     HasConducitivity = true,
-                    Charge = 'P',
+                    Charge = 'I',
                 },
 
-                new ScenarioObjects(scenarioTexture)
+                new ScenarioObjects(scenarioTextures["Lettuce"])
                 {
-                    Position = new Vector2(400,500),
-                    Scale = 0.2f,
+                    Position = new Vector2(400,400),
+                    Scale = 0.4f,
                     SolidObject = true,
-                    HitBoxScale = 1f,
+                    HitBoxScale = 0.2f,
                     HasConducitivity = true,
-                    Charge = 'N',
+                    Charge = 'I',
                 },
+
+                new ScenarioObjects(scenarioTextures["Cabbage"])
+                {
+                    Position = new Vector2(400,700),
+                    Scale = 0.4f,
+                    SolidObject = true,
+                    HitBoxScale = 0.4f,
+                    HasConducitivity = true,
+                    Charge = 'I',
+                },
+
+                new ScenarioObjects(scenarioTextures["Lettuce"])
+                {
+                    Position = new Vector2(880,100),
+                    Scale = 0.4f,
+                    SolidObject = true,
+                    HitBoxScale = 0.2f,
+                    HasConducitivity = true,
+                    Charge = 'I',
+                },
+
+                new ScenarioObjects(scenarioTextures["Cabbage"])
+                {
+                    Position = new Vector2(880,400),
+                    Scale = 0.4f,
+                    SolidObject = true,
+                    HitBoxScale = 0.4f,
+                    HasConducitivity = true,
+                    Charge = 'I',
+                },
+
+                new ScenarioObjects(scenarioTextures["Lettuce"])
+                {
+                    Position = new Vector2(880,700),
+                    Scale = 0.4f,
+                    SolidObject = true,
+                    HitBoxScale = 0.2f,
+                    HasConducitivity = true,
+                    Charge = 'I',
+                },
+
+                new ScenarioObjects(scenarioTextures["Battery down"])
+                {
+                    Position = new Vector2(640,60),
+                    Scale = 2f,
+                    SolidObject = true,
+                    HitBoxScale = 0.8f,
+                    HasConducitivity = true,
+                    Charge = 'I',
+                },
+
             };
 
             //Llista de sprites de les bales
@@ -341,7 +407,7 @@ namespace BaboGame_test_2
             slimeTimer.AutoReset = true;
             slimeTimer.Enabled = true;
             */
-            debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, 0,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
+            //debugger = new Debugger(characterSprites,projectileSprites,overlaySprites,slimeSprites, 0,graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,_font);
 
             //timer.Elapsed += OnTimedEvent;
             //slimeTimer.Elapsed += OnSlimeTimedEvent;
@@ -355,6 +421,7 @@ namespace BaboGame_test_2
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
+            
             FreeConsole();
         }
 
@@ -363,9 +430,11 @@ namespace BaboGame_test_2
         //----------------------------------------------------------------------------------
         protected override void OnExiting(Object sender, EventArgs args)
         {
-            this.serverHandler.SwitchToNotificationMode();
-            base.OnExiting(sender, args);
-
+            if (!testMode)
+            {
+                this.serverHandler.SwitchToNotificationMode();
+                base.OnExiting(sender, args);
+            }
             // amb aquesta crida notifiquem al servidor que sortim de la partida
             // i tornem al sistema de notificaicions
 
@@ -388,13 +457,18 @@ namespace BaboGame_test_2
               //  this.serverHandler.RequestInitState();
                 //initStateRequested = true;
            // }
+
+            //Tanca el programa si pitges ESC
            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                Exit();
+
+           //Tanca el programa si pitges _ quan el joc s'acabat
             if ((Keyboard.GetState().IsKeyDown(Keys.Space))&&(GameEnded))
                 Exit();
             //if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
             //graphics.ToggleFullScreen();
 
+            //Canvia l'estat de pausa del joc de el mode Offline
             if (Keyboard.GetState().IsKeyDown(Keys.P) && (_previousState.IsKeyUp(Keys.P)) && (testMode))
             {
                 if (GamePaused)
@@ -411,12 +485,15 @@ namespace BaboGame_test_2
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
+
+            //Lectura de les dades en l'Online
             if (!testMode)
             {
 
 
             if (ReceiverArgs.newDataFromServer != 0)
             {
+                //Rep noves dades
                 if (ReceiverArgs.newDataFromServer == 1)
                 {
                     GenericResponse response;
@@ -428,13 +505,14 @@ namespace BaboGame_test_2
                         //Console.WriteLine(response.responseStr);
                         //UpdateOnline();
 
-
+                        //Rep un missatge d'inicialització dels objectes
                         if (response.responseType == 101)
                         {
                             initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
                             UpdateInit();
                             Initialized = true;
                         }
+                        //Rep missatges de començar i acabar la partida
                         else if (response.responseType == 102)
                         {
                             if (response.responseStr == "START")
@@ -457,6 +535,7 @@ namespace BaboGame_test_2
                             }*/
                         }
                 }
+                //Rep missatges periodics per actualitzar la partida
                 else if ((ReceiverArgs.newDataFromServer == 103 && Initialized)&&(!GameEnded))
                 {
                     GenericResponse response = ReceiverArgs.realtimeResponse;
@@ -466,6 +545,7 @@ namespace BaboGame_test_2
                     PeriodicalUpdate();
                 }
 
+                //Rep els missatges d'actualització de partida amb un altre tipus de missatge (els missatges d'actualització són descartables, la resta no)
                 else if (ReceiverArgs.newDataFromServer == 1103)
                 {
                     GenericResponse response;
@@ -477,12 +557,14 @@ namespace BaboGame_test_2
                         Console.WriteLine(response.responseStr);
                         //UpdateOnline();
 
+                        //Rep un missatge d'inicialització de partida
                         if (response.responseType == 101)
                         {
                             initGame = JsonSerializer.Deserialize<initState>(response.responseStr);
                             UpdateInit();
                             Initialized = true;
                         }
+                        //Rep missatges d'estat de partida
                         else if (response.responseType == 102)
                         {
                             if (response.responseStr == "START")
@@ -498,6 +580,7 @@ namespace BaboGame_test_2
                             }
                         }
                     }
+                    //Fa l'actualització de partida excepte si el joc ja s'acabat
                     if ((Initialized)&& (!GameEnded))
                     {
                         response = ReceiverArgs.realtimeResponse;
@@ -1052,6 +1135,8 @@ namespace BaboGame_test_2
 
             otherTexts.Add(new NameFontModel("JOC PAUSAT", new Vector2(250, 300), Color.Black, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -2, false));
             otherTexts.Add(new NameFontModel("JOC PAUSAT", new Vector2(250, 290), Color.White, 0f, 2f, new Vector2(0, 0), SpriteEffects.None, 1f, -2, false));
+            otherTexts.Add(new NameFontModel("Pitja P per pausar i despausar el joc", new Vector2(100, 650), Color.Black, 0f, 0.5f, new Vector2(0, 0), SpriteEffects.None, 0.9999f, -2, false));
+            otherTexts.Add(new NameFontModel("Pitja P per pausar i despausar el joc", new Vector2(100, 645), Color.White, 0f, 0.5f, new Vector2(0, 0), SpriteEffects.None, 1f, -2, false));
         }
 
         //Activa el final de la partida si queda només un jugador o menys al offline (excepte si el jugador ha decidit jugar sol)
@@ -1190,24 +1275,28 @@ namespace BaboGame_test_2
                 spriteBatch.Draw(PauseImage, new Vector2(0, 0), null, Color.White, 0f, new Vector2(0, 0), PauseScale, SpriteEffects.None, 0.8f);
             }
 
-            debugger.DrawText(spriteBatch);
+            //debugger.DrawText(spriteBatch);
 
             foreach (var sprite in scenarioSprites)
             {
-                sprite.Draw(spriteBatch);
+                if(sprite.Visible)
+                    sprite.Draw(spriteBatch);
             }
             foreach (var sprite in slimeSprites)
             {
-                sprite.Draw(spriteBatch);
+                if(sprite.Visible)
+                    sprite.Draw(spriteBatch);
             }
             foreach (var sprite in characterSprites)
             {
-                sprite.Draw(spriteBatch);
+                if(sprite.Visible)
+                    sprite.Draw(spriteBatch);
             }
 
             foreach (var sprite in projectileSprites)
             {
-                sprite.Draw(spriteBatch);
+                if(sprite.Visible)
+                    sprite.Draw(spriteBatch);
             }
             foreach (var overlay in overlaySprites)
             {

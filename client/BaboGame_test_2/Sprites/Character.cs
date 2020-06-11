@@ -391,6 +391,26 @@ namespace BaboGame_test_2
             else if (slugName == "Swalot")
                 characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, CPU = CPUgame, });
         }
+
+        public void DisposeAll()
+        {
+            foreach(var item in BaboAnimations)
+            {
+                item.Value.Texture.Dispose();
+            }
+            foreach (var item in LimaxAnimations)
+            {
+                item.Value.Texture.Dispose();
+            }
+            foreach (var item in KalerAnimations)
+            {
+                item.Value.Texture.Dispose();
+            }
+            foreach (var item in SwalotAnimations)
+            {
+                item.Value.Texture.Dispose();
+            }
+        }
     }
 
     public class Character : Sprite

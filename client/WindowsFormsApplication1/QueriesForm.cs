@@ -27,6 +27,8 @@ namespace BaboGameClient
         NotificationWorker notificationWorker;
 
         PictureBox NotificationIcon;
+        PictureBox WithNotification;
+        PictureBox WithOutNotification;
 
         //Elements del menú d'entrenament
         Button Return_btn;
@@ -95,6 +97,8 @@ namespace BaboGameClient
 
 
             this.NotificationIcon = new PictureBox();
+            WithNotification = new PictureBox();
+            WithOutNotification = new PictureBox();
 
             //Elements del menú d'entrenament
             Train_btn = new Button();
@@ -168,7 +172,17 @@ namespace BaboGameClient
             NotificationIcon.Load();
             NotificationIcon.Refresh();
 
-            
+            //Icona de les notificacions
+            WithNotification.ImageLocation = "../../../Pictures/Layouts/Tomato.png";
+            WithNotification.SizeMode = PictureBoxSizeMode.CenterImage;
+            WithNotification.Load();
+            WithNotification.Refresh();
+
+            WithOutNotification.ImageLocation = "../../../Pictures/Layouts/Immature Tomato.png";
+            WithOutNotification.SizeMode = PictureBoxSizeMode.CenterImage;
+            WithOutNotification.Load();
+            WithOutNotification.Refresh();
+
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Creació dels objectes del menú de la tria de la llista de connectats (ScreenSelected = 2)
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -516,8 +530,12 @@ namespace BaboGameClient
 
 
             TrainingState.Player_ID = new int[] {1,2,3,4,5,6,7,8};
-            
 
+            //Actualitza la imatge de notificació
+            if (Notificacions_btn.DropDownItems.Count > 0)
+                Notificacions_btn.Image = WithNotification.Image;
+            else
+                Notificacions_btn.Image = WithOutNotification.Image;
         }
 
         public void UpdateScreen()
@@ -836,6 +854,11 @@ namespace BaboGameClient
             Notificacions_btn.DropDownItems.Add(Invitation);
 
             Notificacions_btn.BackColor = Color.LightGreen;
+
+            if (Notificacions_btn.DropDownItems.Count > 0)
+                Notificacions_btn.Image = WithNotification.Image;
+            else
+                Notificacions_btn.Image = WithOutNotification.Image;
         }
 
         //S'ha confirmat l'acceptació de la partida
@@ -858,12 +881,22 @@ namespace BaboGameClient
         {
             MessageBox.Show("Has rebutjat correctament la partida");
             Notificacions_btn.DropDownItems.Remove(notificationSelection);
+
+            if (Notificacions_btn.DropDownItems.Count > 0)
+                Notificacions_btn.Image = WithNotification.Image;
+            else
+                Notificacions_btn.Image = WithOutNotification.Image;
         }
 
         //Hi ha hagut algún error rebutjant la partida
         public void FailResponseGamePopup()
         {
             MessageBox.Show("No s'ha pogut acceptar/rebutjar la invitació");
+
+            if (Notificacions_btn.DropDownItems.Count > 0)
+                Notificacions_btn.Image = WithNotification.Image;
+            else
+                Notificacions_btn.Image = WithOutNotification.Image;
         }
 
         //Han començat sense tú
@@ -879,6 +912,11 @@ namespace BaboGameClient
             Invitation.Image = NotificationIcon.Image;
             Invitation.Tag = gameName;
             Notificacions_btn.DropDownItems.Remove(Invitation);
+
+            if (Notificacions_btn.DropDownItems.Count > 0)
+                Notificacions_btn.Image = WithNotification.Image;
+            else
+                Notificacions_btn.Image = WithOutNotification.Image;
         }
 
 
@@ -989,6 +1027,11 @@ namespace BaboGameClient
                 Invitation.Image = NotificationIcon.Image;
                 Invitation.Tag = gameName;
                 Notificacions_btn.DropDownItems.Remove(Invitation);
+
+                if (Notificacions_btn.DropDownItems.Count > 0)
+                    Notificacions_btn.Image = WithNotification.Image;
+                else
+                    Notificacions_btn.Image = WithOutNotification.Image;
             }
         }
 
@@ -1002,6 +1045,7 @@ namespace BaboGameClient
 
         int panelcursor = 0;
 
+        //Escriu missatges en el xat
         public void SentMessageChat(string username, string message)
         {
             if (message.Length > 0)
@@ -1126,53 +1170,12 @@ namespace BaboGameClient
                 serverHandler.RequestConnected();
             }
 
-            /*
-            else if (createGame_rb.Checked) //Modificat a la nova versió - Albert
-            {
-                if(queries_tb.Text.Length == 0)
-                {
-                    MessageBox.Show("Escriu el nom de la partida!");
-                }
-                else
-                {
-                    serverHandler.RequestCreateParty(queries_tb.Text);
-                }
-            }
-
-            else if (showGames_rb.Checked)
-            {
-                QueryGrid.Rows.Clear();
-                QueryGrid.Columns.Clear();
-                List<PreGameState> gameTable = serverHandler.GetGameTable();
-                QueryGrid.Columns.Add("ID", "ID");
-                QueryGrid.Columns.Add("Nom", "Nom");
-                QueryGrid.Columns.Add("Creador", "Creador");
-                QueryGrid.Columns.Add("Participants", "Participants");
-                QueryGrid.Columns.Add("Estat", "Estat");
-                                             
-                for (int i = 0; i < gameTable.Count; i++)// array rows
-                {
-                    string[] row = new string[5];
-                    row[0] = gameTable[i].Id.ToString();
-                    row[1] = gameTable[i].Name;
-                    row[2] = gameTable[i].Creator;
-                    row[3] = gameTable[i].UserCount.ToString();
-                    if (gameTable[i].Playing == 1)
-                    {
-                        row[4] = "En Curs";
-                    }
-                    else
-                    {
-                        row[4] = "Oberta";
-                    }
-                    QueryGrid.Rows.Add(row);
-                }
-            }
-            */
+            //Demana la llista de jugadors en que t'has volgut connectar
             else if (Opponents_rb.Checked)
             {
                 serverHandler.RequestOpponentPlayed();
             }
+            //Demana els resultats de les partides jugades amb altres jugadors
             else if (gameResultsWithPlayers_rb.Checked)
             {
                 string[] players = new string[8];
@@ -1183,6 +1186,7 @@ namespace BaboGameClient
 
                 serverHandler.RequestgamePlayedwithPlayers(MultipleStringSelected_dgv.RowCount - 1, players);
             }
+            //Demana les partides jugades en un interval de temps
             else if (GameListInterval_rb.Checked)
             {
                 string startInterval = dateTimeStart_dt.Value.ToString("u");
@@ -1194,6 +1198,7 @@ namespace BaboGameClient
                 MessageBox.Show("Selecciona alguna opció");
         }
 
+        //Desconnecta la sessió en tancar la finestra
         private void QueriesForm_FormClosing(object sender, EventArgs args)
         {
             MessageBox.Show("Desconnectant-se...");
@@ -1201,11 +1206,13 @@ namespace BaboGameClient
             serverHandler.Disconnect();
         }
 
+        //Canvia el color del botó de notificacions en clicar
         private void Notificacions_btn_Click(object sender, EventArgs e)
         {
             Notificacions_btn.BackColor = Color.LightGray;
         }
 
+        //Envia un missatge en el xat de partida
         private void Chatting_btn_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(Chatting_tb.Text))
@@ -1220,6 +1227,7 @@ namespace BaboGameClient
 
         }
 
+        //Obre la llista de stickers en el joc
         private void Stickers_btn_Click(object sender, EventArgs e)
         {
             if(StickersPanel.Visible==true)
@@ -1258,12 +1266,14 @@ namespace BaboGameClient
             }
         }
 
+        //Envia el sticker clicat al xat
         private void StickerSelected_Click (object sender, EventArgs e, string StickerName)
         {
             Chatting_tb.Text = "{" + StickerName + "}";
             serverHandler.RequestChatMessage(Chatting_tb.Text);
         }
 
+        //Detecta si s'ha seleccionat o desseleccionat el round button dels resultats de partides jugades per un grup de jugadors 
         private void gameResultsWithPlayers_rb_CheckedChanged(object sender, EventArgs e)
         {
             if (gameResultsWithPlayers_rb.Checked)
@@ -1279,12 +1289,14 @@ namespace BaboGameClient
             }
         }
 
+        //Afegeix un jugador a la llista en la consulta de preguntar els resultats de les partides jugades per un grup de jugadors
         private void AddToMultipleSelected_btn_Click(object sender,EventArgs e)
         {
             if((!string.IsNullOrWhiteSpace(queries_tb.Text))&&(MultipleStringSelected_dgv.Rows.Count < 8))
                 MultipleStringSelected_dgv.Rows.Add(queries_tb.Text);
         }
 
+        //Detecta si s'ha clicat una cela de la taula de jugadors a fer la consulta dels resultats de la partida
         private void MultipleStringSelected_dgv_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             try
@@ -1316,6 +1328,7 @@ namespace BaboGameClient
             UpdateScreen();
         }
 
+        //Clica la opció de la partida en mode entrenament
         private void Training_btn_Click(object sender, EventArgs e)
         {
             ScreenSelected = -1;
@@ -1404,7 +1417,7 @@ namespace BaboGameClient
         //Menú de la selecció dels personatges
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        //Escollir el personatge
+        //Escollir el personatge a jugar a través d'unes fletxes que apunten a la dreta i l'esquerra
         public void LeftChar_btn_Click(object sender, EventArgs e)
         {
             if (charSelectedPos > 0)
@@ -1419,6 +1432,7 @@ namespace BaboGameClient
             CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
             CharDescription_lbl.Text = characterDescription[charSelectedPos];           
         }
+
 
         public void RightChar_btn_Click(object sender, EventArgs e)
         {
@@ -1443,6 +1457,8 @@ namespace BaboGameClient
             else
                 serverHandler.RequestStartGame(gameName);
         }
+
+        //Cancel·la la partida
         public void CancelGame_btn_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(gameName))
@@ -1477,6 +1493,7 @@ namespace BaboGameClient
                 serverHandler.RequestSelectCharacter(gameName, characterSelected[charSelectedPos]);
         }
 
+        //Carrega la música del form
         private void QueriesForm_Load(object sender, EventArgs e)
         {
            musicPlayer = new MusicPlayer();
@@ -1488,6 +1505,7 @@ namespace BaboGameClient
 
         }
 
+        //Redirigeix al menú principal quan estàs a l'apartat de consultes
         private void MainMenu_btn_Click(object sender, EventArgs e)
         {
             if (ScreenSelected == 1)
@@ -1497,6 +1515,7 @@ namespace BaboGameClient
             }
         }
 
+        //Redirigeix al menú de consultes quan estàs al menú principal
         private void QueriesMenu_btn_Click(object sender, EventArgs e)
         {
             if (ScreenSelected == 0)
@@ -1525,13 +1544,18 @@ namespace BaboGameClient
                 loadingThread.Start();
 
                 using (var game = new Game1(TrainingState, Difficulty[DifficultyPos], LoadVariable))
+                {
                     game.Run();
+                }
+
                 TrainingState.OpponentCharacter_Selected.Clear();
                 OpponentListPanel.Controls.Clear();
                 TrainingState.Opponentnum_players = 0;
+                
             }
         }
 
+        //Obre un form que surt l'animació de carregant partida
         public void LoadingThread(Game1.Loading LoadVariable)
         {
             LoadingForm LoadForm = new LoadingForm(LoadVariable);
@@ -1547,10 +1571,14 @@ namespace BaboGameClient
             UpdateScreen();
 
         }
+
+        //Desa un personatge que s'ha escollit com a personatge controlable
         public void PlayerSelectChar_btn_Click(object sender, EventArgs e)
         {
             TrainingState.PlayerCharacter_Selected= characterSelected[charSelectedPos];            
         }
+
+        //Desa els oponents del mode entrenament
         public void OpponentSelectChar_btn_Click(object sender, EventArgs e)
         {
             if (TrainingState.Opponentnum_players < 7)
