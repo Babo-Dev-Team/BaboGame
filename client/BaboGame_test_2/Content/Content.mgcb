@@ -1311,30 +1311,6 @@
 /processorParam:TextureFormat=Color
 /build:Scenario/Cabbage.png
 
-#begin Scenario/Cabbage.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:Scenario/Cabbage.png
-
-#begin Scenario/Lettuce.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:Scenario/Lettuce.png
-
 #begin Scenario/Lettuce.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -1431,6 +1407,18 @@
 /processorParam:TextureFormat=Color
 /build:Sight/Sight_on.png
 
+#begin Slug_status/full-heart.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Slug_status/full-heart.png
+
 #begin Slug_status/Heart.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -1455,6 +1443,18 @@
 /processorParam:TextureFormat=Color
 /build:Slug_status/heart-1_4.png
 
+#begin Slug_status/heart-1_4.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Slug_status/heart-1_4.png
+
 #begin Slug_status/heart-2_4.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -1466,6 +1466,30 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Slug_status/heart-2_4.png
+
+#begin Slug_status/heart-2_4.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Slug_status/heart-2_4.png
+
+#begin Slug_status/heart-3_4.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Slug_status/heart-3_4.png
 
 #begin Slug_status/heart-3_4.png
 /importer:TextureImporter
