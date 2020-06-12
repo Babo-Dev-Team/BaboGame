@@ -278,6 +278,8 @@ int GetConnectedSocket(ConnectedList* list, char name[USRN_LENGTH])
 	return ret;
 }
 
+// Creem un objecte JSON que representa l'estat de la llista de connectats. 
+// Ho farem servir per enviar de forma global aquesta informació.
 json_object* connectedListToJson(ConnectedList* list)
 {
 	//json_object* list_obj = json_object_new_object();

@@ -1,6 +1,6 @@
+#include <mysql.h>
 #include <stdlib.h>
 #include <string.h>
-#include <mysql.h>
 #include <stdio.h>
 
 #include "BBDD_Handler.h"
@@ -13,10 +13,9 @@ MYSQL_RES *result;
 MYSQL_ROW row;
 
 
-// PROVISIONAL:
-int user_id = 10;
 
 
+// funció per enviar una query al servidor SQL
 int send_query(char query[QUERY_LENGTH])
 {
 	// send query
@@ -30,6 +29,7 @@ int send_query(char query[QUERY_LENGTH])
 	return 0;
 }
 
+// demanem el ranking de jugadors, que retornem com un punter a una string
 char* BBDD_ranking()
 {
 	char query[QUERY_LENGTH];	
@@ -67,6 +67,8 @@ char* BBDD_ranking()
 	return ranking_str;	
 }
 
+// demanem el temps jugat per un jugador. Retornem un punter a una string amb el temps en format 
+// HH:MM:SS
 char* BBDD_time_played(char username[USRN_LENGTH])
 {
 	// SQL Query
@@ -100,6 +102,8 @@ char* BBDD_time_played(char username[USRN_LENGTH])
 	return time_played;
 }
 
+// busquem els personatges que han participat en una partida pel nom de partida.
+// retornem una string de la forma num/jugador1*char1/jugador2*char2...
 char* BBDD_find_characters(char game_id[GAME_ID_LENGTH])
 {
 	char query[QUERY_LENGTH];	
@@ -140,8 +144,10 @@ char* BBDD_find_characters(char game_id[GAME_ID_LENGTH])
 	return characters_str;		
 }
 
+// mètode de sign up al joc
 int BBDD_add_user(char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 {
+	int user_id;
 	char query[QUERY_LENGTH];
 	
 	strcpy(query, "select jugadors.id from jugadors where jugadors.nom = '");
@@ -182,6 +188,8 @@ int BBDD_add_user(char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 	}
 }
 
+// comprovem els paràmetre de login d'un usuari. retorna la id de l'usuari si el longin 
+// és correcte, o -1 si el login no és correcte.
 int BBDD_check_login (char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 {
 	char query[QUERY_LENGTH];
@@ -208,6 +216,9 @@ int BBDD_check_login (char username[USRN_LENGTH], char passwd[PASS_LENGTH])
 	}
 }
 
+// ens connectem al servidor sql
+// retorna 0 si la connexió és correcta, -1 si no s'ha pogut crear la connexió, 
+// -2 si no s'ha pogut inicialitzar la connexió.
 int BBDD_connect ()
 {
 	int error = 0;
@@ -220,8 +231,8 @@ int BBDD_connect ()
 	}
 	
 	// init connection
-	//conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
-	conn = mysql_real_connect (conn, "localhost","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
+	conn = mysql_real_connect (conn, "shiva2.upc.es","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
+	//conn = mysql_real_connect (conn, "localhost","root", "mysql", "T12_BaboGameBBDD", 0, NULL, 0);
 	if (conn == NULL) 
 	{
 		printf ("Error while initializing connection: %u %s\n", mysql_errno(conn), mysql_error(conn));
@@ -231,6 +242,7 @@ int BBDD_connect ()
 	return error;
 }
 
+// retorna una llistade jugadors contra els que ha jugat un usuari especificat per la seva id.
 char* BBDD_opponentGameList(int idPlayer)
 {
 	char query[QUERY_LENGTH];	
@@ -274,6 +286,7 @@ char* BBDD_opponentGameList(int idPlayer)
 	}
 	return opponent_str;
 }
+
 
 char* BBDD_gameResultsWithOtherPlayers (int num,char players [100][USRN_LENGTH])
 {
@@ -353,6 +366,7 @@ char* BBDD_gameResultsWithOtherPlayers (int num,char players [100][USRN_LENGTH])
 	return gameResults_str;
 }
 
+// retorna com a punter a una string una llista de partides jugades per un jugador dins d'un marge de temps.
 char* BBDD_gameInTimeInterval(int idPlayer,char start[100], char end [100])
 {
 	char query[QUERY_LENGTH];	
@@ -399,6 +413,9 @@ char* BBDD_gameInTimeInterval(int idPlayer,char start[100], char end [100])
 	return interval_str;
 }
 
+// Funció per donar de baixa un usuari. No l'eliminem de la base de dades, ja que això impediria
+// que puguessim mantenir un historial correcte de les partides jugades pels jugadors que abandonen el joc.
+// EL que fem s determinar si un usuari est actiu o inactiu amb el flag actiu de la taula jugadors.
 int BBDD_deregister_user(char username[USRN_LENGTH], char password[PASS_LENGTH])
 {
 	char query[QUERY_LENGTH];
@@ -427,7 +444,7 @@ int BBDD_deregister_user(char username[USRN_LENGTH], char password[PASS_LENGTH])
 	}
 }
 
-
+// funció per afegir els resultats d'una partida a la base de dades del joc.
 int BBDD_add_game_scores(char name[GAME_LEN], int nPlayers, char** charnames, int* userIds, int* scores, int winnerId, char* initDate, char* endDate, int duration)
 {
 	char query[QUERY_LENGTH];
