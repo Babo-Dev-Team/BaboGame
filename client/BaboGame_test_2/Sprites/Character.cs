@@ -209,7 +209,7 @@ namespace BaboGame_test_2
             }
         }
 
-        public void CPUDecision(List<ScenarioObjects> scenarioList, List<Projectile> projectileList,ProjectileEngine projectileEngine, Dictionary<string,Texture2D> projectileTexture, char Difficulty)
+        public void CPUDecision(List<ScenarioObjects> scenarioList, List<Projectile> projectileList,ProjectileEngine projectileEngine, Dictionary<string,Texture2D> projectileTexture, char Difficulty, GameTime gameTime)
         {
             foreach (var character in characterList)
             {
@@ -257,7 +257,15 @@ namespace BaboGame_test_2
                         if (VectorOps.ModuloVector(distancePlayers) > 400)
                             character.Acceleration = character.Direction * character.LinearAcceleration;
                         else if (VectorOps.ModuloVector(distancePlayers) < 200)
-                            character.Acceleration = new Vector2(-character.Direction.X,-character.Direction.Y) * character.LinearAcceleration;
+                            character.Acceleration = new Vector2(-character.Direction.X, -character.Direction.Y) * character.LinearAcceleration;
+                        //Llimac evitant parets
+                        if (character.CPUBulletLost)
+                        {
+                            if(character.CPUBulletLostDirection)
+                                character.Acceleration = new Vector2(character.Direction.Y, character.Direction.X) * character.LinearAcceleration;
+                            else
+                                character.Acceleration = new Vector2(-character.Direction.Y, -character.Direction.X) * character.LinearAcceleration;
+                        }
 
                         //Llimac disparant el enemic amb una certa probabilitat d'error
                         switch (Difficulty)
@@ -353,8 +361,24 @@ namespace BaboGame_test_2
                             }
                             break;
                     }
+
+                    //Temps on esquiva la bala
+                    if (character.CPUBulletLost)
+                        character.CPUtimer += gameTime.ElapsedGameTime.Milliseconds;
+
+                    if (character.CPUtimer > 500)
+                    {
+                        character.CPUtimer = 0;
+                        character.CPUBulletLost = false;
+
+                        if (character.CPUBulletLostDirection)
+                            character.CPUBulletLostDirection = false;
+                        else
+                            character.CPUBulletLostDirection = true;
+                    }
                 }
             }
+
         }
 
         public void AddCharacter(Dictionary<string, Animation> slugAnimations, Vector2 Position, float Scale, float HitBoxScaleW, float HitBoxScaleH, int Health, int IDCharacter, Color color)
@@ -427,6 +451,9 @@ namespace BaboGame_test_2
         public bool CPU = false;
         public bool Defeated;
         public int BulletNumber;
+        public bool CPUBulletLost = false;
+        public float CPUtimer = 0;
+        public bool CPUBulletLostDirection = false;
 
         // Constructors
         public Character(Texture2D texture)
@@ -765,12 +792,19 @@ namespace BaboGame_test_2
             }
         }
 
+        //Notifica el dolor
         public void NotifyHit(Vector2 hitDirection, int shooterID, float damage, float hitImpulse)
         {
             this.isHit = true;
             this.Health -= 1;
             this.hitDirection = hitDirection;
             this.hitImpulse = hitImpulse;
+        }
+
+        //Notifica el CPU que s'ha quedat aturat a una paret
+        public void CPUNotifyLostBullet()
+        {
+            CPUBulletLost = true;
         }
 
     }

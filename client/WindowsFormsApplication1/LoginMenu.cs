@@ -30,11 +30,20 @@ namespace BaboGameClient
             this.serverHandler = serverHandler;
             this.notificationWorker = notificationWorker;
             InitializeComponent();
+
+            LoginButton.Image = Image.FromFile("../../../Pictures/Layouts/LogIn.png");
+            SignupButton.Image = Image.FromFile("../../../Pictures/Layouts/SignUp.png");
+            DeleteUserButton.Image = Image.FromFile("../../../Pictures/Layouts/SignOut.png");
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             //serverHandler = new ServerHandler();
+            this.BackColor = Color.LightGreen;
+            Title_pb.ImageLocation = "../../../Pictures/Layouts/BaboGame.png";
+            Title_pb.SizeMode = PictureBoxSizeMode.Zoom;
+            Title_pb.Load();
+            Title_pb.Refresh();
         }
 
         // arranquem el queries form i el passem al Notification Worker
@@ -125,7 +134,7 @@ namespace BaboGameClient
                 MessageBox.Show("Els camps estan buits!");
                 return;
             }
-            int error = serverHandler.Connect(local2_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
+            int error = serverHandler.Connect(shiva_ip, shiva_port); //Quim:192.168.56.103  Albert:192.168.56.101 Joel:192.168.56.104
             if (error != 0)
             {
                 MessageBox.Show("Connection Error.");

@@ -613,7 +613,7 @@ namespace BaboGame_test_2
                 // Actualitzem direcció i moviment del playerChar segons els inputs i les bales
                 UpdateControllableCharacter(gameTime);
                 if ((testMode) && (Difficulty != 'N'))
-                    characterEngine.CPUDecision(scenarioSprites, projectileSprites, projectileEngine, projectileTexture, Difficulty);
+                    characterEngine.CPUDecision(scenarioSprites, projectileSprites, projectileEngine, projectileTexture, Difficulty, gameTime);
             }
 
 

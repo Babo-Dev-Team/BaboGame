@@ -138,7 +138,11 @@ namespace BaboGame_test_2
                     foreach (Character chara in characterList)
                     {
                         if (chara.IDcharacter == projectile.ShooterID)
+                        {
                             chara.BulletNumber--;
+                            if (chara.CPU == true)
+                                chara.CPUNotifyLostBullet();
+                        }
                     }
                 }
             }
