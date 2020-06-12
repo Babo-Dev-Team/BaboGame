@@ -162,12 +162,13 @@ namespace BaboGameClient
 
             //Variable que diferencia a quin menú estàs situat
             ScreenSelected = 0;
+            
 
-
+            //Inicialització de components
             InitializeComponent();
             this.serverHandler = serverHandler;
             this.notificationWorker = notificationWorker;
-            NotificationIcon.ImageLocation = "../../../Pictures/Layouts/Babo down hit.png";
+            NotificationIcon.ImageLocation = "../../../Pictures/Layouts/Tomato.png";
             NotificationIcon.SizeMode = PictureBoxSizeMode.CenterImage;
             NotificationIcon.Load();
             NotificationIcon.Refresh();
@@ -231,6 +232,8 @@ namespace BaboGameClient
             NewPartyBack_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             NewPartyBack_btn.FlatAppearance.BorderSize = 0;
             NewPartyBack_btn.FlatStyle = FlatStyle.Flat;
+            NewPartyBack_btn.MouseHover += new EventHandler(this.NewPartyBack_btn_MouseHover);
+            NewPartyBack_btn.MouseLeave += new EventHandler(this.NewPartyBack_btn_MouseLeave);
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Creació del menú de selecció de personatges (ScreenSelected = 3)
@@ -296,6 +299,8 @@ namespace BaboGameClient
             CancelGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             CancelGame_btn.FlatAppearance.BorderSize = 0;
             CancelGame_btn.FlatStyle = FlatStyle.Flat;
+            CancelGame_btn.MouseHover += new EventHandler(this.CancelGame_btn_MouseHover);
+            CancelGame_btn.MouseLeave += new EventHandler(this.CancelGame_btn_MouseLeave);
 
             //Button per acceptar la partida
             StartGame_btn.Location = new Point(175, 300);
@@ -311,22 +316,27 @@ namespace BaboGameClient
 
             //Button per seleccionar el personatge
             SelectChar_btn.Location = new Point(25, 300);
-            SelectChar_btn.Text = "Seleccionar Personatge";
-            SelectChar_btn.Size = new Size(80, 60);
+            //SelectChar_btn.Text = "Seleccionar Personatge";
+            SelectChar_btn.Size = new Size(64, 64);
             SelectChar_btn.Visible = false;
             this.Controls.Add(SelectChar_btn);
             SelectChar_btn.Click += new EventHandler(this.SelectChar_btn_Click);
+            SelectChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/SightOff.png");
+            SelectChar_btn.FlatAppearance.BorderSize = 0;
+            SelectChar_btn.FlatStyle = FlatStyle.Flat;
 
             //Button per sortir de la partida
             QuitGame_btn.Location = new Point(225, 300);
-            QuitGame_btn.Text = "Sortir";
-            QuitGame_btn.Size = new Size(80, 25);
+            //QuitGame_btn.Text = "Sortir";
+            QuitGame_btn.Size = new Size(40, 40);
             QuitGame_btn.Visible = false;
             this.Controls.Add(QuitGame_btn);
             QuitGame_btn.Click += new EventHandler(this.QuitGame_btn_Click);
             QuitGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             QuitGame_btn.FlatAppearance.BorderSize = 0;
             QuitGame_btn.FlatStyle = FlatStyle.Flat;
+            QuitGame_btn.MouseHover += new EventHandler(this.QuitGame_btn_MouseHover);
+            QuitGame_btn.MouseLeave += new EventHandler(this.QuitGame_btn_MouseLeave);
 
             //RichTextBox
             ChatGame_rtb.Visible = false;
@@ -430,6 +440,8 @@ namespace BaboGameClient
             Return_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             Return_btn.FlatAppearance.BorderSize = 0;
             Return_btn.FlatStyle = FlatStyle.Flat;
+            Return_btn.MouseHover += new EventHandler(this.Return_btn_MouseHover);
+            Return_btn.MouseLeave += new EventHandler(this.Return_btn_MouseLeave);
 
             //Butó per començar l'entrenament
             Train_btn.Location = new Point(224, 300);
@@ -475,19 +487,25 @@ namespace BaboGameClient
 
             //Butó per seleccionar el personatge de l'oponent
             OpponentSelectChar_btn.Location = new Point(312, 300);
-            OpponentSelectChar_btn.Text = "Selecciona Oponent";
-            OpponentSelectChar_btn.Size = new Size(80, 60);
+            //OpponentSelectChar_btn.Text = "Selecciona Oponent";
+            OpponentSelectChar_btn.Size = new Size(64, 64);
             OpponentSelectChar_btn.Visible = false;
+            OpponentSelectChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/SightOff.png");
+            OpponentSelectChar_btn.FlatAppearance.BorderSize = 0;
+            OpponentSelectChar_btn.FlatStyle = FlatStyle.Flat;
             this.Controls.Add(OpponentSelectChar_btn);
             OpponentSelectChar_btn.Click += new EventHandler(this.OpponentSelectChar_btn_Click);
 
             //Butó per seleccionar el personatge del jugador
             PlayerSelectChar_btn.Location = new Point(25, 300);
-            PlayerSelectChar_btn.Text = "Selecciona Personatge";
-            PlayerSelectChar_btn.Size = new Size(80, 60);
+            //PlayerSelectChar_btn.Text = "Selecciona Personatge";
+            PlayerSelectChar_btn.Size = new Size(64, 64);
             PlayerSelectChar_btn.Visible = false;
             this.Controls.Add(PlayerSelectChar_btn);
             PlayerSelectChar_btn.Click += new EventHandler(this.PlayerSelectChar_btn_Click);
+            PlayerSelectChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/SightOff.png");
+            PlayerSelectChar_btn.FlatAppearance.BorderSize = 0;
+            PlayerSelectChar_btn.FlatStyle = FlatStyle.Flat;
 
             //Nom del personatge de l'oponent
             OpponentCharName_lbl.Location = new Point(312, 200);
@@ -548,7 +566,7 @@ namespace BaboGameClient
             DifficultyPos = 0;
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            //Creació del menú de consultes
+            //Creació del menú de consultes (ScreenSelected = 1)
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //LLista de múltiples respostes
             MultipleStringSelected_dgv.Visible = false;
@@ -568,6 +586,7 @@ namespace BaboGameClient
             AddToMultipleStringSelected_btn.Text = "Afegeix";
             AddToMultipleStringSelected_btn.Visible = false;
             AddToMultipleStringSelected_btn.Click += new EventHandler(this.AddToMultipleSelected_btn_Click);
+            AddToMultipleStringSelected_btn.BackColor = Color.White;
             this.Controls.Add(AddToMultipleStringSelected_btn);
 
 
@@ -578,6 +597,7 @@ namespace BaboGameClient
                 Notificacions_btn.Image = WithNotification.Image;
             else
                 Notificacions_btn.Image = WithOutNotification.Image;
+
         }
 
         public void UpdateScreen()
@@ -677,6 +697,50 @@ namespace BaboGameClient
             else
                 this.Width = 616;
             
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //Events de decoració
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        //Botó de sortir del menú del mode local
+        private void Return_btn_MouseHover(object sender,EventArgs e)
+        {
+            Return_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back2.png");
+        }
+        private void Return_btn_MouseLeave(object sender, EventArgs e)
+        {
+            Return_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
+        }
+
+        //Botó de sortir de la selecció de jugadors
+        private void NewPartyBack_btn_MouseHover(object sender, EventArgs e)
+        {
+            NewPartyBack_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back2.png");
+        }
+        private void NewPartyBack_btn_MouseLeave(object sender, EventArgs e)
+        {
+            NewPartyBack_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
+        }
+
+        //Botó de cancelar la partida
+        private void CancelGame_btn_MouseHover(object sender, EventArgs e)
+        {
+            CancelGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back2.png");
+        }
+        private void CancelGame_btn_MouseLeave(object sender, EventArgs e)
+        {
+            CancelGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
+        }
+
+        //Botó de sortir de la partida
+        private void QuitGame_btn_MouseHover(object sender, EventArgs e)
+        {
+            QuitGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back2.png");
+        }
+        private void QuitGame_btn_MouseLeave(object sender, EventArgs e)
+        {
+            QuitGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
         }
 
         //------------------------------------------------
@@ -876,6 +940,7 @@ namespace BaboGameClient
                 CancelGame_btn.Visible = true;
                 QuitGame_btn.Visible = false;
                 ChatGame_rtb.Text = "";
+                panelcursor = 0;
                 ChattingPanel.Controls.Clear();
             }
             else if (response == "ALONE")
@@ -919,6 +984,7 @@ namespace BaboGameClient
 
             Notificacions_btn.DropDownItems.Remove(notificationSelection);
             ChatGame_rtb.Text = "";
+            panelcursor = 0;
             ChattingPanel.Controls.Clear();
             if (Notificacions_btn.DropDownItems.Count > 0)
                 Notificacions_btn.Image = WithNotification.Image;
@@ -932,6 +998,7 @@ namespace BaboGameClient
             MessageBox.Show("Has rebutjat correctament la partida");
             Notificacions_btn.DropDownItems.Remove(notificationSelection);
             ChatGame_rtb.Text = "";
+            panelcursor = 0;
             ChattingPanel.Controls.Clear();
             if (Notificacions_btn.DropDownItems.Count > 0)
                 Notificacions_btn.Image = WithNotification.Image;
@@ -944,6 +1011,7 @@ namespace BaboGameClient
         {
             MessageBox.Show("No s'ha pogut acceptar/rebutjar la invitació");
             ChatGame_rtb.Text = "";
+            panelcursor = 0;
             ChattingPanel.Controls.Clear();
             if (Notificacions_btn.DropDownItems.Count > 0)
                 Notificacions_btn.Image = WithNotification.Image;
@@ -965,6 +1033,7 @@ namespace BaboGameClient
             Invitation.Tag = gameName;
             Notificacions_btn.DropDownItems.Remove(Invitation);
             ChatGame_rtb.Text = "";
+            panelcursor = 0;
             ChattingPanel.Controls.Clear();
             if (Notificacions_btn.DropDownItems.Count > 0)
                 Notificacions_btn.Image = WithNotification.Image;
@@ -1051,6 +1120,7 @@ namespace BaboGameClient
             //Canviem a la pantalla principal
             ScreenSelected = 0;
             ChatGame_rtb.Text = "";
+            panelcursor = 0;
             ChattingPanel.Controls.Clear();
             UpdateScreen();
         }
@@ -1088,6 +1158,7 @@ namespace BaboGameClient
             catch { }
 
                 ChatGame_rtb.Text = "";
+                panelcursor = 0;
                 ChattingPanel.Controls.Clear();
 
                 if (Notificacions_btn.DropDownItems.Count > 0)
@@ -1263,6 +1334,13 @@ namespace BaboGameClient
         //Desconnecta la sessió en tancar la finestra
         private void QueriesForm_FormClosing(object sender, EventArgs args)
         {
+            if(ScreenSelected == 3)
+            {
+                if (StartGame_btn.Visible)
+                    serverHandler.RequestCancelGame(gameName);
+                else
+                    serverHandler.RequestRejectInvitation(gameName);
+            }
             MessageBox.Show("Desconnectant-se...");
             notificationWorker.DataGridUpdateRequested = 0;
             serverHandler.Disconnect();
@@ -1661,6 +1739,8 @@ namespace BaboGameClient
                 TrainingState.Opponentnum_players++;
             }
         }
+
+        //Deselecciona l'oponent clicat per fer la partida del mode entrenament
         public void DeselectOpponent_Click(object sender, EventArgs e, string opponentName, PictureBox opponent)
         {
             TrainingState.OpponentCharacter_Selected.Remove(opponentName);
@@ -1674,6 +1754,7 @@ namespace BaboGameClient
             OpponentListPanel.Controls.Remove(opponent);
         }
 
+        //Botons per escollir l'oponent
         public void LeftOpponentChar_btn_Click(object sender, EventArgs e)
         {
             if (OpponentcharSelectedPos > 0)

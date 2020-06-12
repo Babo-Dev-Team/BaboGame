@@ -44,6 +44,8 @@ namespace BaboGameClient
             Title_pb.SizeMode = PictureBoxSizeMode.Zoom;
             Title_pb.Load();
             Title_pb.Refresh();
+            this.BackgroundImage = Image.FromFile("../../../Pictures/Layouts/LettuceBackGround.jpg");
+            this.BackgroundImageLayout = ImageLayout.Stretch;
         }
 
         // arranquem el queries form i el passem al Notification Worker
