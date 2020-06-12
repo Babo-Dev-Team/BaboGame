@@ -465,8 +465,8 @@ namespace BaboGame_test_2
            //Tanca el programa si pitges _ quan el joc s'acabat
             if ((Keyboard.GetState().IsKeyDown(Keys.Space))&&(GameEnded))
                 Exit();
-            //if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
-            //graphics.ToggleFullScreen();
+            if (Keyboard.GetState().IsKeyDown(Keys.F11) && (_previousState.IsKeyUp(Keys.F11)))
+                graphics.ToggleFullScreen();
 
             //Canvia l'estat de pausa del joc de el mode Offline
             if (Keyboard.GetState().IsKeyDown(Keys.P) && (_previousState.IsKeyUp(Keys.P)) && (testMode))

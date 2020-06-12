@@ -39,8 +39,8 @@ namespace BaboGameClient
         private void Form1_Load(object sender, EventArgs e)
         {
             //serverHandler = new ServerHandler();
-            this.BackColor = Color.LightGreen;
-            Title_pb.ImageLocation = "../../../Pictures/Layouts/BaboGame.png";
+            this.BackColor = Color.SandyBrown;
+            Title_pb.ImageLocation = "../../../Pictures/Layouts/AssaltDeSal.png";
             Title_pb.SizeMode = PictureBoxSizeMode.Zoom;
             Title_pb.Load();
             Title_pb.Refresh();

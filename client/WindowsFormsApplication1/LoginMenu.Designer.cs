@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.Title_pb = new System.Windows.Forms.PictureBox();
             this.DeleteUserButton = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -36,14 +37,13 @@
             this.UsernameTextBox = new System.Windows.Forms.TextBox();
             this.SignupButton = new System.Windows.Forms.Button();
             this.LoginButton = new System.Windows.Forms.Button();
-            this.Title_pb = new System.Windows.Forms.PictureBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Title_pb)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
-            this.groupBox1.BackColor = System.Drawing.Color.PaleGreen;
+            this.groupBox1.BackColor = System.Drawing.Color.Transparent;
             this.groupBox1.Controls.Add(this.Title_pb);
             this.groupBox1.Controls.Add(this.DeleteUserButton);
             this.groupBox1.Controls.Add(this.label3);
@@ -52,20 +52,28 @@
             this.groupBox1.Controls.Add(this.UsernameTextBox);
             this.groupBox1.Controls.Add(this.SignupButton);
             this.groupBox1.Controls.Add(this.LoginButton);
-            this.groupBox1.Location = new System.Drawing.Point(23, 35);
+            this.groupBox1.Location = new System.Drawing.Point(23, 13);
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4);
-            this.groupBox1.Size = new System.Drawing.Size(484, 420);
+            this.groupBox1.Size = new System.Drawing.Size(484, 527);
             this.groupBox1.TabIndex = 6;
             this.groupBox1.TabStop = false;
+            // 
+            // Title_pb
+            // 
+            this.Title_pb.Location = new System.Drawing.Point(7, -42);
+            this.Title_pb.Name = "Title_pb";
+            this.Title_pb.Size = new System.Drawing.Size(477, 347);
+            this.Title_pb.TabIndex = 15;
+            this.Title_pb.TabStop = false;
             // 
             // DeleteUserButton
             // 
             this.DeleteUserButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.DeleteUserButton.FlatAppearance.BorderSize = 0;
             this.DeleteUserButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.DeleteUserButton.Location = new System.Drawing.Point(340, 268);
+            this.DeleteUserButton.Location = new System.Drawing.Point(338, 379);
             this.DeleteUserButton.Name = "DeleteUserButton";
             this.DeleteUserButton.Size = new System.Drawing.Size(130, 130);
             this.DeleteUserButton.TabIndex = 5;
@@ -75,24 +83,28 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(30, 233);
+            this.label3.BackColor = System.Drawing.Color.White;
+            this.label3.ForeColor = System.Drawing.Color.DarkGreen;
+            this.label3.Location = new System.Drawing.Point(12, 342);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(73, 17);
+            this.label3.Size = new System.Drawing.Size(95, 17);
             this.label3.TabIndex = 14;
-            this.label3.Text = "Password:";
+            this.label3.Text = "Contrassenya";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(30, 206);
+            this.label1.BackColor = System.Drawing.Color.White;
+            this.label1.ForeColor = System.Drawing.Color.DarkGreen;
+            this.label1.Location = new System.Drawing.Point(28, 317);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(77, 17);
+            this.label1.Size = new System.Drawing.Size(53, 17);
             this.label1.TabIndex = 13;
-            this.label1.Text = "Username:";
+            this.label1.Text = "Usuari:";
             // 
             // PasswordTextBox
             // 
-            this.PasswordTextBox.Location = new System.Drawing.Point(116, 231);
+            this.PasswordTextBox.Location = new System.Drawing.Point(114, 342);
             this.PasswordTextBox.Margin = new System.Windows.Forms.Padding(4);
             this.PasswordTextBox.Name = "PasswordTextBox";
             this.PasswordTextBox.Size = new System.Drawing.Size(287, 22);
@@ -100,7 +112,7 @@
             // 
             // UsernameTextBox
             // 
-            this.UsernameTextBox.Location = new System.Drawing.Point(116, 201);
+            this.UsernameTextBox.Location = new System.Drawing.Point(114, 312);
             this.UsernameTextBox.Margin = new System.Windows.Forms.Padding(4);
             this.UsernameTextBox.Name = "UsernameTextBox";
             this.UsernameTextBox.Size = new System.Drawing.Size(287, 22);
@@ -111,7 +123,7 @@
             this.SignupButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.SignupButton.FlatAppearance.BorderSize = 0;
             this.SignupButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SignupButton.Location = new System.Drawing.Point(167, 268);
+            this.SignupButton.Location = new System.Drawing.Point(165, 379);
             this.SignupButton.Name = "SignupButton";
             this.SignupButton.Size = new System.Drawing.Size(130, 130);
             this.SignupButton.TabIndex = 4;
@@ -123,26 +135,18 @@
             this.LoginButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.LoginButton.FlatAppearance.BorderSize = 0;
             this.LoginButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.LoginButton.Location = new System.Drawing.Point(10, 273);
+            this.LoginButton.Location = new System.Drawing.Point(8, 384);
             this.LoginButton.Name = "LoginButton";
             this.LoginButton.Size = new System.Drawing.Size(130, 130);
             this.LoginButton.TabIndex = 3;
             this.LoginButton.UseVisualStyleBackColor = true;
             this.LoginButton.Click += new System.EventHandler(this.LoginButton_Click);
             // 
-            // Title_pb
-            // 
-            this.Title_pb.Location = new System.Drawing.Point(7, -23);
-            this.Title_pb.Name = "Title_pb";
-            this.Title_pb.Size = new System.Drawing.Size(477, 217);
-            this.Title_pb.TabIndex = 15;
-            this.Title_pb.TabStop = false;
-            // 
             // LoginMenu
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(550, 499);
+            this.ClientSize = new System.Drawing.Size(550, 553);
             this.Controls.Add(this.groupBox1);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "LoginMenu";
