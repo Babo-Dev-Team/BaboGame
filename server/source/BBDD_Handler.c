@@ -287,7 +287,9 @@ char* BBDD_opponentGameList(int idPlayer)
 	return opponent_str;
 }
 
-
+// funció el qual busca les partides jugades per un cert grup d'usuaris i retorna els resultats
+//Com volem el nom del jugadors guanyador, enlloc de la id, fem una segona consulta la qual retorna el nom del jugador d'aquella id
+//això es rebrà al menú de consultes del client
 char* BBDD_gameResultsWithOtherPlayers (int num,char players [100][USRN_LENGTH])
 {
 	char query[QUERY_LENGTH];	
