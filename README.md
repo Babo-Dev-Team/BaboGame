@@ -49,3 +49,5 @@ Vídeo de la versió 5 fet per Joaquim Broquetas
 ## Versió 6 - Versió final entregable
 
 Versió 6 generada per Albert Compte Prades
+
+Versió 6 revisada per Joaquim Broquetas Ruiz
