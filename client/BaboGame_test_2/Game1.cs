@@ -304,7 +304,16 @@ namespace BaboGame_test_2
                     Layer = 1f,
                 },
 
-
+                new SightWeapon(sightAnimation, inputManager)
+                {
+                    Position = new Vector2(100,100),
+                    Scale = 0.2f,
+                    SolidObject = false,
+                    Layer = 0.999f,
+                    Visible = false,
+                    _color = Color.Silver,
+                    KalerHab = true,
+                },
             };
             playersNames = new List<NameFontModel>();
             otherTexts = new List<NameFontModel>();
@@ -380,6 +389,28 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.8f,
                     HasConducitivity = true,
                     Charge = 'I',
+                },
+
+                new ScenarioObjects(scenarioTextures["Block"])
+                {
+                    Position = new Vector2(620,140),
+                    Scale = 0.04f,
+                    SolidObject = false,
+                    HitBoxScale = 1.2f,
+                    HasConducitivity = true,
+                    Charge = 'N',
+                    Visible = false,
+                },
+
+                new ScenarioObjects(scenarioTextures["Block"])
+                {
+                    Position = new Vector2(660,140),
+                    Scale = 0.04f,
+                    SolidObject = false,
+                    HitBoxScale = 1.2f,
+                    HasConducitivity = true,
+                    Charge = 'P',
+                    Visible = false,
                 },
 
             };
@@ -1094,6 +1125,49 @@ namespace BaboGame_test_2
                         projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
                         Controllable.BulletNumber++;
                         NextProjectileID++;
+                    }
+                }
+
+                //Habilitat d'en Kaler
+
+                if (Controllable.Weight == 6)
+                {
+                    float dist = 2000;
+                    Character targetchara = Controllable;
+                    //Busca enemics propers a la mira
+                    foreach (Character chara in characterSprites)
+                    {
+                        if ((VectorOps.ModuloVector(chara.Position - inputManager.GetMousePosition()) < dist) && (VectorOps.ModuloVector(chara.Position - inputManager.GetMousePosition()) < 200))
+                        {
+                            targetchara = chara;
+                            dist = VectorOps.ModuloVector(chara.Position - inputManager.GetMousePosition());
+                        }
+                    }
+                    //Posa la posició de la mira
+                    foreach (Sprite sight in overlaySprites)
+                    {
+                        if (sight.KalerHab == true)
+                        {
+                            if (dist < 150)
+                            {
+                                sight.Position = targetchara.Position;
+                                sight.Visible = true;
+                            }
+                            else
+                                sight.Visible = false;
+                        }
+                    }
+                    //Opció de disparar la nova bala
+                    if (inputManager.RightMouseClick())
+                    {
+                        Vector2 projOrigin = Controllable.Position;
+                        Vector2 projTarget = targetchara.Position;
+                        if ((Controllable.BulletNumber < BulletThreshold)&&(projOrigin != projTarget))
+                        {
+                            projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
+                            Controllable.BulletNumber++;
+                            NextProjectileID++;
+                        }
                     }
                 }
 

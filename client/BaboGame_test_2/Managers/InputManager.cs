@@ -17,6 +17,7 @@ namespace BaboGame_test_2
         private bool leftCtrlActive;
         private bool rightCtrlActive;
         private bool leftMouseClick;
+        private bool rightMouseClick;
         private MouseState currentMouseState;
         private MouseState previousMouseState;
         private Vector2 mousePosition;
@@ -32,6 +33,7 @@ namespace BaboGame_test_2
             leftCtrlActive = false;
             rightCtrlActive = false;
             leftMouseClick = false;
+            rightMouseClick = false;
             previousMouseState = Mouse.GetState();
             currentMouseState = previousMouseState;
             mousePosition = Vector2.Zero;
@@ -60,6 +62,11 @@ namespace BaboGame_test_2
         public bool LeftMouseClick()
         {
             return leftMouseClick;
+        }
+
+        public bool RightMouseClick()
+        {
+            return rightMouseClick;
         }
 
         public void detectKeysPressed()
@@ -99,6 +106,12 @@ namespace BaboGame_test_2
                 leftMouseClick = true;
             }
             else leftMouseClick = false;
+
+            if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton == ButtonState.Released)
+            {
+                rightMouseClick = true;
+            }
+            else rightMouseClick = false;
         }
 
         public bool LeftMousePressed()
@@ -106,6 +119,11 @@ namespace BaboGame_test_2
             return Mouse.GetState().LeftButton == ButtonState.Pressed;
         }
 
+        public bool RightMousePressed()
+        {
+            return Mouse.GetState().RightButton == ButtonState.Pressed;
+        }
+        
         public Vector2 GetMousePosition()
         {
             mousePosition.X = Mouse.GetState().X;

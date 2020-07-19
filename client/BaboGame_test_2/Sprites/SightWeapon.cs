@@ -36,7 +36,8 @@ namespace BaboGame_test_2
 
             //Defineix la posició de la mira segons la posició del ratolí
             //Position = new Vector2(Mouse.GetState().Position.X, Mouse.GetState().Position.Y);
-            Position = inputManager.GetMousePosition();
+            if(!KalerHab)
+                Position = inputManager.GetMousePosition();
 
             //Crida i fa les animacions
             SetAnimation();
@@ -46,7 +47,7 @@ namespace BaboGame_test_2
         //Animació de pulsar el botó
         protected virtual void SetAnimation()
         {
-            if (inputManager.LeftMousePressed())
+            if ((inputManager.LeftMousePressed()&&(!KalerHab))|| (inputManager.RightMousePressed() && (KalerHab)))
                 _animationManager.Play(_animations["ON"]);
             else
                 _animationManager.Play(_animations["OFF"]);

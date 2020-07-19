@@ -252,6 +252,7 @@
             this.Controls.Add(this.Send_btn);
             this.Controls.Add(this.QueryGrid);
             this.Controls.Add(this.MenúExtres);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MainMenuStrip = this.MenúExtres;
             this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Name = "QueriesForm";

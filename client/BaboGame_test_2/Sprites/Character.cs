@@ -395,25 +395,25 @@ namespace BaboGame_test_2
         public void AddKnownCharacter(string slugName, Vector2 Position, float Scale, int Health, int IDCharacter, Color color)
         {
             if(slugName == "Babo")
-                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) {Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f,});
+                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) {Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, Defense = 10f});
             else if (slugName == "Limax")
-                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f,});
+                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, Defense = 6f});
             else if (slugName == "Kaler")
-                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f,});
+                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, Defense = 9f});
             else if (slugName == "Swalot")
-                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, });
+                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, Defense = 15f});
         }
 
         public void AddKnownCharacter(string slugName, Vector2 Position, float Scale, int Health, int IDCharacter, Color color, bool CPUgame)
         {
             if (slugName == "Babo")
-                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) { Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, CPU = CPUgame, });
+                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) { Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, CPU = CPUgame, Defense = 10f});
             else if (slugName == "Limax")
-                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, CPU = CPUgame, });
+                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, CPU = CPUgame, Defense = 6f});
             else if (slugName == "Kaler")
-                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, CPU = CPUgame, });
+                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, CPU = CPUgame, Defense = 9f});
             else if (slugName == "Swalot")
-                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, CPU = CPUgame, });
+                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, CPU = CPUgame, Defense = 15f});
         }
 
         public void DisposeAll()
@@ -454,6 +454,8 @@ namespace BaboGame_test_2
         public bool CPUBulletLost = false;
         public float CPUtimer = 0;
         public bool CPUBulletLostDirection = false;
+        public float Defense;
+        Random randomDamage = new Random();
 
         // Constructors
         public Character(Texture2D texture)
@@ -696,26 +698,29 @@ namespace BaboGame_test_2
         {
             foreach (var objectItem in scenarioObjects)
             {
-                //Eix Y
-                if (this.IsTouchingBottom(objectItem) && (this.Force.Y < 0) || this.IsTouchingTop(objectItem) && (this.Force.Y > 0))
+                if (objectItem.SolidObject)
                 {
-                    this.Velocity.Y = -this.Force.Y / this.Weight;
+                    //Eix Y
+                    if (this.IsTouchingBottom(objectItem) && (this.Force.Y < 0) || this.IsTouchingTop(objectItem) && (this.Force.Y > 0))
+                    {
+                        this.Velocity.Y = -this.Force.Y / this.Weight;
 
-                } //Evitem el glith atravessa-parets
-                else if (this.IsTouchingBottom(objectItem) || this.IsTouchingTop(objectItem))
-                {
-                    this.Velocity.Y = 0;
-                }
+                    } //Evitem el glith atravessa-parets
+                    else if (this.IsTouchingBottom(objectItem) || this.IsTouchingTop(objectItem))
+                    {
+                        this.Velocity.Y = 0;
+                    }
 
-                //Eix X
-                if (this.IsTouchingLeft(objectItem) && (this.Force.X < 0) || this.IsTouchingRight(objectItem) && (this.Force.X > 0))
-                {
-                    this.Velocity.X = -this.Force.X / this.Weight;
+                    //Eix X
+                    if (this.IsTouchingLeft(objectItem) && (this.Force.X < 0) || this.IsTouchingRight(objectItem) && (this.Force.X > 0))
+                    {
+                        this.Velocity.X = -this.Force.X / this.Weight;
 
-                } //Evitem el glith atravessa-parets
-                else if (this.IsTouchingLeft(objectItem) || this.IsTouchingRight(objectItem))
-                {
-                    this.Velocity.X = 0;
+                    } //Evitem el glith atravessa-parets
+                    else if (this.IsTouchingLeft(objectItem) || this.IsTouchingRight(objectItem))
+                    {
+                        this.Velocity.X = 0;
+                    }
                 }
             }
         }
@@ -796,7 +801,8 @@ namespace BaboGame_test_2
         public void NotifyHit(Vector2 hitDirection, int shooterID, float damage, float hitImpulse)
         {
             this.isHit = true;
-            this.Health -= 1;
+            float randomValue = (float) randomDamage.NextDouble();
+            this.Health -= (int)(damage/Defense * (randomValue + 0.8)* (randomValue + 0.8) * 1.5/2.25);
             this.hitDirection = hitDirection;
             this.hitImpulse = hitImpulse;
         }

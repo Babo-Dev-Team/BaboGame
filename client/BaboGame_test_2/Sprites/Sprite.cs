@@ -82,6 +82,9 @@ using Microsoft.Xna.Framework;
         public bool IsMenuSalt = false;
         public int MenuPos = 0;
 
+        //Variables relacionades amb l'habilitat d'en Kaler
+        public bool KalerHab = false;
+
         //Funció principal per definir el sprite generat
         public Sprite(Texture2D texture)
         {

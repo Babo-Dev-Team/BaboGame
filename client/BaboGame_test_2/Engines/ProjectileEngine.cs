@@ -30,7 +30,12 @@ namespace BaboGame_test_2
         // afegim un projectil a la llista, inicialitzant-lo amb posicio origen i final i una velocitat de moment estàndard
         public void AddProjectile(Vector2 origin, Vector2 target, Texture2D projectileTexture, int shooterID, char projectileType, int projectileID)
         {
-            projectileList.Add(new Projectile(origin, target, masterProjVelocity, shooterID, projectileTexture, masterProjScale, masterProjDamage, projectileType, projectileID));
+            if(projectileType == 'N')
+                projectileList.Add(new Projectile(origin, target, masterProjVelocity, shooterID, projectileTexture, masterProjScale, (float) 2* masterProjDamage, projectileType, projectileID));
+            else if (projectileType == 'D')
+                projectileList.Add(new Projectile(origin, target, masterProjVelocity, shooterID, projectileTexture, masterProjScale, (float) 1.6 * masterProjDamage, projectileType, projectileID));
+            else if (projectileType == 'S')
+                projectileList.Add(new Projectile(origin, target, masterProjVelocity, shooterID, projectileTexture, masterProjScale, (float) 1.2 * masterProjDamage, projectileType, projectileID));
         }
 
         // afegim un projectil amb velocitat configurable
@@ -181,15 +186,34 @@ namespace BaboGame_test_2
             {
                 if (projectile.DetectCollision(character))
                 {
-                    if (projectile.ShooterID != character.IDcharacter)
+                    if (((projectile.ShooterID != character.IDcharacter) && (!projectile.rejected)) || (projectile.HitCount != 0) || ((projectile.RejectorID != character.IDcharacter) && (projectile.rejected)))
                     {
                         // notificar el dany al personatge!!!
                         character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
-                        projectile.KillProjectile();
-                        foreach (Character chara in characterList)
+                        projectile.rejected = false;
+
+                        if (character.Weight == 14)
                         {
-                            if (chara.IDcharacter == projectile.ShooterID)
-                                chara.BulletNumber--;
+                            Random bulletRejected = new Random(projectile.ShooterID + projectile.projectileID + (int)projectile.LinearVelocity + projectile.HitCount);
+                            if (bulletRejected.Next(0, 5) == 0)
+                                projectile.rejected = true;
+
+                        }
+
+                        if (!projectile.rejected)
+                        {
+                            projectile.KillProjectile();
+                            foreach (Character chara in characterList)
+                            {
+                                if (chara.IDcharacter == projectile.ShooterID)
+                                    chara.BulletNumber--;
+                            }
+                        }
+                        else 
+                        {
+                            projectile.Direction = -projectile.Direction;
+                            projectile.RejectorID = character.IDcharacter;
+                            projectile.HitCount = 0;
                         }
                     }
                 }
@@ -285,15 +309,34 @@ namespace BaboGame_test_2
             {
                 if (projectile.DetectCollision(character))
                 {
-                    if ((projectile.ShooterID != character.IDcharacter)||(projectile.HitCount != 0))
+                    if (((projectile.ShooterID != character.IDcharacter)&&(!projectile.rejected))||(projectile.HitCount != 0)||((projectile.RejectorID != character.IDcharacter)&&(projectile.rejected)))
                     {
                         // notificar el dany al personatge!!!
                         character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
-                        projectile.KillProjectile();
-                        foreach (Character chara in characterList)
+                        projectile.rejected = false;
+
+                        if (character.Weight == 14)
                         {
-                            if (chara.IDcharacter == projectile.ShooterID)
-                                chara.BulletNumber--;
+                            Random bulletRejected = new Random(projectile.ShooterID + projectile.projectileID + (int)projectile.LinearVelocity + projectile.HitCount);
+                            if (bulletRejected.Next(0, 5) == 0)
+                                projectile.rejected = true;
+
+                        }
+
+                        if (!projectile.rejected)
+                        {
+                            projectile.KillProjectile();
+                            foreach (Character chara in characterList)
+                            {
+                                if (chara.IDcharacter == projectile.ShooterID)
+                                    chara.BulletNumber--;
+                            }
+                        }
+                        else
+                        {
+                            projectile.Direction = -projectile.Direction;
+                            projectile.RejectorID = character.IDcharacter;
+                            projectile.HitCount = 0;
                         }
                     }
                 }
@@ -343,12 +386,14 @@ namespace BaboGame_test_2
         public Vector2 Target { get; set; }
         private Vector2 origin;
         private Vector2 trajectory;
-        public int ShooterID { get; }
+        public int ShooterID { get; set; }
         public float Damage { get; }
         public char ProjectileType = 'N'; //N de Normal, D de directe i S de noNewtonian Slimed Salt
         public int HitCount = 0;
         public int projectileID;
         public int ProjectileOnlineUpdates;
+        public int RejectorID;
+        public bool rejected = false;
         
         
         
@@ -370,6 +415,7 @@ namespace BaboGame_test_2
             this.Layer = 0.01f;
             this.projectileID = projectileID;
             this.ProjectileOnlineUpdates = 0;
+            this.RejectorID = 0;
             //IsSaltShoot = true;
         }
 

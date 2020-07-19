@@ -29,6 +29,7 @@ namespace BaboGameClient
         PictureBox NotificationIcon;
         PictureBox WithNotification;
         PictureBox WithOutNotification;
+        GroupBox background_gb;
 
         //Elements del menú d'entrenament
         Button Return_btn;
@@ -62,10 +63,11 @@ namespace BaboGameClient
         Button StartGame_btn;
         Button QuitGame_btn;
         RichTextBox ChatGame_rtb;
+        Panel StickersPanel;
         Panel ChattingPanel;
         Button Chatting_btn;
         TextBox Chatting_tb;
-        Panel StickersPanel;
+        
         Button Stickers_btn;
         Label CharName_lbl;
         Label CharDescription_lbl;
@@ -99,6 +101,7 @@ namespace BaboGameClient
             this.NotificationIcon = new PictureBox();
             WithNotification = new PictureBox();
             WithOutNotification = new PictureBox();
+            background_gb = new GroupBox();
 
             //Elements del menú d'entrenament
             Train_btn = new Button();
@@ -134,9 +137,10 @@ namespace BaboGameClient
             QuitGame_btn = new Button();
             ChatGame_rtb = new RichTextBox();
             ChattingPanel = new Panel();
+            StickersPanel = new Panel();
             Chatting_btn = new Button();
             Chatting_tb = new TextBox();
-            StickersPanel = new Panel();
+            
             Stickers_btn = new Button();
             CharName_lbl = new Label();
             CharDescription_lbl = new Label();
@@ -184,6 +188,43 @@ namespace BaboGameClient
             WithOutNotification.Load();
             WithOutNotification.Refresh();
 
+            //Groupbox
+            background_gb.Text = "";
+            background_gb.Width = this.Width;
+            background_gb.Height = this.Height;
+            background_gb.BackColor = Color.Transparent;
+            this.Controls.Add(background_gb);
+            background_gb.Location = new Point(0, 0);
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //Llista de consultes (ScreenSelected = 1)
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+            background_gb.Controls.Add(Characters_rb);
+            background_gb.Controls.Add(ConnectedList_rb);
+            background_gb.Controls.Add(GameListInterval_rb);
+            background_gb.Controls.Add(gameResultsWithPlayers_rb);
+            background_gb.Controls.Add(Opponents_rb);
+            background_gb.Controls.Add(Ranking_rb);
+            background_gb.Controls.Add(TimePlayed_rb);
+            background_gb.Controls.Add(queries_tb);
+            background_gb.Controls.Add(QueryGrid);
+            background_gb.Controls.Add(Send_btn);
+            background_gb.Controls.Add(TimeInterval1_lbl);
+            background_gb.Controls.Add(TimeInterval2_lbl);
+            background_gb.Controls.Add(dateTimeStart_dt);
+            background_gb.Controls.Add(dateTimeEnd);
+
+            Characters_rb.BackColor = Color.White;
+            ConnectedList_rb.BackColor = Color.White;
+            GameListInterval_rb.BackColor = Color.White;
+            gameResultsWithPlayers_rb.BackColor = Color.White;
+            Opponents_rb.BackColor = Color.White;
+            Ranking_rb.BackColor = Color.White;
+            TimePlayed_rb.BackColor = Color.White;
+            TimeInterval1_lbl.BackColor = Color.White;
+            TimeInterval2_lbl.BackColor = Color.White;
+
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Creació dels objectes del menú de la tria de la llista de connectats (ScreenSelected = 2)
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,19 +238,20 @@ namespace BaboGameClient
             PlayersSelected_dg.RowTemplate.Height = 20;
             PlayersSelected_dg.Enabled = true;
             PlayersSelected_dg.Visible = false;
-            this.Controls.Add(PlayersSelected_dg);
+            background_gb.Controls.Add(PlayersSelected_dg);
             PlayersSelected_dg.CellClick += new DataGridViewCellEventHandler(this.PlayersSelected_dg_CellClick);
 
             //TextBox del nom de la partida
             NewPartyName_tb.Location = new Point(125, 35);
             NewPartyName_tb.Visible = false;
-            this.Controls.Add(NewPartyName_tb);
+            background_gb.Controls.Add(NewPartyName_tb);
 
             //Label del nom de la partida
             NewPartyName_lbl.Location = new Point(25, 35);
             NewPartyName_lbl.Visible = false;
             NewPartyName_lbl.Text = "Nom de la partida:";
-            this.Controls.Add(NewPartyName_lbl);
+            background_gb.Controls.Add(NewPartyName_lbl);
+            NewPartyName_lbl.BackColor = Color.White;
 
             //Button de crear la partida
             CreateParty_btn.Location = new Point(200, 280);
@@ -219,7 +261,7 @@ namespace BaboGameClient
             CreateParty_btn.Image = Image.FromFile("../../../Pictures/Layouts/Multiplayer.png");
             CreateParty_btn.FlatAppearance.BorderSize = 0;
             CreateParty_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(CreateParty_btn);
+            background_gb.Controls.Add(CreateParty_btn);
             CreateParty_btn.Click += new EventHandler(this.CreateParty_btn_Click);
 
             //Button per sortir del menú de seleccionar jugadors
@@ -227,7 +269,7 @@ namespace BaboGameClient
             //NewPartyBack_btn.Text = "Surt";
             NewPartyBack_btn.Size = new Size(40,40);
             NewPartyBack_btn.Visible = false;
-            this.Controls.Add(NewPartyBack_btn);
+            background_gb.Controls.Add(NewPartyBack_btn);
             NewPartyBack_btn.Click += new EventHandler(this.NewPartyBack_btn_Click);
             NewPartyBack_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             NewPartyBack_btn.FlatAppearance.BorderSize = 0;
@@ -243,7 +285,8 @@ namespace BaboGameClient
             PartyName_lbl.Location = new Point(25, 35);
             PartyName_lbl.Text = "Partida: Game1";
             PartyName_lbl.Visible = false;
-            this.Controls.Add(PartyName_lbl);
+            background_gb.Controls.Add(PartyName_lbl);
+            PartyName_lbl.BackColor = Color.White;
 
             //Buttons per canviar el personatge
             LeftChar_btn.Location = new Point(25,100);
@@ -254,7 +297,7 @@ namespace BaboGameClient
             LeftChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
             LeftChar_btn.FlatAppearance.BorderSize = 0;
             LeftChar_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(LeftChar_btn);
+            background_gb.Controls.Add(LeftChar_btn);
 
             RightChar_btn.Location = new Point(240, 100);
             //RightChar_btn.Text = "Right";
@@ -264,7 +307,7 @@ namespace BaboGameClient
             RightChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/right.png");
             RightChar_btn.FlatAppearance.BorderSize = 0;
             RightChar_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(RightChar_btn);
+            background_gb.Controls.Add(RightChar_btn);
 
             //PictureBox de la imatge del personatge
             character_pb.Location = new Point(90, 60);
@@ -273,13 +316,14 @@ namespace BaboGameClient
             character_pb.Visible = false;
             character_pb.SizeMode = PictureBoxSizeMode.Zoom;
             character_pb.Refresh();
-            this.Controls.Add(character_pb);
+            background_gb.Controls.Add(character_pb);
 
             //Label del nom del personatge
             CharName_lbl.Location = new Point(25, 200);
             CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
             CharName_lbl.Visible = false;
-            this.Controls.Add(CharName_lbl);
+            background_gb.Controls.Add(CharName_lbl);
+            CharName_lbl.BackColor = Color.White;
 
             //Label de la descripció del personatge
             CharDescription_lbl.Location = new Point(25, 230);
@@ -287,14 +331,15 @@ namespace BaboGameClient
             CharDescription_lbl.Size = new Size(150, 60);
             CharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
             CharDescription_lbl.Visible = false;
-            this.Controls.Add(CharDescription_lbl);
+            background_gb.Controls.Add(CharDescription_lbl);
+            CharDescription_lbl.BackColor = Color.White;
 
             //Button per cancellar la partida
             CancelGame_btn.Location = new Point(225, 300);
             //CancelGame_btn.Text = "Cancel·lar";
             CancelGame_btn.Size = new Size(40, 40);
             CancelGame_btn.Visible = false;
-            this.Controls.Add(CancelGame_btn);
+            background_gb.Controls.Add(CancelGame_btn);
             CancelGame_btn.Click += new EventHandler(this.CancelGame_btn_Click);
             CancelGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             CancelGame_btn.FlatAppearance.BorderSize = 0;
@@ -311,7 +356,7 @@ namespace BaboGameClient
             StartGame_btn.BackgroundImageLayout = ImageLayout.Zoom;
             StartGame_btn.FlatAppearance.BorderSize = 0;
             StartGame_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(StartGame_btn);
+            background_gb.Controls.Add(StartGame_btn);
             StartGame_btn.Click += new EventHandler(this.StartGame_btn_Click);
 
             //Button per seleccionar el personatge
@@ -319,7 +364,7 @@ namespace BaboGameClient
             //SelectChar_btn.Text = "Seleccionar Personatge";
             SelectChar_btn.Size = new Size(64, 64);
             SelectChar_btn.Visible = false;
-            this.Controls.Add(SelectChar_btn);
+            background_gb.Controls.Add(SelectChar_btn);
             SelectChar_btn.Click += new EventHandler(this.SelectChar_btn_Click);
             SelectChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/SightOff.png");
             SelectChar_btn.FlatAppearance.BorderSize = 0;
@@ -330,7 +375,7 @@ namespace BaboGameClient
             //QuitGame_btn.Text = "Sortir";
             QuitGame_btn.Size = new Size(40, 40);
             QuitGame_btn.Visible = false;
-            this.Controls.Add(QuitGame_btn);
+            background_gb.Controls.Add(QuitGame_btn);
             QuitGame_btn.Click += new EventHandler(this.QuitGame_btn_Click);
             QuitGame_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             QuitGame_btn.FlatAppearance.BorderSize = 0;
@@ -343,14 +388,27 @@ namespace BaboGameClient
             ChatGame_rtb.Size = new Size(250,350);
             ChatGame_rtb.Location = new Point(325,25);
             ChatGame_rtb.ReadOnly = true;
-            this.Controls.Add(ChatGame_rtb);
+            background_gb.Controls.Add(ChatGame_rtb);
             ChatGame_rtb.Text = "";
+
+            //StickersPanel
+            StickersPanel.Size = new Size(250, 120); //Mides del panell
+            StickersPanel.Location = new Point(625, 175); //posició del panell
+            StickersPanel.Visible = false;
+            background_gb.Controls.Add(StickersPanel);
+            StickersPanel.BackColor = Color.LightYellow;
+            StickersPanel.AutoScroll = false;
+            StickersPanel.HorizontalScroll.Enabled = true;
+            StickersPanel.HorizontalScroll.Visible = true;
+            StickersPanel.AutoScroll = true;
+            StickersPanel.Refresh();
+            StickersPanel.BringToFront();
 
             //ChatPanel
             ChattingPanel.Size = new Size(250,270); //Mides del panell
             ChattingPanel.Location = new Point(625,25); //posició del panell
             ChattingPanel.Visible = false;
-            this.Controls.Add(ChattingPanel);
+            background_gb.Controls.Add(ChattingPanel);
             ChattingPanel.BackColor = Color.WhiteSmoke;
             ChattingPanel.AutoScroll = false;
             ChattingPanel.VerticalScroll.Visible = true;
@@ -358,25 +416,14 @@ namespace BaboGameClient
             ChattingPanel.AutoScroll = true;
             ChattingPanel.Refresh();
 
-            //StickersPanel
-            StickersPanel.Size = new Size(250, 120); //Mides del panell
-            StickersPanel.Location = new Point(625, 175); //posició del panell
-            StickersPanel.Visible = false;
-            this.Controls.Add(StickersPanel);
-            StickersPanel.BringToFront();
-            StickersPanel.BackColor = Color.LightYellow;
-            StickersPanel.AutoScroll = false;
-            StickersPanel.HorizontalScroll.Enabled = true;
-            StickersPanel.HorizontalScroll.Visible = true;
-            StickersPanel.AutoScroll = true;
-            StickersPanel.Refresh();
+            
 
             //Chatting_Btn
             Chatting_btn.Location = new Point(625, 300);
             //Chatting_btn.Text = "Xateja";
             Chatting_btn.Size = new Size(55, 30);
             Chatting_btn.Visible = false;
-            this.Controls.Add(Chatting_btn);
+            background_gb.Controls.Add(Chatting_btn);
             Chatting_btn.Click += new EventHandler(this.Chatting_btn_Click);
             Chatting_btn.Image = Image.FromFile("../../../Pictures/Layouts/Send.png");
             Chatting_btn.FlatAppearance.BorderSize = 0;
@@ -387,7 +434,7 @@ namespace BaboGameClient
             //Stickers_btn.Text = "Adhesius";
             Stickers_btn.Size = new Size(40, 40);
             Stickers_btn.Visible = false;
-            this.Controls.Add(Stickers_btn);
+            background_gb.Controls.Add(Stickers_btn);
             Stickers_btn.Click += new EventHandler(this.Stickers_btn_Click);
             Stickers_btn.Image = Image.FromFile("../../../Pictures/Layouts/Sticker.png");
             Stickers_btn.FlatAppearance.BorderSize = 0;
@@ -397,7 +444,7 @@ namespace BaboGameClient
             Chatting_tb.Location = new Point(690, 300);
             Chatting_tb.Size = new Size(135, 50);
             Chatting_tb.Visible = false;
-            this.Controls.Add(Chatting_tb);
+            background_gb.Controls.Add(Chatting_tb);
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             //Creació del menú principal (ScreenSelected = 0)
@@ -408,7 +455,7 @@ namespace BaboGameClient
             NewParty_btn.Size = new Size(300, 300);
             NewParty_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/Online.png");
             NewParty_btn.Visible = false;
-            this.Controls.Add(NewParty_btn);
+            background_gb.Controls.Add(NewParty_btn);
             NewParty_btn.Click += new EventHandler(this.NewParty_btn_Click);
             NewParty_btn.FlatAppearance.BorderSize = 0;
             NewParty_btn.FlatStyle = FlatStyle.Flat;
@@ -419,7 +466,7 @@ namespace BaboGameClient
             Training_btn.Size = new Size(300, 300);
             Training_btn.Visible = false;
             Training_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/Offline.png");
-            this.Controls.Add(Training_btn);
+            background_gb.Controls.Add(Training_btn);
             Training_btn.Click += new EventHandler(this.Training_btn_Click);
             Training_btn.FlatAppearance.BorderSize = 0;
             Training_btn.FlatStyle = FlatStyle.Flat;
@@ -435,7 +482,7 @@ namespace BaboGameClient
             //Return_btn.Text = "Enrere";
             Return_btn.Size = new Size(40, 40);
             Return_btn.Visible = false;
-            this.Controls.Add(Return_btn);
+            background_gb.Controls.Add(Return_btn);
             Return_btn.Click += new EventHandler(this.Return_btn_Click);
             Return_btn.Image = Image.FromFile("../../../Pictures/Layouts/Back.png");
             Return_btn.FlatAppearance.BorderSize = 0;
@@ -451,7 +498,7 @@ namespace BaboGameClient
             Train_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/Train.png");
             Train_btn.FlatAppearance.BorderSize = 0;
             Train_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(Train_btn);
+            background_gb.Controls.Add(Train_btn);
             Train_btn.Click += new EventHandler(this.Train_btn_Click);
 
             //Butó per veure el personatge esquerre de l'oponent
@@ -463,7 +510,7 @@ namespace BaboGameClient
             LeftOpponentChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
             LeftOpponentChar_btn.FlatAppearance.BorderSize = 0;
             LeftOpponentChar_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(LeftOpponentChar_btn);
+            background_gb.Controls.Add(LeftOpponentChar_btn);
 
             //Butó per veure el personatge dret de l'oponent
             RightOpponentChar_btn.Location = new Point(527, 100);
@@ -474,7 +521,7 @@ namespace BaboGameClient
             RightOpponentChar_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/right.png");
             RightOpponentChar_btn.FlatAppearance.BorderSize = 0;
             RightOpponentChar_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(RightOpponentChar_btn);
+            background_gb.Controls.Add(RightOpponentChar_btn);
 
             //Picture Box de l'oponent
             Opponentcharacter_pb.Location = new Point(377, 60);
@@ -483,7 +530,7 @@ namespace BaboGameClient
             Opponentcharacter_pb.Visible = false;
             Opponentcharacter_pb.SizeMode = PictureBoxSizeMode.Zoom;
             Opponentcharacter_pb.Refresh();
-            this.Controls.Add(Opponentcharacter_pb);
+            background_gb.Controls.Add(Opponentcharacter_pb);
 
             //Butó per seleccionar el personatge de l'oponent
             OpponentSelectChar_btn.Location = new Point(312, 300);
@@ -493,7 +540,7 @@ namespace BaboGameClient
             OpponentSelectChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/SightOff.png");
             OpponentSelectChar_btn.FlatAppearance.BorderSize = 0;
             OpponentSelectChar_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(OpponentSelectChar_btn);
+            background_gb.Controls.Add(OpponentSelectChar_btn);
             OpponentSelectChar_btn.Click += new EventHandler(this.OpponentSelectChar_btn_Click);
 
             //Butó per seleccionar el personatge del jugador
@@ -501,7 +548,7 @@ namespace BaboGameClient
             //PlayerSelectChar_btn.Text = "Selecciona Personatge";
             PlayerSelectChar_btn.Size = new Size(64, 64);
             PlayerSelectChar_btn.Visible = false;
-            this.Controls.Add(PlayerSelectChar_btn);
+            background_gb.Controls.Add(PlayerSelectChar_btn);
             PlayerSelectChar_btn.Click += new EventHandler(this.PlayerSelectChar_btn_Click);
             PlayerSelectChar_btn.Image = Image.FromFile("../../../Pictures/Layouts/SightOff.png");
             PlayerSelectChar_btn.FlatAppearance.BorderSize = 0;
@@ -511,7 +558,8 @@ namespace BaboGameClient
             OpponentCharName_lbl.Location = new Point(312, 200);
             OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
             OpponentCharName_lbl.Visible = false;
-            this.Controls.Add(OpponentCharName_lbl);
+            background_gb.Controls.Add(OpponentCharName_lbl);
+            OpponentCharName_lbl.BackColor = Color.White;
 
             //Descripció del personatge de l'oponent
             OpponentCharDescription_lbl.Location = new Point(312, 230);
@@ -519,13 +567,14 @@ namespace BaboGameClient
             OpponentCharDescription_lbl.Size = new Size(150, 60);
             OpponentCharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
             OpponentCharDescription_lbl.Visible = false;
-            this.Controls.Add(OpponentCharDescription_lbl);
+            background_gb.Controls.Add(OpponentCharDescription_lbl);
+            OpponentCharDescription_lbl.BackColor = Color.White;
 
             //Llista d'oponents
             OpponentListPanel.Size = new Size(250, 240); //Mides del panell
             OpponentListPanel.Location = new Point(625, 25); //posició del panell
             OpponentListPanel.Visible = false;
-            this.Controls.Add(OpponentListPanel);
+            background_gb.Controls.Add(OpponentListPanel);
             OpponentListPanel.BackColor = Color.WhiteSmoke;
             OpponentListPanel.AutoScroll = false;
             OpponentListPanel.VerticalScroll.Visible = true;
@@ -542,7 +591,7 @@ namespace BaboGameClient
             LeftDifficulty_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/left.png");
             LeftDifficulty_btn.FlatAppearance.BorderSize = 0;
             LeftDifficulty_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(LeftDifficulty_btn);
+            background_gb.Controls.Add(LeftDifficulty_btn);
 
             //Butó per canviar la difficultat a la dreta de l'oponent
             RightDifficulty_btn.Location = new Point(811, 290);
@@ -553,7 +602,7 @@ namespace BaboGameClient
             RightDifficulty_btn.Image = System.Drawing.Image.FromFile("../../../Pictures/Layouts/right.png");
             RightDifficulty_btn.FlatAppearance.BorderSize = 0;
             RightDifficulty_btn.FlatStyle = FlatStyle.Flat;
-            this.Controls.Add(RightDifficulty_btn);
+            background_gb.Controls.Add(RightDifficulty_btn);
 
             //Picture Box de la difficultat
             DifficultySelected_pb.Location = new Point(705, 270);
@@ -562,7 +611,7 @@ namespace BaboGameClient
             DifficultySelected_pb.Visible = false;
             DifficultySelected_pb.SizeMode = PictureBoxSizeMode.Zoom;
             DifficultySelected_pb.Refresh();
-            this.Controls.Add(DifficultySelected_pb);
+            background_gb.Controls.Add(DifficultySelected_pb);
             DifficultyPos = 0;
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -577,7 +626,7 @@ namespace BaboGameClient
             MultipleStringSelected_dgv.TabIndex = 0;
             MultipleStringSelected_dgv.RowTemplate.Height = 20;
             MultipleStringSelected_dgv.Enabled = true;
-            this.Controls.Add(MultipleStringSelected_dgv);
+            background_gb.Controls.Add(MultipleStringSelected_dgv);
             MultipleStringSelected_dgv.CellClick += new DataGridViewCellEventHandler(this.MultipleStringSelected_dgv_CellClick);
 
             //Butó per afegir elements a la llista
@@ -587,7 +636,7 @@ namespace BaboGameClient
             AddToMultipleStringSelected_btn.Visible = false;
             AddToMultipleStringSelected_btn.Click += new EventHandler(this.AddToMultipleSelected_btn_Click);
             AddToMultipleStringSelected_btn.BackColor = Color.White;
-            this.Controls.Add(AddToMultipleStringSelected_btn);
+            background_gb.Controls.Add(AddToMultipleStringSelected_btn);
 
 
             TrainingState.Player_ID = new int[] {1,2,3,4,5,6,7,8};
@@ -597,6 +646,10 @@ namespace BaboGameClient
                 Notificacions_btn.Image = WithNotification.Image;
             else
                 Notificacions_btn.Image = WithOutNotification.Image;
+
+            //Imatge de fons
+            this.BackgroundImage = Image.FromFile("../../../Pictures/Layouts/LettuceBackGround.jpg");
+            this.BackgroundImageLayout = ImageLayout.Stretch;
 
         }
 
@@ -685,17 +738,24 @@ namespace BaboGameClient
             PartyName_lbl.Text = "Partida: " + gameName;
             Chatting_btn.Visible = SelectCharacterOnlineScreen;
             Chatting_tb.Visible = SelectCharacterOnlineScreen;
+            StickersPanel.Visible = SelectCharacterOnlineScreen;
             ChattingPanel.Visible = SelectCharacterOnlineScreen;
-            StickersPanel.Visible = false;
             Stickers_btn.Visible = SelectCharacterOnlineScreen;
             CharName_lbl.Visible = SelectCharacterOnlineScreen || TrainningScreen;
             CharDescription_lbl.Visible = SelectCharacterOnlineScreen || TrainningScreen;
+            StickersPanel.Visible = false;
             this.BackColor = Color.LightGreen;
 
-            if ((SelectCharacterOnlineScreen)||(TrainningScreen))
-                this.Width = 900;            
+            if ((SelectCharacterOnlineScreen) || (TrainningScreen))
+            {
+                this.Width = 900;
+                background_gb.Width = 900;
+            }
             else
+            {
                 this.Width = 616;
+                background_gb.Height = 616;
+            }
             
         }
 
@@ -1376,11 +1436,13 @@ namespace BaboGameClient
         {
             if(StickersPanel.Visible==true)
             {
-                StickersPanel.Visible = false;
+                StickersPanel.Visible = false;        
             }
             else
             {
+                
                 StickersPanel.Visible = true;
+                
                 DirectoryInfo stickerFolder = new DirectoryInfo("../../../Pictures/Stickers");
                 FileInfo[] stickers = stickerFolder.GetFiles();
                 List<string> stickersNames = new List<string>();
@@ -1426,10 +1488,12 @@ namespace BaboGameClient
                 MultipleStringSelected_dgv.Columns.Clear();
                 MultipleStringSelected_dgv.Columns.Add("players", "Jugadors");
                 this.Width = 900;
+                background_gb.Width = 900;
             }
             else
             {
                 this.Width = 616;
+                background_gb.Width = 616;
             }
         }
 
