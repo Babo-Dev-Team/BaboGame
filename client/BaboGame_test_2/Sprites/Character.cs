@@ -608,10 +608,12 @@ namespace BaboGame_test_2
                 isHit = false;
             }
 
-            if(Health <= 0)
+            if (Health <= 0)
             {
                 Defeated = true;
             }
+            else
+                Defeated = false;
 
             //Reprodueix l'animació
             SetAnimations();

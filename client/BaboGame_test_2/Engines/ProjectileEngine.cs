@@ -91,9 +91,19 @@ namespace BaboGame_test_2
             //Projectils creats
             foreach (var projectile in this.newProjectile)
             {
-                projectileList.Add(projectile);
+                projectile.delayGeneration -= gameTime.ElapsedGameTime.Milliseconds;
+                if(projectile.delayGeneration < 0f)
+                    projectileList.Add(projectile);
             }
-            newProjectile.Clear();
+            
+            int i = 0;
+            while (i < newProjectile.Count())
+            {
+                if (newProjectile[i].delayGeneration <= 0)
+                    newProjectile.RemoveAt(i);
+                else
+                    i++;
+            }
         }
 
         // Mecànica de la sal normal
@@ -244,7 +254,7 @@ namespace BaboGame_test_2
 
                         if ((Rejected)&&((testMode)||(character.IDcharacter == Controllable.IDcharacter)))
                         {
-                            newProjectile.Add(new Projectile(projectile.Position, projectile.Position - (projectile.Direction * VectorOps.ModuloVector(projectile.Origin - projectile.Target)),masterProjVelocity,character.IDcharacter,projectile._texture,masterProjScale,projectile.Damage,projectile.ProjectileType,character.NextProjectileID));
+                            newProjectile.Add(new Projectile(projectile.Position, projectile.Position - (projectile.Direction * VectorOps.ModuloVector(projectile.Origin - projectile.Target)), masterProjVelocity, character.IDcharacter, projectile._texture, masterProjScale, projectile.Damage, projectile.ProjectileType, character.NextProjectileID) {delayGeneration = 200f, });
                             character.NextProjectileID++;
                         }
                     }
@@ -378,7 +388,7 @@ namespace BaboGame_test_2
                         
                         if ((Rejected) && ((testMode) || (character.IDcharacter == Controllable.IDcharacter)))
                         {
-                            newProjectile.Add(new Projectile(projectile.Position, projectile.Position - (projectile.Direction * VectorOps.ModuloVector(projectile.Origin - projectile.Target)), masterProjVelocity, character.IDcharacter, projectile._texture, masterProjScale, projectile.Damage, projectile.ProjectileType, character.NextProjectileID) { });
+                            newProjectile.Add(new Projectile(projectile.Position, projectile.Position - (projectile.Direction * VectorOps.ModuloVector(projectile.Origin - projectile.Target)), masterProjVelocity, character.IDcharacter, projectile._texture, masterProjScale, projectile.Damage, projectile.ProjectileType, character.NextProjectileID) { delayGeneration = 200,});
                             character.NextProjectileID++;
                         }
                     }
@@ -435,6 +445,7 @@ namespace BaboGame_test_2
         public int HitCount = 0;
         public int projectileID;
         public int ProjectileOnlineUpdates;
+        public float delayGeneration = 0f;
         
         
         
