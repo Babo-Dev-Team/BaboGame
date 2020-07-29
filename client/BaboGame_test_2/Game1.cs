@@ -325,6 +325,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.4f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Lettuce"])
@@ -335,6 +336,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.2f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Cabbage"])
@@ -345,6 +347,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.4f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Lettuce"])
@@ -355,6 +358,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.2f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Cabbage"])
@@ -365,6 +369,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.4f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Lettuce"])
@@ -375,6 +380,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.2f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Battery down"])
@@ -385,6 +391,7 @@ namespace BaboGame_test_2
                     HitBoxScale = 0.8f,
                     HasConducitivity = true,
                     Charge = 'I',
+                    
                 },
 
                 new ScenarioObjects(scenarioTextures["Block"])
@@ -512,6 +519,13 @@ namespace BaboGame_test_2
             inputManager.detectKeysPressed();
             _previousState = Keyboard.GetState();
 
+            //Actualitza la posició anterior dels personatges
+            foreach(Character chara in characterSprites)
+            {
+                chara.LastPosition = new Vector2(chara.Position.X, chara.Position.Y);
+                chara.LastDirection = new Vector2(chara.Direction.X, chara.Direction.Y);
+                chara.LastLayer = chara.Layer;
+            }
 
             //Lectura de les dades en l'Online
             if (!testMode)
@@ -1187,9 +1201,13 @@ namespace BaboGame_test_2
                     if (inputManager.RightMouseClick())
                     {
                         Controllable.SlugHability = true;
+                        Controllable._color = Color.Silver;
                         Controllable.HabilityRefresh = 0f;
                     }
                 }
+
+                if (!Controllable.SlugHability)
+                    Controllable._color = Color.White;
 
                 //Desactivar habilitat
                 Controllable.HabilityRefresh += gameTime.ElapsedGameTime.Milliseconds;
@@ -1389,10 +1407,12 @@ namespace BaboGame_test_2
                 if(sprite.Visible)
                     sprite.Draw(spriteBatch);
             }
-            foreach (var sprite in characterSprites)
+            foreach (Character sprite in characterSprites)
             {
                 if(sprite.Visible)
                     sprite.Draw(spriteBatch);
+                if (sprite.visualShadowVisibility && (sprite.charType == 'L'))
+                    sprite.VisualShadowDraw(spriteBatch);
             }
 
             foreach (var sprite in projectileSprites)

@@ -163,6 +163,8 @@ namespace BaboGame_test_2
             {
                 if ((character.IDcharacter == Controllable.IDcharacter) || (testmode))
                 {
+
+                    
                     // si tenim un impacte, desplaçament per impacte
                     if (character.isHit)
                     {
@@ -462,6 +464,16 @@ namespace BaboGame_test_2
         public float HabilityRefresh = 0f;
         Random randomDamage = new Random();
 
+        //animació Limax
+        public AnimationManager VisualShadowAnimationManager;
+        public Vector2 VisualShadowPosition;
+        public Vector2 LastPosition;
+        public Vector2 LastDirection;
+        public Vector2 VisualShadowDirection;
+        public float LastLayer;
+        public float VisualShadowTimer = 0f;
+        public bool visualShadowVisibility = false;
+
         // Constructors
         public Character(Texture2D texture)
             : base(texture)
@@ -479,6 +491,9 @@ namespace BaboGame_test_2
             Defeated = false;
             BulletNumber = 0;
             NextProjectileID = 0;
+
+            //Animació Limax
+            VisualShadowAnimationManager = new AnimationManager(animations.First().Value) {Ascale = Scale, Aeffects = Effect, };
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScaleW, float _HitBoxScaleH, int _Health, int _IDcharacter, Color _Color)
@@ -495,6 +510,9 @@ namespace BaboGame_test_2
             Defeated = false;
             BulletNumber = 0;
             NextProjectileID = 0;
+
+            //Animació Limax
+            VisualShadowAnimationManager = new AnimationManager(animations.First().Value) { Ascale = Scale, Aeffects = Effect, };
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScale, int _Health, int _IDcharacter, Color _Color)
@@ -510,6 +528,9 @@ namespace BaboGame_test_2
             Defeated = false;
             BulletNumber = 0;
             NextProjectileID = 0;
+
+            //Animació Limax
+            VisualShadowAnimationManager = new AnimationManager(animations.First().Value) { Ascale = Scale, Aeffects = Effect, };
         }
 
         // interfície pública per moure el character
@@ -601,6 +622,29 @@ namespace BaboGame_test_2
                 Framespeed = 0.5f;
 
             this._animationManager.Update(gameTime, Framespeed);
+
+            //Reprodueix l'animació del Limax del Dash
+            if((VectorOps.ModuloVector(Position - LastPosition) > 70)&&(charType == 'L'))
+            {
+                visualShadowVisibility = true;
+                VisualShadowTimer = 0f;
+                VisualShadowPosition = new Vector2(LastPosition.X, LastPosition.Y);
+                VisualShadowDirection = new Vector2(LastDirection.X, LastDirection.Y);
+                VisualShadowAnimationManager.ALayer = LastLayer;
+            }
+
+            if(visualShadowVisibility)
+            {
+                VisualShadowAnimationManager.Position = VisualShadowPosition;
+                SetVisualShadowAnimations();
+                VisualShadowAnimationManager.Update(gameTime, Framespeed);
+                VisualShadowTimer += gameTime.ElapsedGameTime.Milliseconds;
+                if (VisualShadowTimer > 500f)
+                {
+                    VisualShadowTimer = 0f;
+                    visualShadowVisibility = false;
+                }
+            }
 
             //"Equació" per definir a quina capa es mostrarà el "sprite" perquè un personatge no li estigui trapitjant la cara al altre
             float LayerValue = this.Position.Y / 10000;
@@ -806,6 +850,58 @@ namespace BaboGame_test_2
             }
         }
 
+        //Apartat de les animacions
+        protected virtual void SetVisualShadowAnimations()
+        {
+                // Detecció del angle de dispar amb la corresponent animació (probablement s'haurà de fer de forma més eficient) 
+                // Angle entre animacions: 18 graus || pi/10 radiants -- Desfasament: 9 graus || pi/20 radiant
+
+                float angle = VectorOps.Vector2ToDeg(VisualShadowDirection);
+                if ((angle <= 9 && angle >= 0) || (angle <= 360 && angle > 351))
+                    VisualShadowAnimationManager.Play(_animations["Slug right0"]);
+                else if (angle <= 27 && angle > 9)
+                    VisualShadowAnimationManager.Play(_animations["Slug right-22_5"]);
+                else if (angle <= 45 && angle > 27)
+                    VisualShadowAnimationManager.Play(_animations["Slug right-45"]);
+                else if (angle <= 63 && angle > 45)
+                    VisualShadowAnimationManager.Play(_animations["Slug down45"]);
+                else if (angle <= 81 && angle > 63)
+                    VisualShadowAnimationManager.Play(_animations["Slug down22_5"]);
+                else if (angle <= 99 && angle > 81)
+                    VisualShadowAnimationManager.Play(_animations["Slug down0"]);
+                else if (angle <= 117 && angle > 99)
+                    VisualShadowAnimationManager.Play(_animations["Slug down-22_5"]);
+                else if (angle <= 135 && angle > 117)
+                    VisualShadowAnimationManager.Play(_animations["Slug down-45"]);
+                else if (angle <= 153 && angle > 135)
+                    VisualShadowAnimationManager.Play(_animations["Slug left45"]);
+                else if (angle <= 171 && angle > 153)
+                    VisualShadowAnimationManager.Play(_animations["Slug left22_5"]);
+                else if (angle <= 189 && angle > 171)
+                    VisualShadowAnimationManager.Play(_animations["Slug left0"]);
+                else if (angle <= 207 && angle > 189)
+                    VisualShadowAnimationManager.Play(_animations["Slug left-22_5"]);
+                else if (angle <= 225 && angle > 207)
+                    VisualShadowAnimationManager.Play(_animations["Slug left-45"]);
+                else if (angle <= 243 && angle > 225)
+                    VisualShadowAnimationManager.Play(_animations["Slug up45"]);
+                else if (angle <= 261 && angle > 243)
+                    VisualShadowAnimationManager.Play(_animations["Slug up22_5"]);
+                else if (angle <= 279 && angle > 261)
+                    VisualShadowAnimationManager.Play(_animations["Slug up0"]);
+                else if (angle <= 297 && angle > 279)
+                    VisualShadowAnimationManager.Play(_animations["Slug up-22_5"]);
+                else if (angle <= 315 && angle > 297)
+                    VisualShadowAnimationManager.Play(_animations["Slug up-45"]);
+                else if (angle <= 333 && angle > 315)
+                    VisualShadowAnimationManager.Play(_animations["Slug right45"]);
+                else if (angle <= 351 && angle > 333)
+                    VisualShadowAnimationManager.Play(_animations["Slug right22_5"]);
+                else
+                    VisualShadowAnimationManager.Play(_animations["Slug down0"]);
+            
+        }
+
         //Notifica el dolor
         public void NotifyHit(Vector2 hitDirection, int shooterID, float damage, float hitImpulse, float shooterAttack, char charType)
         {
@@ -835,6 +931,24 @@ namespace BaboGame_test_2
         public void CPUNotifyLostBullet()
         {
             CPUBulletLost = true;
+        }
+
+        //Mostra l'animació de la ombra visual de Limax
+        public void VisualShadowDraw(SpriteBatch spriteBatch)
+        {
+            if (_texture != null)
+                spriteBatch.Draw(_texture, VisualShadowPosition, null, Color.Aqua, _rotation, Origin, Scale, Effect, Layer);
+            else if (VisualShadowAnimationManager != null)
+            {
+                VisualShadowAnimationManager.Ascale = Scale;
+                VisualShadowAnimationManager.ALayer = Layer;
+                VisualShadowAnimationManager.Aeffects = Effect;
+                VisualShadowAnimationManager.Acolor = Color.Aqua;
+                VisualShadowAnimationManager.AHitBoxScale = HitBoxScale;
+
+                VisualShadowAnimationManager.Draw(spriteBatch);
+            }
+            else throw new Exception("No tens cap textura per aquest sprite");
         }
 
     }
