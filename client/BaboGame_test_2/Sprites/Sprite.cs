@@ -33,7 +33,7 @@ using Microsoft.Xna.Framework;
         //Variables entorn a les animacions
         protected AnimationManager _animationManager;
         protected Dictionary<string, Animation> _animations;
-        protected Texture2D _texture;
+        public Texture2D _texture;
         protected Vector2 _position;
 
         //Variables vector per la posició, el centre i la direcció del personatge

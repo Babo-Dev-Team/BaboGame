@@ -394,26 +394,26 @@ namespace BaboGame_test_2
         //Cerca llimacs ja coneguts
         public void AddKnownCharacter(string slugName, Vector2 Position, float Scale, int Health, int IDCharacter, Color color)
         {
-            if(slugName == "Babo")
-                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) {Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, Defense = 10f});
+            if (slugName == "Babo")
+                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) { Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, Attack = 1f, Defense = 10f, charType = 'B' });
             else if (slugName == "Limax")
-                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, Defense = 6f});
+                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, Attack = 0.8f, Defense = 7f, charType = 'L'});
             else if (slugName == "Kaler")
-                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, Defense = 9f});
+                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) {Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, Attack = 1.2f, Defense = 9f, charType = 'K'});
             else if (slugName == "Swalot")
-                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, Defense = 15f});
+                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, Attack = 1.8f, Defense = 15f, charType = 'S'});
         }
 
         public void AddKnownCharacter(string slugName, Vector2 Position, float Scale, int Health, int IDCharacter, Color color, bool CPUgame)
         {
             if (slugName == "Babo")
-                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) { Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, CPU = CPUgame, Defense = 10f});
+                characterList.Add(new Character(BaboAnimations, Position, Scale, 0.6f, Health, IDCharacter, color) { Weight = 10, Velocity_Threshold = 12, LinearAcceleration = 2f, CPU = CPUgame, Attack = 1f, Defense = 10f, charType = 'B'});
             else if (slugName == "Limax")
-                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, CPU = CPUgame, Defense = 6f});
+                characterList.Add(new Character(LimaxAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 8, Velocity_Threshold = 16, LinearAcceleration = 4f, CPU = CPUgame, Attack = 0.8f, Defense = 7f, charType = 'L'});
             else if (slugName == "Kaler")
-                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, CPU = CPUgame, Defense = 9f});
+                characterList.Add(new Character(KalerAnimations, Position, Scale, 0.5f, Health, IDCharacter, color) { Weight = 6, Velocity_Threshold = 12, LinearAcceleration = 2.5f, CPU = CPUgame, Attack = 1.2f, Defense = 9f, charType = 'K'});
             else if (slugName == "Swalot")
-                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, CPU = CPUgame, Defense = 15f});
+                characterList.Add(new Character(SwalotAnimations, Position, Scale, 0.7f, Health, IDCharacter, color) { Weight = 14, Velocity_Threshold = 10, LinearAcceleration = 1.5f, CPU = CPUgame, Attack = 1.8f, Defense = 15f, charType = 'S'});
         }
 
         public void DisposeAll()
@@ -455,6 +455,11 @@ namespace BaboGame_test_2
         public float CPUtimer = 0;
         public bool CPUBulletLostDirection = false;
         public float Defense;
+        public float Attack;
+        public char charType; //B Babo, L Limax, K Kaler, S Swalot
+        public int NextProjectileID;
+        public bool SlugHability = false;
+        public float HabilityRefresh = 0f;
         Random randomDamage = new Random();
 
         // Constructors
@@ -464,6 +469,7 @@ namespace BaboGame_test_2
             isHit = false;
             Defeated = false;
             BulletNumber = 0;
+            NextProjectileID = 0;
         }
 
         public Character(Dictionary<string, Animation> animations)
@@ -472,6 +478,7 @@ namespace BaboGame_test_2
             isHit = false;
             Defeated = false;
             BulletNumber = 0;
+            NextProjectileID = 0;
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScaleW, float _HitBoxScaleH, int _Health, int _IDcharacter, Color _Color)
@@ -487,6 +494,7 @@ namespace BaboGame_test_2
             isHit = false;
             Defeated = false;
             BulletNumber = 0;
+            NextProjectileID = 0;
         }
 
         public Character(Dictionary<string, Animation> animations, Vector2 _Position, float _Scale, float _HitBoxScale, int _Health, int _IDcharacter, Color _Color)
@@ -501,6 +509,7 @@ namespace BaboGame_test_2
             isHit = false;
             Defeated = false;
             BulletNumber = 0;
+            NextProjectileID = 0;
         }
 
         // interfície pública per moure el character
@@ -798,11 +807,26 @@ namespace BaboGame_test_2
         }
 
         //Notifica el dolor
-        public void NotifyHit(Vector2 hitDirection, int shooterID, float damage, float hitImpulse)
+        public void NotifyHit(Vector2 hitDirection, int shooterID, float damage, float hitImpulse, float shooterAttack, char charType)
         {
             this.isHit = true;
             float randomValue = (float) randomDamage.NextDouble();
-            this.Health -= (int)(damage/Defense * (randomValue + 0.8)* (randomValue + 0.8) * 1.5/2.25);
+            float randomCritical = (float)randomDamage.NextDouble();
+
+            if (((randomCritical < 0.036)&&(charType == 'B'))|| ((randomCritical < 0.018) && (charType == 'L'))|| ((randomCritical < 0.06) && (charType == 'K'))|| ((randomCritical < 0.006) && (charType == 'S')))
+                this.Health -= (int)damage / 2;
+            else
+            {
+                if(randomValue* randomValue * shooterAttack * damage/this.Defense > 3)
+                    this.Health -= 4;
+                else if(randomValue * randomValue* shooterAttack * damage / this.Defense > 2)
+                    this.Health -= 3;
+                else if (randomValue* randomValue * shooterAttack * damage / this.Defense > 1)
+                    this.Health -= 2;
+                else 
+                    this.Health -= 1;
+            }
+
             this.hitDirection = hitDirection;
             this.hitImpulse = hitImpulse;
         }

@@ -37,6 +37,7 @@ namespace BaboGameClient
         Button LeftOpponentChar_btn;
         Button RightOpponentChar_btn;
         PictureBox Opponentcharacter_pb;
+        PictureBox Opponentstats_pb;
         Button OpponentSelectChar_btn;
         Button PlayerSelectChar_btn;
         Label OpponentCharName_lbl;
@@ -56,6 +57,7 @@ namespace BaboGameClient
         //Elements del menú de la partida
         Label PartyName_lbl;
         PictureBox character_pb;
+        PictureBox stats_pb;
         Button LeftChar_btn;
         Button RightChar_btn;
         Button CancelGame_btn;
@@ -109,6 +111,7 @@ namespace BaboGameClient
             LeftOpponentChar_btn = new Button();
             RightOpponentChar_btn = new Button();
             Opponentcharacter_pb = new PictureBox();
+            Opponentstats_pb = new PictureBox();
             PlayerSelectChar_btn = new Button();
             OpponentSelectChar_btn = new Button();
             OpponentCharName_lbl = new Label(); 
@@ -129,6 +132,7 @@ namespace BaboGameClient
             //Elements del menú de la partida
             PartyName_lbl = new Label();
             character_pb = new PictureBox();
+            stats_pb = new PictureBox();
             LeftChar_btn = new Button();
             RightChar_btn = new Button();
             CancelGame_btn = new Button();
@@ -158,9 +162,9 @@ namespace BaboGameClient
             characterDescription = new string[] 
             {
             "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal?",//Babo
-            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac una mica salat.",//Limax
-            "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude?",//Kaler
-            "Swalot, pokémon tipus verí. Com no té dents, es traga tot d'un sol cop amb la seva enorme boca. " //Swalot
+            "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac una mica salat. Hab. Dash",//Limax
+            "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude? Hab. Mira Automàtica",//Kaler
+            "Swalot: pokémon tipus verí. Com no té dents, es traga tot d'un sol cop amb la seva gran boca. Hab. Rebot de sal" //Swalot
             };
             charSelectedPos = 0;
 
@@ -318,6 +322,15 @@ namespace BaboGameClient
             character_pb.Refresh();
             background_gb.Controls.Add(character_pb);
 
+            //PictureBox dels stats del personatge
+            stats_pb.Location = new Point(190, 200);
+            stats_pb.Size = new Size(100, 100);
+            stats_pb.ImageLocation = "../../../Pictures/Characters/stats Babo.png";
+            stats_pb.Visible = false;
+            stats_pb.SizeMode = PictureBoxSizeMode.Zoom;
+            stats_pb.Refresh();
+            background_gb.Controls.Add(stats_pb);
+
             //Label del nom del personatge
             CharName_lbl.Location = new Point(25, 200);
             CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
@@ -328,7 +341,7 @@ namespace BaboGameClient
             //Label de la descripció del personatge
             CharDescription_lbl.Location = new Point(25, 230);
             CharDescription_lbl.Text = characterDescription[charSelectedPos];
-            CharDescription_lbl.Size = new Size(150, 60);
+            CharDescription_lbl.Size = new Size(160, 60);
             CharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
             CharDescription_lbl.Visible = false;
             background_gb.Controls.Add(CharDescription_lbl);
@@ -532,6 +545,15 @@ namespace BaboGameClient
             Opponentcharacter_pb.Refresh();
             background_gb.Controls.Add(Opponentcharacter_pb);
 
+            //PictureBox dels stats de l'oponent
+            Opponentstats_pb.Location = new Point(487, 200);
+            Opponentstats_pb.Size = new Size(100, 100);
+            Opponentstats_pb.ImageLocation = "../../../Pictures/Characters/stats Babo.png";
+            Opponentstats_pb.Visible = false;
+            Opponentstats_pb.SizeMode = PictureBoxSizeMode.Zoom;
+            Opponentstats_pb.Refresh();
+            background_gb.Controls.Add(Opponentstats_pb);
+
             //Butó per seleccionar el personatge de l'oponent
             OpponentSelectChar_btn.Location = new Point(312, 300);
             //OpponentSelectChar_btn.Text = "Selecciona Oponent";
@@ -564,7 +586,7 @@ namespace BaboGameClient
             //Descripció del personatge de l'oponent
             OpponentCharDescription_lbl.Location = new Point(312, 230);
             OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
-            OpponentCharDescription_lbl.Size = new Size(150, 60);
+            OpponentCharDescription_lbl.Size = new Size(160, 60);
             OpponentCharDescription_lbl.TextAlign = ContentAlignment.TopCenter;
             OpponentCharDescription_lbl.Visible = false;
             background_gb.Controls.Add(OpponentCharDescription_lbl);
@@ -687,6 +709,7 @@ namespace BaboGameClient
             RightOpponentChar_btn.Visible= TrainningScreen;
             Opponentcharacter_pb.Visible = TrainningScreen;
             OpponentSelectChar_btn.Visible = TrainningScreen;
+            Opponentstats_pb.Visible = TrainningScreen;
             PlayerSelectChar_btn.Visible = TrainningScreen;
             OpponentCharName_lbl.Visible = TrainningScreen;
             OpponentCharDescription_lbl.Visible = TrainningScreen;
@@ -727,6 +750,7 @@ namespace BaboGameClient
 
             //SelectCharacterOnlineScreen
             character_pb.Visible = SelectCharacterOnlineScreen || TrainningScreen;
+            stats_pb.Visible = SelectCharacterOnlineScreen || TrainningScreen;
             PartyName_lbl.Visible = SelectCharacterOnlineScreen;
             RightChar_btn.Visible = SelectCharacterOnlineScreen||TrainningScreen;
             LeftChar_btn.Visible = SelectCharacterOnlineScreen ||TrainningScreen;
@@ -1637,6 +1661,12 @@ namespace BaboGameClient
             character_pb.ImageLocation = "../../../Pictures/Characters/"+ characterSelected[charSelectedPos] + " stop.gif";
             character_pb.Load();
             character_pb.Refresh();
+
+            stats_pb.Image.Dispose();
+            stats_pb.ImageLocation = "../../../Pictures/Characters/stats " + characterSelected[charSelectedPos] + ".png";
+            stats_pb.Load();
+            stats_pb.Refresh();
+
             CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
             CharDescription_lbl.Text = characterDescription[charSelectedPos];           
         }
@@ -1653,6 +1683,12 @@ namespace BaboGameClient
             character_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[charSelectedPos] + " stop.gif";
             character_pb.Load();
             character_pb.Refresh();
+
+            stats_pb.Image.Dispose();
+            stats_pb.ImageLocation = "../../../Pictures/Characters/stats " + characterSelected[charSelectedPos] + ".png";
+            stats_pb.Load();
+            stats_pb.Refresh();
+
             CharName_lbl.Text = "Nom: " + characterSelected[charSelectedPos];
             CharDescription_lbl.Text = characterDescription[charSelectedPos];
         }
@@ -1830,6 +1866,12 @@ namespace BaboGameClient
             Opponentcharacter_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[OpponentcharSelectedPos] + " stop.gif";
             Opponentcharacter_pb.Load();
             Opponentcharacter_pb.Refresh();
+
+            Opponentstats_pb.Image.Dispose();
+            Opponentstats_pb.ImageLocation = "../../../Pictures/Characters/stats " + characterSelected[OpponentcharSelectedPos] + ".png";
+            Opponentstats_pb.Load();
+            Opponentstats_pb.Refresh();
+
             OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
             OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
 
@@ -1847,6 +1889,12 @@ namespace BaboGameClient
             Opponentcharacter_pb.ImageLocation = "../../../Pictures/Characters/" + characterSelected[OpponentcharSelectedPos] + " stop.gif";
             Opponentcharacter_pb.Load();
             Opponentcharacter_pb.Refresh();
+
+            Opponentstats_pb.Image.Dispose();
+            Opponentstats_pb.ImageLocation = "../../../Pictures/Characters/stats " + characterSelected[OpponentcharSelectedPos] + ".png";
+            Opponentstats_pb.Load();
+            Opponentstats_pb.Refresh();
+
             OpponentCharName_lbl.Text = "Nom: " + characterSelected[OpponentcharSelectedPos];
             OpponentCharDescription_lbl.Text = characterDescription[OpponentcharSelectedPos];
         }

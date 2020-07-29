@@ -140,7 +140,6 @@ namespace BaboGame_test_2
         float SlimeTime = 0;
         //Temportizació dels pdates cap el servidor
         float UpdateOnlineTime = 0;
-        int NextProjectileID;
         static int BulletThreshold = 20;
         static int projectileOnlineUpdateThreshold = 32;
         public class Loading
@@ -162,7 +161,6 @@ namespace BaboGame_test_2
             graphics.PreferredBackBufferWidth = 1280;
             Initialized = false;
             InitRequested = false;
-            NextProjectileID = 0;
             GameEnded = false;
             GamePaused = false;
             HasWinner = false;
@@ -185,7 +183,6 @@ namespace BaboGame_test_2
             //serverHandler.SwitchToRealtimeMode();
             //AllocConsole();
             Console.WriteLine("testline");
-            NextProjectileID = 0;
             this.LoadVariable = LoadVariable;
         }
 
@@ -200,7 +197,6 @@ namespace BaboGame_test_2
             Initialized = false;
             this.localGameState = localGameState;
             Difficulty = difficulty;
-            NextProjectileID = 0;
             GameEnded = false;
             GamePaused = true;
             HasWinner = false;
@@ -658,7 +654,7 @@ namespace BaboGame_test_2
             {
                 characterEngine.Update(gameTime, slimeSprites, scenarioSprites, testMode, Controllable);
                 // Això hauria de moure els projectils, calcular les colisions i notificar als characters si hi ha hagut dany.
-                projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites);
+                projectileEngine.UpdateProjectiles(gameTime, characterSprites, scenarioSprites, testMode, Controllable);
             }
                 // Generem les babes amb una certa espera per no sobrecarregar i les instanciem al update del personatge
 
@@ -870,9 +866,9 @@ namespace BaboGame_test_2
             for (int i = 0; i < initGame.nPlayers; i++)
             {
                 
-                Vector2 HeartPosition = HeartPosInScreen(initGame.nPlayers,i,5);
-                characterEngine.AddKnownCharacter(initGame.users[i].charName, new Vector2(HeartPosition.X + 5*30/2, HeartPosition.Y - 40), 0.20f, 20, initGame.users[i].charId, Color.White);
-                heartManager.CreateHeart(initGame.users[i].charId, 5, 20, slugHealth, HeartPosition);
+                Vector2 HeartPosition = HeartPosInScreen(initGame.nPlayers,i,8);
+                characterEngine.AddKnownCharacter(initGame.users[i].charName, new Vector2(HeartPosition.X + 5*30/2, HeartPosition.Y - 40), 0.20f, 32, initGame.users[i].charId, Color.White);
+                heartManager.CreateHeart(initGame.users[i].charId, 8, 32, slugHealth, HeartPosition);
 
                 if (thisClient.charId == initGame.users[i].charId)
                 {
@@ -1122,15 +1118,15 @@ namespace BaboGame_test_2
                     Vector2 projTarget = inputManager.GetMousePosition();
                     if (Controllable.BulletNumber < BulletThreshold)
                     {
-                        projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
+                        projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, Controllable.NextProjectileID);
                         Controllable.BulletNumber++;
-                        NextProjectileID++;
+                        Controllable.NextProjectileID++;
                     }
                 }
 
                 //Habilitat d'en Kaler
 
-                if (Controllable.Weight == 6)
+                if (Controllable.charType == 'K')
                 {
                     float dist = 2000;
                     Character targetchara = Controllable;
@@ -1164,11 +1160,43 @@ namespace BaboGame_test_2
                         Vector2 projTarget = targetchara.Position;
                         if ((Controllable.BulletNumber < BulletThreshold)&&(projOrigin != projTarget))
                         {
-                            projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, NextProjectileID);
+                            projectileManager.AddProjectile(projOrigin, projTarget, Controllable.IDcharacter, Controllable.NextProjectileID);
                             Controllable.BulletNumber++;
-                            NextProjectileID++;
+                            Controllable.NextProjectileID++;
                         }
                     }
+                }
+                else if(Controllable.charType == 'L')
+                {
+                    if (inputManager.RightMouseClick())
+                    {
+                        bool dash = true;
+                        foreach(ScenarioObjects ScenearioObject in scenarioSprites)
+                        {
+                            if((ScenearioObject.IsNear(Controllable.Position - (VectorOps.UnitVector(Controllable.Position - inputManager.GetMousePosition()) * 100)))&&(ScenearioObject.SolidObject))
+                                dash = false;
+                        }
+
+                        if(dash)
+                            Controllable.Position -= VectorOps.UnitVector(Controllable.Position - inputManager.GetMousePosition()) * 100;
+                    }
+                }
+                //Altres habilitats d'altres personatges
+                else
+                {
+                    if (inputManager.RightMouseClick())
+                    {
+                        Controllable.SlugHability = true;
+                        Controllable.HabilityRefresh = 0f;
+                    }
+                }
+
+                //Desactivar habilitat
+                Controllable.HabilityRefresh += gameTime.ElapsedGameTime.Milliseconds;
+                if(Controllable.HabilityRefresh > 100)
+                {
+                    Controllable.HabilityRefresh = 0f;
+                    Controllable.SlugHability = false;
                 }
 
             }
@@ -1187,9 +1215,9 @@ namespace BaboGame_test_2
                 Vector2 HeartPosition;
                 if (localGameState.Player_ID[i] == 1)
                 {
-                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
-                    characterEngine.AddKnownCharacter(localGameState.PlayerCharacter_Selected, new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 20, localGameState.Player_ID[i], Color.White);
-                    heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
+                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 8);
+                    characterEngine.AddKnownCharacter(localGameState.PlayerCharacter_Selected, new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 32, localGameState.Player_ID[i], Color.White);
+                    heartManager.CreateHeart(localGameState.Player_ID[i], 8, 32, slugHealth, HeartPosition);
                     playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i], true));
                     playersNames.Add(new NameFontModel("Jugador", new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.LightGreen, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.999f, localGameState.Player_ID[i], true));
                     projectileManager.CreateSaltMenu(projectileMenuTexture, overlaySprites, localGameState.Player_ID[i], 0.1f);
@@ -1197,9 +1225,9 @@ namespace BaboGame_test_2
                 }
                 else if (i!=0)
                 {
-                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 5);
-                    characterEngine.AddKnownCharacter(localGameState.OpponentCharacter_Selected[i - 1], new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 20, localGameState.Player_ID[i], Color.White, true);
-                    heartManager.CreateHeart(localGameState.Player_ID[i], 5, 20, slugHealth, HeartPosition);
+                    HeartPosition = HeartPosInScreen(localGameState.Opponentnum_players + 1, i, 8);
+                    characterEngine.AddKnownCharacter(localGameState.OpponentCharacter_Selected[i - 1], new Vector2(HeartPosition.X + 5 * 30 / 2, HeartPosition.Y - 40), 0.20f, 32, localGameState.Player_ID[i], Color.White, true);
+                    heartManager.CreateHeart(localGameState.Player_ID[i], 8, 32, slugHealth, HeartPosition);
                     playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 65), Color.Black, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.99f, localGameState.Player_ID[i], true));
                     playersNames.Add(new NameFontModel("CPU " + localGameState.Player_ID[i], new Vector2(HeartPosition.X, HeartPosition.Y - 70), Color.White, 0, 0.9f, new Vector2(0, 0), SpriteEffects.None, 0.999f, localGameState.Player_ID[i], true));
 

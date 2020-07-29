@@ -35,5 +35,14 @@ namespace BaboGame_test_2
             else
                 Layer = LayerValue + 0.01f;
         }
+
+        public bool IsNear(Vector2 Position)
+        {
+            if((VectorOps.ModuloVector(this.Position - Position)) > (Math.Max(this._texture.Width, this._texture.Height)*this.HitBoxScale*this.Scale))
+                return false;
+            else
+                return true;
+        }
+
     }
 }

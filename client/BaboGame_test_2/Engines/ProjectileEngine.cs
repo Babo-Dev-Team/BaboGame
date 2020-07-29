@@ -14,6 +14,7 @@ namespace BaboGame_test_2
     public class ProjectileEngine
     {
         private List<Projectile> projectileList;
+        private List<Projectile> newProjectile = new List<Projectile>();
 
         // constants per defecte dels projectils
         private const float masterProjVelocity = 15;
@@ -47,7 +48,7 @@ namespace BaboGame_test_2
         // aquí estarà la gràcia. En comptes d'actualitzar-los un per un a cada objecte, agafarem
         // tota la llista i calcularem tots els moviments i colisions.
         // caldrà fer saber als characters que han colisionat que tenen dany + la direcció de l'impacte.
-        public void UpdateProjectiles(GameTime gameTime, List<Character> characterList, List<ScenarioObjects> objectsList)
+        public void UpdateProjectiles(GameTime gameTime, List<Character> characterList, List<ScenarioObjects> objectsList, bool testMode, Character Controllable)
         {
             //Valorar el temps de vida de la sal a disparar i la eliminació d'aquest
             /* _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -69,26 +70,34 @@ namespace BaboGame_test_2
                 }
             }
 
+            
+            //Mecànica de cada projectils
             foreach (var projectile in this.projectileList)
             {
                 
                     if (projectile.ProjectileType == 'D') //Sal directe
-                        DirectSaltUpdate(characterList, objectsList, projectile);
+                        DirectSaltUpdate(characterList, objectsList, projectile, testMode, Controllable);
                     else if (projectile.ProjectileType == 'S') //Slimed Salt
-                        SlimedSaltUpdate(characterList, objectsList, projectile);
-                    else
-                        NormalSaltUpdate(characterList, objectsList, projectile);
+                        SlimedSaltUpdate(characterList, objectsList, projectile, testMode, Controllable);
+                    else //Sal normal
+                        NormalSaltUpdate(characterList, objectsList, projectile, testMode, Controllable);
 
                     if (!projectile.IsRemoved)
                     {
                         projectile.Move();
                     }
-                
             }
+
+            //Projectils creats
+            foreach (var projectile in this.newProjectile)
+            {
+                projectileList.Add(projectile);
+            }
+            newProjectile.Clear();
         }
 
         // Mecànica de la sal normal
-        private void NormalSaltUpdate(List<Character> characterList, List<ScenarioObjects> objectsList, Projectile projectile)
+        private void NormalSaltUpdate(List<Character> characterList, List<ScenarioObjects> objectsList, Projectile projectile, bool testMode, Character Controllable)
         {
             //Definir la posició final de la sal per ser eliminada
             if (((projectile.Target.X >= projectile.Position.X - 15) && (projectile.Target.X <= projectile.Position.X + 15)) &&
@@ -123,8 +132,20 @@ namespace BaboGame_test_2
                 {
                     if (projectile.ShooterID != character.IDcharacter)
                     {
+                        //info del qui dispara
+                        float shooterAttack = 1f;
+                        char shooterType = 'B';
+                        foreach(var chara in characterList)
+                        {
+                            if(chara.IDcharacter == projectile.ShooterID)
+                            {
+                                shooterAttack = chara.Attack;
+                                shooterType = chara.charType;
+                            }
+                        }
                         // notificar el dany al personatge!!!
-                        character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
+                        if ((!character.SlugHability) || (character.charType != 'S'))
+                            character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity, shooterAttack, shooterType);
                         projectile.KillProjectile();
                         foreach (Character chara in characterList)
                         {
@@ -154,7 +175,7 @@ namespace BaboGame_test_2
         }
 
         // Mecànica de la sal directe
-        private void DirectSaltUpdate(List<Character> characterList, List<ScenarioObjects> objectsList, Projectile projectile)
+        private void DirectSaltUpdate(List<Character> characterList, List<ScenarioObjects> objectsList, Projectile projectile, bool testMode, Character Controllable)
         {
             //Elimina la sal en un límit de distancia
             if (VectorOps.ModuloVector(projectile.Origin - projectile.Position) > 2000)
@@ -186,34 +207,45 @@ namespace BaboGame_test_2
             {
                 if (projectile.DetectCollision(character))
                 {
-                    if (((projectile.ShooterID != character.IDcharacter) && (!projectile.rejected)) || (projectile.HitCount != 0) || ((projectile.RejectorID != character.IDcharacter) && (projectile.rejected)))
+                    if ((projectile.ShooterID != character.IDcharacter) || (projectile.HitCount != 0))
                     {
-                        // notificar el dany al personatge!!!
-                        character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
-                        projectile.rejected = false;
-
-                        if (character.Weight == 14)
+                        //info del qui dispara
+                        float shooterAttack = 1f;
+                        char shooterType = 'B';
+                        foreach (var chara in characterList)
                         {
-                            Random bulletRejected = new Random(projectile.ShooterID + projectile.projectileID + (int)projectile.LinearVelocity + projectile.HitCount);
-                            if (bulletRejected.Next(0, 5) == 0)
-                                projectile.rejected = true;
-
-                        }
-
-                        if (!projectile.rejected)
-                        {
-                            projectile.KillProjectile();
-                            foreach (Character chara in characterList)
+                            if (chara.IDcharacter == projectile.ShooterID)
                             {
-                                if (chara.IDcharacter == projectile.ShooterID)
-                                    chara.BulletNumber--;
+                                shooterAttack = chara.Attack;
+                                shooterType = chara.charType;
                             }
                         }
-                        else 
+                        // notificar el dany al personatge!!!
+                        if ((!character.SlugHability) || (character.charType != 'S'))
+                            character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity, shooterAttack, shooterType);
+                        bool Rejected = false;
+
+                        if (character.charType == 'S')
                         {
-                            projectile.Direction = -projectile.Direction;
-                            projectile.RejectorID = character.IDcharacter;
-                            projectile.HitCount = 0;
+                            Random bulletRejected = new Random();
+                            if (character.SlugHability)
+                                Rejected = true;
+                            if (bulletRejected.Next(0, 9) == 0)
+                                Rejected = true;
+
+                        }
+                        //Destrueix l'objecte
+                        projectile.KillProjectile();
+                        foreach (Character chara in characterList)
+                        {
+                            if (chara.IDcharacter == projectile.ShooterID)
+                                chara.BulletNumber--;
+                        }
+
+                        if ((Rejected)&&((testMode)||(character.IDcharacter == Controllable.IDcharacter)))
+                        {
+                            newProjectile.Add(new Projectile(projectile.Position, projectile.Position - (projectile.Direction * VectorOps.ModuloVector(projectile.Origin - projectile.Target)),masterProjVelocity,character.IDcharacter,projectile._texture,masterProjScale,projectile.Damage,projectile.ProjectileType,character.NextProjectileID));
+                            character.NextProjectileID++;
                         }
                     }
                 }
@@ -234,7 +266,7 @@ namespace BaboGame_test_2
         }
 
         // Mecànica de la sal no neutoniana
-        private void SlimedSaltUpdate(List<Character> characterList, List<ScenarioObjects> objectsList, Projectile projectile)
+        private void SlimedSaltUpdate(List<Character> characterList, List<ScenarioObjects> objectsList, Projectile projectile, bool testMode, Character Controllable)
         {
             //Elimina la sal en un límit de distancia
             if (VectorOps.ModuloVector(projectile.Origin - projectile.Position) > 2000)
@@ -309,34 +341,45 @@ namespace BaboGame_test_2
             {
                 if (projectile.DetectCollision(character))
                 {
-                    if (((projectile.ShooterID != character.IDcharacter)&&(!projectile.rejected))||(projectile.HitCount != 0)||((projectile.RejectorID != character.IDcharacter)&&(projectile.rejected)))
+                    if ((projectile.ShooterID != character.IDcharacter)||(projectile.HitCount != 0))
                     {
-                        // notificar el dany al personatge!!!
-                        character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity);
-                        projectile.rejected = false;
-
-                        if (character.Weight == 14)
+                        //info del qui dispara
+                        float shooterAttack = 1f;
+                        char shooterType = 'B';
+                        foreach (var chara in characterList)
                         {
-                            Random bulletRejected = new Random(projectile.ShooterID + projectile.projectileID + (int)projectile.LinearVelocity + projectile.HitCount);
-                            if (bulletRejected.Next(0, 5) == 0)
-                                projectile.rejected = true;
-
-                        }
-
-                        if (!projectile.rejected)
-                        {
-                            projectile.KillProjectile();
-                            foreach (Character chara in characterList)
+                            if (chara.IDcharacter == projectile.ShooterID)
                             {
-                                if (chara.IDcharacter == projectile.ShooterID)
-                                    chara.BulletNumber--;
+                                shooterAttack = chara.Attack;
+                                shooterType = chara.charType;
                             }
                         }
-                        else
+                        // notificar el dany al personatge!!!
+                        if((!character.SlugHability)||(character.charType != 'S'))
+                            character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity, shooterAttack, shooterType);
+                        bool Rejected = false;
+
+                        if (character.charType == 'S')
                         {
-                            projectile.Direction = -projectile.Direction;
-                            projectile.RejectorID = character.IDcharacter;
-                            projectile.HitCount = 0;
+                            Random bulletRejected = new Random();
+                            if (character.SlugHability)
+                                Rejected = true;
+                            if (bulletRejected.Next(0, 9) == 0)
+                                Rejected = true;
+
+                        }
+                        //Destrueix l'objecte
+                        projectile.KillProjectile();
+                        foreach (Character chara in characterList)
+                        {
+                            if (chara.IDcharacter == projectile.ShooterID)
+                                chara.BulletNumber--;
+                        }
+                        
+                        if ((Rejected) && ((testMode) || (character.IDcharacter == Controllable.IDcharacter)))
+                        {
+                            newProjectile.Add(new Projectile(projectile.Position, projectile.Position - (projectile.Direction * VectorOps.ModuloVector(projectile.Origin - projectile.Target)), masterProjVelocity, character.IDcharacter, projectile._texture, masterProjScale, projectile.Damage, projectile.ProjectileType, character.NextProjectileID) { });
+                            character.NextProjectileID++;
                         }
                     }
                 }
@@ -392,8 +435,6 @@ namespace BaboGame_test_2
         public int HitCount = 0;
         public int projectileID;
         public int ProjectileOnlineUpdates;
-        public int RejectorID;
-        public bool rejected = false;
         
         
         
@@ -415,7 +456,6 @@ namespace BaboGame_test_2
             this.Layer = 0.01f;
             this.projectileID = projectileID;
             this.ProjectileOnlineUpdates = 0;
-            this.RejectorID = 0;
             //IsSaltShoot = true;
         }
 
