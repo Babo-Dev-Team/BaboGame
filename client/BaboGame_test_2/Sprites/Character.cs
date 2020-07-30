@@ -474,6 +474,9 @@ namespace BaboGame_test_2
         public float VisualShadowTimer = 0f;
         public bool visualShadowVisibility = false;
 
+        //habilitat Babo
+        public char charCopied = 'B';
+
         // Constructors
         public Character(Texture2D texture)
             : base(texture)
@@ -626,7 +629,7 @@ namespace BaboGame_test_2
             this._animationManager.Update(gameTime, Framespeed);
 
             //Reprodueix l'animació del Limax del Dash
-            if((VectorOps.ModuloVector(Position - LastPosition) > 70)&&(charType == 'L'))
+            if((VectorOps.ModuloVector(Position - LastPosition) > 70)&&((charType == 'L')||(charType == 'B')))
             {
                 visualShadowVisibility = true;
                 VisualShadowTimer = 0f;

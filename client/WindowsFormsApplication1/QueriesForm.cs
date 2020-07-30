@@ -161,7 +161,7 @@ namespace BaboGameClient
 
             characterDescription = new string[] 
             {
-            "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal?",//Babo
+            "Una vegada va voler fundar una societat anònima anomenada Babo S.A. ¿Qué puede malir sal? Hab. Còpia",//Babo
             "De l'espècie Limax Maximus. Li agrada fer jocs de paraules. És un llimac una mica salat. Hab. Dash",//Limax
             "És un llimac groc amb un saler controlat per terminal, es podrà descarregar el driver per aptitude? Hab. Mira Automàtica",//Kaler
             "Swalot: pokémon tipus verí. Com no té dents, es traga tot d'un sol cop amb la seva gran boca. Hab. Rebot de sal" //Swalot

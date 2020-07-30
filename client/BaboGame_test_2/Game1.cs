@@ -1140,7 +1140,7 @@ namespace BaboGame_test_2
 
                 //Habilitat d'en Kaler
 
-                if (Controllable.charType == 'K')
+                if ((Controllable.charType == 'K')||(Controllable.charCopied == 'K'))
                 {
                     float dist = 2000;
                     Character targetchara = Controllable;
@@ -1180,7 +1180,9 @@ namespace BaboGame_test_2
                         }
                     }
                 }
-                else if(Controllable.charType == 'L')
+
+                //Habilitat Limax
+                else if((Controllable.charType == 'L')||(Controllable.charCopied == 'L'))
                 {
                     if (inputManager.RightMouseClick())
                     {
@@ -1193,6 +1195,24 @@ namespace BaboGame_test_2
 
                         if(dash)
                             Controllable.Position -= VectorOps.UnitVector(Controllable.Position - inputManager.GetMousePosition()) * 100;
+                    }
+                }
+
+                //Habilitat Babo
+                else if((Controllable.charType == 'B')&&(Controllable.charCopied == 'B'))
+                {
+                    if (inputManager.RightMouseClick())
+                    {
+                        char charTypeSel = 'B';
+                        foreach(Character chara in characterSprites)
+                        {
+                            if (VectorOps.ModuloVector(chara.Position - inputManager.GetMousePosition()) < 60)
+                            {
+                                charTypeSel = chara.charType;
+                            }
+                        }
+
+                        Controllable.charCopied = charTypeSel;
                     }
                 }
                 //Altres habilitats d'altres personatges
@@ -1411,7 +1431,7 @@ namespace BaboGame_test_2
             {
                 if(sprite.Visible)
                     sprite.Draw(spriteBatch);
-                if (sprite.visualShadowVisibility && (sprite.charType == 'L'))
+                if (sprite.visualShadowVisibility && ((sprite.charType == 'L')||(sprite.charType == 'B')))
                     sprite.VisualShadowDraw(spriteBatch);
             }
 

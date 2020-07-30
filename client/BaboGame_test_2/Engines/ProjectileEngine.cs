@@ -154,7 +154,7 @@ namespace BaboGame_test_2
                             }
                         }
                         // notificar el dany al personatge!!!
-                        if ((!character.SlugHability) || (character.charType != 'S'))
+                        if ((!character.SlugHability) || (!((character.charType == 'S')||(character.charCopied == 'S'))))
                             character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity, shooterAttack, shooterType);
                         projectile.KillProjectile();
                         foreach (Character chara in characterList)
@@ -231,11 +231,11 @@ namespace BaboGame_test_2
                             }
                         }
                         // notificar el dany al personatge!!!
-                        if ((!character.SlugHability) || (character.charType != 'S'))
+                        if ((!character.SlugHability) || (!((character.charType == 'S') || (character.charCopied == 'S'))))
                             character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity, shooterAttack, shooterType);
                         bool Rejected = false;
 
-                        if (character.charType == 'S')
+                        if ((character.charType == 'S')||(character.charCopied == 'S'))
                         {
                             Random bulletRejected = new Random();
                             if (character.SlugHability)
@@ -365,11 +365,11 @@ namespace BaboGame_test_2
                             }
                         }
                         // notificar el dany al personatge!!!
-                        if((!character.SlugHability)||(character.charType != 'S'))
+                        if ((!character.SlugHability) || (!((character.charType == 'S') || (character.charCopied == 'S'))))
                             character.NotifyHit(projectile.Direction, projectile.ShooterID, projectile.Damage, projectile.LinearVelocity, shooterAttack, shooterType);
                         bool Rejected = false;
 
-                        if (character.charType == 'S')
+                        if ((character.charType == 'S')||(character.charCopied == 'S'))
                         {
                             Random bulletRejected = new Random();
                             if (character.SlugHability)
