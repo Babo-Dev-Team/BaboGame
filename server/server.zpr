@@ -15,7 +15,7 @@ tab_width=4
 tab_use_spaces=0
 explorer_path=.
 inherits_from=
-current_source=source/BBDD_Handler.h
+current_source=main.c
 path_char=/
 [source]
 path=main.c
@@ -23,7 +23,7 @@ cursor=1056:24
 open=true
 [source]
 path=source/BBDD_Handler.c
-cursor=291:19
+cursor=297:21
 open=true
 [source]
 path=source/connected_list.c
@@ -35,7 +35,7 @@ cursor=450:2
 open=true
 [source]
 path=source/game_state.c
-cursor=95:41
+cursor=21:42
 open=true
 [header]
 path=source/BBDD_Handler.h

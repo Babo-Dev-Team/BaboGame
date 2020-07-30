@@ -19,7 +19,7 @@ GameState* CreateGameState(int gameId, int n_players)
 		game->characterStatesList[i].velocity_Y = 0;
 		game->characterStatesList[i].direction_X = 0;
 		game->characterStatesList[i].direction_Y = 0;
-		game->characterStatesList[i].health = 20;
+		game->characterStatesList[i].health = 32;
 		game->characterStatesList[i].projectileCount = 0;
 		for (int j = 0; j < PROJ_COUNT_PLAYER; j++)
 		{
