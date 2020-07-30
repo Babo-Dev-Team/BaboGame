@@ -48,7 +48,7 @@ namespace BaboGame_test_2
 
                 slime.Layer = 0.001f - slime.timer * 0.00001f;
 
-
+                /*
                 //Conducció de les babes
                 bool sourceConnect = false;
                 foreach (var scenObject in scenarioList)
@@ -94,7 +94,7 @@ namespace BaboGame_test_2
                     slime._color = Color.Silver;
                 else
                     slime._color = Color.White;
-
+                    */
             }          
         }
     }
