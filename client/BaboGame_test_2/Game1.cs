@@ -1231,7 +1231,7 @@ namespace BaboGame_test_2
 
                 //Desactivar habilitat
                 Controllable.HabilityRefresh += gameTime.ElapsedGameTime.Milliseconds;
-                if(Controllable.HabilityRefresh > 100)
+                if(Controllable.HabilityRefresh > 200)
                 {
                     Controllable.HabilityRefresh = 0f;
                     Controllable.SlugHability = false;

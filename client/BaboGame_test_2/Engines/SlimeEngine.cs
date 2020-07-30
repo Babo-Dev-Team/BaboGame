@@ -95,6 +95,9 @@ namespace BaboGame_test_2
                 else
                     slime._color = Color.White;
                     */
+
+                if (slime.IsSalted)
+                    slime._color = Color.Silver;
             }          
         }
     }
